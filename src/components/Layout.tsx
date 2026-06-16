@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
+import Image from 'next/image';
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, ShoppingBag, User, Menu, X, ChevronDown, Check, Sparkles } from "lucide-react";
@@ -139,9 +140,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Navbar */}
       <header className={cn("sticky top-0 z-50 w-full border-b transition-all duration-300", scrolled ? "border-border bg-surface/80 backdrop-blur-xl" : "border-transparent bg-surface/60 backdrop-blur-lg")}>
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-4 px-4 md:h-[80px]">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <span className="font-display text-[22px] md:text-[26px] font-bold tracking-tight text-primary">SOMNATH<span className="text-secondary ml-1">NX</span></span>
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src="/assets/logo.png"
+              alt="Somnath NX"
+              width={140}
+              height={48}
+              className="h-10 w-auto object-contain md:h-12"
+              priority
+            />
           </Link>
 
           {/* Nav */}
@@ -318,7 +325,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-dark/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
             <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 z-[80] h-full w-[86%] max-w-[360px] overflow-y-auto bg-surface shadow-2xl">
               <div className="flex items-center justify-between border-b border-border p-5">
-                <span className="font-display text-[18px] font-bold text-primary">SOMNATH<span className="text-secondary ml-1">NX</span></span>
+                <Image
+                  src="/assets/logo.png"
+                  alt="Somnath NX"
+                  width={120}
+                  height={40}
+                  className="h-9 w-auto object-contain"
+                />
                 <button onClick={() => setMobileMenu(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-bg-base">
                   <X className="h-5 w-5" />
                 </button>
@@ -471,7 +484,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-[1240px] px-4 py-16">
           <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
             <div>
-              <span className="font-display text-[26px] font-bold tracking-tight text-primary">SOMNATH<span className="text-secondary ml-1">NX</span></span>
+              <Image
+                src="/assets/logo.png"
+                alt="Somnath NX"
+                width={160}
+                height={56}
+                className="h-12 w-auto object-contain"
+              />
               <p className="mt-6 max-w-[320px] text-[14.5px] leading-relaxed text-dark/70">India’s premium destination for nightwear and loungewear. Experience unmatched comfort, modern designs, and breathable fabrics.</p>
             </div>
             {[
