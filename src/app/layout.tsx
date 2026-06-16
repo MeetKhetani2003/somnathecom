@@ -1,12 +1,14 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { StoreProvider } from '@/store';
+import { Inter, Poppins } from "next/font/google";
+import "./globals.css";
+import Layout from "@/components/Layout";
+import Providers from "@/components/Providers";
 
-export const metadata: Metadata = {
-  title: 'Somnath NX',
-  description: 'Premium e-commerce platform',
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const poppins = Poppins({ weight: ["500", "600"], subsets: ["latin"], variable: "--font-display" });
+
+export const metadata = {
+  title: "Somnath NX - Premium Nightwear & Loungewear",
+  description: "Discover premium comfort, modern styles, and breathable fabrics.",
 };
 
 export default function RootLayout({
@@ -15,15 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased min-h-screen bg-bg text-ink flex flex-col">
-        <StoreProvider>
-          <Navbar />
-          <main className="flex-1">
+    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+      <body className="font-sans antialiased bg-bg-base text-dark">
+        <Providers>
+          <Layout>
             {children}
-          </main>
-          <Footer />
-        </StoreProvider>
+          </Layout>
+        </Providers>
       </body>
     </html>
   );
