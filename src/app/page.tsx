@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, Play, ArrowRight, Check, Heart, ShoppingBag, PlayCircle, Camera } from "lucide-react";
-import { categories, testimonials } from "@/data/mockData";
+import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag, Camera } from "lucide-react";
+import { heroSlides, testimonials } from "@/data/mockData";
 import { useShop } from "@/context/ShopContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
@@ -15,6 +15,178 @@ const fadeInUp = {
   viewport: { once: true, margin: "-50px" },
   transition: { duration: 0.6, ease: "easeOut" } as any
 };
+
+function HeroCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const goTo = (idx: number) => {
+    if (transitioning || idx === current) return;
+    setTransitioning(true);
+    setPrev(current);
+    setCurrent(idx);
+    setTimeout(() => { setPrev(null); setTransitioning(false); }, 900);
+  };
+
+  const next = () => goTo((current + 1) % heroSlides.length);
+  const prev2 = () => goTo((current - 1 + heroSlides.length) % heroSlides.length);
+
+  useEffect(() => {
+    timerRef.current = setTimeout(next, 5000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [current]);
+
+  return (
+    <section className="relative w-full overflow-hidden" style={{ height: "100svh", minHeight: 560 }}>
+      {/* Slides */}
+      {heroSlides.map((slide, i) => (
+        <div
+          key={slide.id}
+          className="absolute inset-0 transition-opacity"
+          style={{
+            opacity: i === current ? 1 : i === prev ? 0 : 0,
+            transitionDuration: "900ms",
+            transitionTimingFunction: "cubic-bezier(0.4,0,0.2,1)",
+            zIndex: i === current ? 2 : i === prev ? 1 : 0,
+          }}
+        >
+          {/* Background image */}
+          <img
+            src={slide.image}
+            alt={slide.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
+          />
+          {/* Dark gradient overlay — centered layout */}
+          <div className="absolute inset-0 bg-dark/55" />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark/70 via-dark/20 to-transparent" />
+        </div>
+      ))}
+
+      {/* Content — only active slide's text animates in */}
+      <div className="relative z-10 flex h-full items-center justify-center">
+        <div className="mx-auto w-full max-w-[900px] px-6 md:px-12 text-center">
+          {heroSlides.map((slide, i) => (
+            <div
+              key={slide.id}
+              className="w-full transition-all"
+              style={{
+                opacity: i === current ? 1 : 0,
+                transform: i === current ? "translateY(0)" : "translateY(24px)",
+                transitionDuration: "700ms",
+                transitionDelay: i === current ? "200ms" : "0ms",
+                position: i === current ? "relative" : "absolute",
+                pointerEvents: i === current ? "auto" : "none",
+              }}
+            >
+              {/* Eyebrow */}
+              <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
+                {slide.eyebrow}
+              </div>
+
+              {/* Headline */}
+              <h1
+                className="font-display text-[44px] font-bold leading-[1.1] tracking-tight text-white md:text-[60px] lg:text-[72px]"
+                style={{ textWrap: "balance" } as any}
+              >
+                {slide.title}
+              </h1>
+
+              {/* Subtitle */}
+              <p className="mt-6 mx-auto max-w-[600px] text-[17px] leading-relaxed text-white/75 md:text-[19px]">
+                {slide.subtitle}
+              </p>
+
+              {/* CTAs */}
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  href="/products"
+                  className="group flex items-center gap-2 rounded-full bg-white px-8 py-4 text-[15px] font-bold text-dark transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:shadow-2xl hover:shadow-primary/30"
+                >
+                  {slide.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  href="/products"
+                  className="flex items-center gap-2 rounded-full border-2 border-white/40 bg-white/10 px-8 py-4 text-[15px] font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20"
+                >
+                  View All
+                </Link>
+              </div>
+
+              {/* Trust badge */}
+              <div className="mt-10 hidden items-center justify-center gap-6 md:flex">
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-[#F5A524] text-[#F5A524]" />
+                    ))}
+                  </div>
+                  <span className="text-[14px] font-semibold text-white">4.9/5</span>
+                </div>
+                <div className="h-4 w-px bg-white/30" />
+                <span className="text-[14px] text-white/70">10,000+ Happy Sleepers</span>
+                <div className="h-4 w-px bg-white/30" />
+                <span className="text-[14px] text-white/70">Free Pan-India Shipping</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Arrow controls */}
+      <button
+        onClick={prev2}
+        className="absolute left-5 top-1/2 z-20 -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 hover:scale-110 md:left-8 md:h-14 md:w-14"
+        aria-label="Previous"
+      >
+        <ChevronLeft className="h-6 w-6" />
+      </button>
+      <button
+        onClick={next}
+        className="absolute right-5 top-1/2 z-20 -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 hover:scale-110 md:right-8 md:h-14 md:w-14"
+        aria-label="Next"
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
+
+      {/* Dot navigation */}
+      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3">
+        {heroSlides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={cn(
+              "rounded-full transition-all duration-500",
+              i === current
+                ? "w-8 h-2.5 bg-white"
+                : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
+            )}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 z-20 h-[3px] w-full bg-white/10">
+        <div
+          key={current}
+          className="h-full bg-secondary"
+          style={{ animation: "heroProgress 5s linear forwards" }}
+        />
+      </div>
+
+      <style>{`
+        @keyframes heroProgress {
+          from { width: 0% }
+          to { width: 100% }
+        }
+      `}</style>
+    </section>
+  );
+}
 
 export default function Home() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
@@ -55,66 +227,9 @@ export default function Home() {
 
   return (
     <>
-      {/* SECTION 1: Hero */}
-      <section className="relative w-full overflow-hidden bg-bg-base pt-6 md:pt-10">
-        <div className="mx-auto max-w-[1400px] px-4 md:px-8">
-          <div className="grid min-h-[80vh] items-center gap-10 lg:grid-cols-2 lg:gap-16">
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="max-w-2xl py-10 lg:py-0"
-            >
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-[12px] font-semibold tracking-widest text-primary uppercase">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
-                Premium Nightwear
-              </div>
-              <h1 className="font-display text-[46px] font-bold leading-[1.1] tracking-tight text-dark md:text-[64px] lg:text-[72px]">
-                That Feels As <br className="hidden lg:block"/>
-                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Good As It Looks.</span>
-              </h1>
-              <p className="mt-6 max-w-[500px] text-[16px] leading-relaxed text-dark/70 md:text-[18px]">
-                Discover premium comfort, modern styles, and breathable fabrics designed for your best sleep and effortless lounging.
-              </p>
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link href="/products?category=Women's Nightwear" className="group relative overflow-hidden rounded-full bg-gradient-to-r from-primary to-[#2E2387] px-8 py-4 text-[15px] font-semibold text-white shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-primary/30">
-                  <span className="relative z-10 flex items-center gap-2">
-                    Shop Women <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                </Link>
-                <Link href="/products?category=Men's Nightwear" className="group flex items-center gap-2 rounded-full border-2 border-border bg-transparent px-8 py-4 text-[15px] font-semibold text-dark transition-all hover:border-primary hover:text-primary">
-                  Shop Men
-                </Link>
-              </div>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-              className="relative h-[60vh] w-full min-h-[500px] lg:h-[80vh] lg:min-h-[600px]"
-            >
-              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-primary/10 via-secondary/5 to-transparent blur-3xl rounded-full" />
-              <img 
-                src="https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?auto=format&fit=crop&q=80&w=1200&h=1600" 
-                alt="Premium Nightwear" 
-                className="relative z-10 h-full w-full object-cover rounded-[40px] shadow-2xl"
-              />
-              <div className="absolute -bottom-6 -left-6 z-20 rounded-2xl bg-surface p-5 shadow-xl md:p-6 backdrop-blur-xl border border-white/50">
-                <div className="flex items-center gap-4">
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
-                    <Star className="h-6 w-6 fill-primary" />
-                  </div>
-                  <div>
-                    <div className="font-display text-[20px] font-bold text-dark">4.9/5</div>
-                    <div className="text-[13px] text-dark/60">From 10,000+ Happy Sleepers</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* SECTION 1: Full-Viewport Background Carousel Hero */}
+      <HeroCarousel />
+
 
       {/* SECTION 2: Shop By Collection (Bento Grid) */}
       <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">

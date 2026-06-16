@@ -373,7 +373,7 @@ function AdminDashboard() {
                         {orders.slice(0, 5).map((order) => (
                           <div key={order._id} className="flex items-center justify-between text-[13px] border-b border-[#FDFBFE] pb-2 last:border-0 last:pb-0">
                             <div>
-                              <div className="font-semibold text-dark">{order.shippingDetails.name}</div>
+                              <div className="font-semibold text-dark">{order.shippingDetails?.name ?? "—"}</div>
                               <div className="text-[11px] text-dark/50">{new Date(order.createdAt).toLocaleDateString()} • {order.paymentMethod === "cod" ? "COD" : "Online"}</div>
                             </div>
                             <div className="text-right">
@@ -570,9 +570,9 @@ function AdminDashboard() {
                             </div>
                             <div className="rounded-xl bg-surface p-3 text-[13px] border border-border">
                               <div className="font-semibold text-dark mb-1.5">Delivery & Totals</div>
-                              <div><strong>Customer:</strong> {order.shippingDetails.name}</div>
-                              <div><strong>Address:</strong> {order.shippingDetails.address}</div>
-                              <div><strong>Phone:</strong> {order.shippingDetails.phone}</div>
+                              <div><strong>Customer:</strong> {order.shippingDetails?.name ?? "—"}</div>
+                              <div><strong>Address:</strong> {order.shippingDetails?.address ?? "—"}</div>
+                              <div><strong>Phone:</strong> {order.shippingDetails?.phone ?? "—"}</div>
                               <div className="mt-2 border-t border-border pt-2 flex justify-between font-bold text-dark">
                                 <span>Grand Total:</span>
                                 <span>₹{order.total}</span>

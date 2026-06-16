@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-import { Filter, Star, Heart, ShoppingBag, ChevronDown, Search, ArrowRight } from "lucide-react";
+import { Filter, Heart, ShoppingBag, ChevronDown, Search, Check } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
 
 const categoryGroups = [
