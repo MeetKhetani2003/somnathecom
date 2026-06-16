@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag, Camera } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag } from "lucide-react";
 import { heroSlides, testimonials } from "@/data/mockData";
 import { useShop } from "@/context/ShopContext";
 
