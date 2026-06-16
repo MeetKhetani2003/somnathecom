@@ -213,6 +213,25 @@ export default function Home() {
     fetchProducts();
   }, []);
 
+  // Auto-slide testimonials
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (testimonialCarouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = testimonialCarouselRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth - 10) {
+          // Loop back to start
+          testimonialCarouselRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          // Scroll right by exactly the card width + gap for clean sliding
+          // A card is roughly 300px on mobile and 400px on desktop + 24px gap (gap-6)
+          const cardWidth = window.innerWidth >= 768 ? 424 : 324;
+          testimonialCarouselRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
+        }
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   const scrollTestimonialCarousel = (dir: "left" | "right") => {
     if (!testimonialCarouselRef.current) return;
     const amount = testimonialCarouselRef.current.clientWidth * 0.8;
@@ -241,7 +260,7 @@ export default function Home() {
         <div className="grid h-auto grid-cols-1 gap-4 md:h-[600px] md:grid-cols-3 md:grid-rows-2 md:gap-6">
           {/* Women's Nightwear */}
           <Link href="/products?category=Women's Nightwear" className="group relative col-span-1 overflow-hidden rounded-[32px] bg-bg-base md:col-span-2 md:row-span-2">
-            <img src="https://images.unsplash.com/photo-1620799139834-6b8f844fbe61?auto=format&fit=crop&q=80&w=1000&h=1200" alt="Women's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+            <img src="/images/products/oversized_cargo.png" alt="Women's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-dark/20 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8">
               <div className="text-[13px] font-bold uppercase tracking-widest text-white/80">Explore</div>
@@ -254,7 +273,7 @@ export default function Home() {
 
           {/* Men's Nightwear */}
           <Link href="/products?category=Men's Nightwear" className="group relative overflow-hidden rounded-[32px] bg-bg-base">
-            <img src="https://images.unsplash.com/photo-1594938298596-eb5fd3f6b402?auto=format&fit=crop&q=80&w=800&h=800" alt="Men's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+            <img src="/images/products/gents_stripe.png" alt="Men's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <h3 className="font-display text-[22px] font-bold text-white">Men's Classic</h3>
@@ -263,7 +282,7 @@ export default function Home() {
 
           {/* Premium Tencel */}
           <Link href="/products?category=Tencel Collection" className="group relative overflow-hidden rounded-[32px] bg-primary">
-            <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800&h=800" alt="Tencel Collection" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 group-hover:scale-105 mix-blend-overlay" />
+            <img src="/images/products/tencel_plazo.png" alt="Tencel Collection" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 group-hover:scale-105 mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-t from-primary to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <h3 className="font-display text-[22px] font-bold text-white">Premium Tencel</h3>
@@ -384,7 +403,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative h-[400px] w-full md:h-auto">
-            <img src="https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&q=80&w=1200&h=1600" alt="Tencel Fabric" className="absolute inset-0 h-full w-full object-cover" />
+            <img src="/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/20 to-transparent md:hidden" />
           </div>
         </div>
@@ -410,30 +429,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* SECTION 8 & 9: Video Shopping & Customer Gallery */}
-      <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
-        <div className="mb-10 text-center">
-          <h2 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">The Somnath NX Community</h2>
-          <p className="mt-3 text-[16px] text-dark/60">Follow us <a href="#" className="font-semibold text-primary">@somnathnx</a> for more inspiration</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
-          {[
-            "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=600&h=800",
-            "https://images.unsplash.com/photo-1594938298596-eb5fd3f6b402?auto=format&fit=crop&q=80&w=600&h=800",
-            "https://images.unsplash.com/photo-1620799139834-6b8f844fbe61?auto=format&fit=crop&q=80&w=600&h=800",
-            "https://images.unsplash.com/photo-1574634534894-89d7576c8259?auto=format&fit=crop&q=80&w=600&h=800",
-            "https://images.unsplash.com/photo-1434389678232-04ce6ca86f2b?auto=format&fit=crop&q=80&w=600&h=800",
-          ].map((src, i) => (
-            <a key={i} href="#" className={cn("group relative overflow-hidden rounded-[24px] bg-bg-base aspect-[3/4]", i === 4 ? "hidden lg:block" : "")}>
-              <img src={src} alt="Community" className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-dark/0 transition duration-300 group-hover:bg-dark/30" />
-              <div className="absolute inset-0 grid place-items-center opacity-0 transition duration-300 group-hover:opacity-100">
-                <Camera className="h-8 w-8 text-white" />
-              </div>
-            </a>
-          ))}
-        </div>
-      </motion.section>
+
 
       {/* SECTION 10: Reviews */}
       <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
@@ -474,8 +470,16 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="font-display text-[16px] font-bold text-dark">{t.name}</div>
-                  <div className="text-[13px] text-dark/50 flex items-center gap-1 mt-0.5">
-                    <Check className="h-3.5 w-3.5 text-green-500" /> {t.role}
+                  <div className="text-[13px] text-dark/60 flex items-center gap-1.5 mt-0.5">
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span className="flex items-center gap-1 font-medium">
+                      Google Verified
+                    </span>
                   </div>
                 </div>
               </div>
