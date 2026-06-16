@@ -142,7 +142,7 @@ export default function ProductDetail() {
             </Reveal>
           </div>
           <div className="lg:col-span-7">
-            <RevealImage src="https://images.pexels.com/photos/4814062/pexels-photo-4814062.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1100&w=1500" ratio="aspect-[4/3]"/>
+            <RevealImage src="/tencel_full_suit.png" ratio="aspect-[4/3]"/>
           </div>
         </div>
       </section>

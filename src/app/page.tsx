@@ -6,7 +6,7 @@ import { ProductCard, Reveal, RevealImage, SectionLabel } from "@/components/UI"
 import { IconArrowRight, IconArrowDown } from "@/components/Icons";
 import { navigate } from "@/store";
 
-const HERO_IMG = "https://images.pexels.com/photos/8416196/pexels-photo-8416196.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1800&w=1400";
+const HERO_IMG = "/hero_banner.png";
 
 export default function Home() {
   return (
@@ -29,10 +29,10 @@ export default function Home() {
 /* ============================== CATEGORY NAVIGATION ============================== */
 function CategoryNavigation() {
   const categories = [
-    { name: "Women", desc: "Premium Loungewear & Night Suits", href: "/shop/women", img: "https://images.pexels.com/photos/17574239/pexels-photo-17574239.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=600&w=400" },
-    { name: "Men", desc: "Quiet essentials & Pajamas", href: "/shop/men", img: "https://images.pexels.com/photos/20364755/pexels-photo-20364755.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=600&w=400" },
-    { name: "Tencel", desc: "Organic eucalyptus softness", href: "/shop/tencel", img: "https://images.pexels.com/photos/7087669/pexels-photo-7087669.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=600&w=400" },
-    { name: "New Arrivals", desc: "The latest chapter in comfort", href: "/shop/new", img: "https://images.pexels.com/photos/10211651/pexels-photo-10211651.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=600&w=400" }
+    { name: "Women", desc: "Premium Loungewear & Night Suits", href: "/shop/women", img: "/women_banner.png" },
+    { name: "Men", desc: "Quiet essentials & Pajamas", href: "/shop/men", img: "/men_banner.png" },
+    { name: "Tencel", desc: "Organic eucalyptus softness", href: "/shop/tencel", img: "/lounge_set.png" },
+    { name: "New Arrivals", desc: "The latest chapter in comfort", href: "/shop/new", img: "/hero_banner.png" }
   ];
 
   return (
@@ -142,7 +142,7 @@ function NewCollection() {
       </div>
       <div className="max-w-[1500px] mx-auto px-6 lg:px-12 mt-12 lg:mt-20 grid lg:grid-cols-12 gap-8 lg:gap-16 items-center pb-24 lg:pb-40">
         <div className="lg:col-span-7">
-          <RevealImage src="https://images.pexels.com/photos/10211651/pexels-photo-10211651.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1600&w=1200" ratio="aspect-[4/5]"/>
+          <RevealImage src="/hero_banner.png" ratio="aspect-[4/5]"/>
         </div>
         <div className="lg:col-span-5 lg:pl-8">
           <Reveal delay={120}>
@@ -174,7 +174,7 @@ function Women() {
       </div>
       <div className="mt-12 lg:mt-16 relative">
         <RevealImage
-          src="https://images.pexels.com/photos/17574239/pexels-photo-17574239.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1400&w=2400"
+          src="/women_banner.png"
           ratio="aspect-[16/10] md:aspect-[21/9]"
           className=""
         />
@@ -224,7 +224,7 @@ function Men() {
           </Reveal>
         </div>
         <div className="lg:col-span-7 lg:order-2 order-1">
-          <RevealImage src="https://images.pexels.com/photos/20364755/pexels-photo-20364755.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1600&w=1200" ratio="aspect-[4/5]"/>
+          <RevealImage src="/men_banner.png" ratio="aspect-[4/5]"/>
         </div>
       </div>
     </section>
@@ -263,7 +263,7 @@ function TencelStory() {
         {/* Editorial paired images + chapter text */}
         <div className="mt-20 lg:mt-32 grid lg:grid-cols-12 gap-8 lg:gap-12">
           <div className="lg:col-span-5">
-            <RevealImage src="https://images.pexels.com/photos/7087669/pexels-photo-7087669.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1500&w=1100" ratio="aspect-[3/4]"/>
+            <RevealImage src="/tencel_full_suit.png" ratio="aspect-[3/4]"/>
           </div>
           <div className="lg:col-span-6 lg:col-start-7 lg:pt-20 space-y-16">
             {chapters.map((c, i) => (
@@ -291,7 +291,7 @@ function TencelStory() {
             </Reveal>
           </div>
           <div className="lg:col-span-4 lg:col-start-9">
-            <RevealImage src="https://images.pexels.com/photos/4814062/pexels-photo-4814062.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=900" ratio="aspect-[3/4]"/>
+            <RevealImage src="/lounge_set.png" ratio="aspect-[3/4]"/>
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ function TencelStory() {
 
 /* ============================== FEATURED COLLECTION (Editorial composition) ============================== */
 function Featured() {
-  const a = PRODUCTS[0], b = PRODUCTS[3], c = PRODUCTS[6], d = PRODUCTS[7];
+  const a = PRODUCTS[0], b = PRODUCTS[1], c = PRODUCTS[2], d = PRODUCTS[3];
   return (
     <section className="bg-bg">
       <div className="max-w-[1500px] mx-auto px-6 lg:px-12 pt-24 lg:pt-40">
@@ -393,7 +393,7 @@ function CampaignBanner() {
   return (
     <section className="relative h-screen min-h-[600px] overflow-hidden bg-ink">
       <RevealImage
-        src="https://images.pexels.com/photos/29215016/pexels-photo-29215016.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1800&w=2400"
+        src="/hero_banner.png"
         ratio="aspect-auto h-full"
         className="absolute inset-0 w-full h-full"
       />

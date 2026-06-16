@@ -83,7 +83,7 @@ function SignIn({ login }: { login: () => void }) {
           </p>
         </div>
         <div className="hidden lg:block">
-          <img src="https://images.pexels.com/photos/10211651/pexels-photo-10211651.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1500&w=1200" alt="" className="aspect-[3/4] object-cover w-full"/>
+          <img src="/hero_banner.png" alt="" className="aspect-[3/4] object-cover w-full"/>
         </div>
       </div>
     </div>

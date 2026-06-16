@@ -22,7 +22,7 @@ export default function About() {
 
       {/* Massive image */}
       <RevealImage
-        src="https://images.pexels.com/photos/3992002/pexels-photo-3992002.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1200&w=2400"
+        src="/hero_banner.png"
         ratio="aspect-[21/9]"
         priority
       />
@@ -52,7 +52,7 @@ export default function About() {
       {/* Editorial split — Factory */}
       <section className="max-w-[1500px] mx-auto px-6 lg:px-12 pb-24 lg:pb-40 grid lg:grid-cols-12 gap-8 lg:gap-16 items-center">
         <div className="lg:col-span-7 lg:order-1 order-2">
-          <RevealImage src="https://images.pexels.com/photos/4814062/pexels-photo-4814062.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1300&w=1600" ratio="aspect-[5/4]"/>
+          <RevealImage src="/tencel_full_suit.png" ratio="aspect-[5/4]"/>
         </div>
         <div className="lg:col-span-5 lg:order-2 order-1 lg:pl-8">
           <Reveal><SectionLabel num="— 02" label="Atelier"/></Reveal>
@@ -99,8 +99,8 @@ export default function About() {
           </Reveal>
         </div>
         <div className="lg:col-span-6 lg:col-start-7 grid grid-cols-2 gap-4">
-          <RevealImage src="https://images.pexels.com/photos/7087669/pexels-photo-7087669.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1100&w=900" ratio="aspect-[3/4]"/>
-          <RevealImage src="https://images.pexels.com/photos/4814062/pexels-photo-4814062.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=1100&w=900" ratio="aspect-[3/4]" className="mt-12"/>
+          <RevealImage src="/lounge_set.png" ratio="aspect-[3/4]"/>
+          <RevealImage src="/men_banner.png" ratio="aspect-[3/4]" className="mt-12"/>
         </div>
       </section>
     </div>
