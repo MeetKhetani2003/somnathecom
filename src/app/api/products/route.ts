@@ -7,7 +7,7 @@ import { uploadToGridFS } from "@/utils/gridfs";
 export async function GET() {
   try {
     await dbConnect();
-    const products = await Product.find({}).sort({ id: 1 });
+    const products = await Product.find({}).sort({ id: -1 });
     return NextResponse.json({ success: true, products });
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -31,9 +31,11 @@ export async function POST(req: Request) {
     const whatsIncludedStr = formData.get("whatsIncluded") as string;
     const careInstructions = formData.get("careInstructions") as string;
     const featuredStr = formData.get("featured") as string;
+    const colorsMetaStr = formData.get("colorsMeta") as string;
     
     const imageFile = formData.get("image") as File | null;
     const imagesFiles = formData.getAll("images") as File[];
+    const colorImageFiles = formData.getAll("colorImages") as File[];
 
     if (!title || !category || !price || !mrp) {
       return NextResponse.json({ success: false, message: "Missing required product fields" }, { status: 400 });
@@ -53,14 +55,50 @@ export async function POST(req: Request) {
       mainImageUrl = `/api/image/${fileId}`;
     }
 
-    let detailedImageUrls: string[] = [];
-    for (const file of imagesFiles) {
-      if (file && file.size > 0) {
-        if (file.size > MAX_SIZE) {
-          return NextResponse.json({ success: false, message: `Image ${file.name} exceeds 500KB limit` }, { status: 400 });
+    // ─── Process Color Variants ──────────────────────────────────────────────
+    let colors: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+    
+    if (colorsMetaStr) {
+      try {
+        const colorsMeta: { name: string; sizes: { size: string; stock: number }[]; imageCount: number }[] = JSON.parse(colorsMetaStr);
+        
+        // Upload color images in order
+        let colorImageIdx = 0;
+        for (const meta of colorsMeta) {
+          const colorImages: string[] = [];
+          for (let i = 0; i < meta.imageCount; i++) {
+            const file = colorImageFiles[colorImageIdx];
+            if (file && file.size > 0) {
+              if (file.size > MAX_SIZE) {
+                return NextResponse.json({ success: false, message: `Image in color "${meta.name}" exceeds 500KB limit` }, { status: 400 });
+              }
+              const fileId = await uploadToGridFS(file);
+              colorImages.push(`/api/image/${fileId}`);
+            }
+            colorImageIdx++;
+          }
+          colors.push({
+            name: meta.name,
+            images: colorImages,
+            sizes: meta.sizes,
+          });
         }
-        const fileId = await uploadToGridFS(file);
-        detailedImageUrls.push(`/api/image/${fileId}`);
+      } catch (e) {
+        console.error("Error parsing colorsMeta:", e);
+      }
+    }
+
+    // ─── Legacy detailed images (when no colors) ─────────────────────────────
+    let detailedImageUrls: string[] = [];
+    if (!colorsMetaStr) {
+      for (const file of imagesFiles) {
+        if (file && file.size > 0) {
+          if (file.size > MAX_SIZE) {
+            return NextResponse.json({ success: false, message: `Image ${file.name} exceeds 500KB limit` }, { status: 400 });
+          }
+          const fileId = await uploadToGridFS(file);
+          detailedImageUrls.push(`/api/image/${fileId}`);
+        }
       }
     }
 
@@ -78,38 +116,21 @@ export async function POST(req: Request) {
     const nextId = lastProduct ? lastProduct.id + 1 : 101;
 
     // ─── SKU Generation ───────────────────────────────────────────────────────
-    // Format: SAH-[CAT3]-[ID]-[SIZECODE]-[RAND4]
-    // Examples:
-    //   SAH-ANI-101-34Y-78Y-4823  (Animal Costume, sizes 3-4 Yrs to 7-8 Yrs)
-    //   SAH-BRD-102-S26-7231      (Birds Costume, single size S26)
-    //   SAH-FRU-103-NS-9012       (Fruit Costume, no sizes defined)
-
-    /** Encode a single size string into a short code */
     function encodeSingleSize(sizeStr: string): string {
       const clean = sizeStr.trim();
-
-      // "Size 24" / "size24" → S24
       const numberedMatch = clean.match(/^[Ss]ize\s*(\d+)/);
       if (numberedMatch) return `S${numberedMatch[1]}`;
-
-      // "3-4 Yrs" / "3-4 Years" / "3-4 yr" → 34Y
       const yearRangeMatch = clean.match(/^(\d+)-(\d+)\s*[Yy]/);
       if (yearRangeMatch) return `${yearRangeMatch[1]}${yearRangeMatch[2]}Y`;
-
-      // "3 Yrs" / "3 Years" → 3Y
       const singleYearMatch = clean.match(/^(\d+)\s*[Yy]/);
       if (singleYearMatch) return `${singleYearMatch[1]}Y`;
-
-      // Fallback: strip spaces, uppercase first 4 chars
       return clean.replace(/\s+/g, "").substring(0, 4).toUpperCase();
     }
 
-    /** Build size code from the full sizes array */
     function buildSizeCode(sizeList: { size: string; stock: number }[]): string {
       const valid = sizeList.filter(s => s.size.trim());
-      if (valid.length === 0) return "NS"; // No Size
+      if (valid.length === 0) return "NS";
       if (valid.length === 1) return encodeSingleSize(valid[0].size);
-      // For multiple sizes: encode first and last to show the range
       const first = encodeSingleSize(valid[0].size);
       const last  = encodeSingleSize(valid[valid.length - 1].size);
       return first === last ? first : `${first}-${last}`;
@@ -119,10 +140,17 @@ export async function POST(req: Request) {
     const sizeCode   = buildSizeCode(sizes);
     const randomNum  = Math.floor(1000 + Math.random() * 9000);
     const sku        = `SAH-${catAbbrev}-${nextId}-${sizeCode}-${randomNum}`;
-    // ─────────────────────────────────────────────────────────────────────────
 
-    const computedStock = sizes.reduce((sum: number, s: any) => sum + (Number(s.stock) || 0), 0);
+    const computedStock = colors.length > 0
+      ? colors.reduce((sum, c) => sum + c.sizes.reduce((s, sz) => s + (Number(sz.stock) || 0), 0), 0)
+      : sizes.reduce((sum: number, s: any) => sum + (Number(s.stock) || 0), 0);
+
     const whatsIncluded = whatsIncludedStr ? whatsIncludedStr.split("\n").map(s => s.trim()).filter(Boolean) : [];
+
+    // If we have colors, use the first color's first image as the main image fallback
+    if (colors.length > 0 && mainImageUrl.includes("pexels") && colors[0].images.length > 0) {
+      mainImageUrl = colors[0].images[0];
+    }
 
     const product = await Product.create({
       id: nextId,
@@ -140,6 +168,7 @@ export async function POST(req: Request) {
       tag: tag || "",
       material: material || "",
       sizes,
+      colors,
       whatsIncluded,
       careInstructions: careInstructions || "",
       featured: featuredStr === "true"

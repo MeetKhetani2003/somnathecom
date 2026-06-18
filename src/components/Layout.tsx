@@ -284,7 +284,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <button className="relative grid h-10 w-10 place-items-center rounded-full text-dark transition hover:bg-bg-base hover:text-primary md:hidden">
               <Search className="h-5 w-5" />
             </button>
-            <Link href="/wishlist" className="relative grid h-10 w-10 place-items-center rounded-full text-dark transition hover:bg-bg-base hover:text-primary">
+            <Link 
+              href={session ? "/wishlist" : "#"}
+              onClick={(e) => {
+                if (!session) {
+                  e.preventDefault();
+                  setIsLoginOpen(true);
+                }
+              }}
+              className="relative grid h-10 w-10 place-items-center rounded-full text-dark transition hover:bg-bg-base hover:text-primary"
+            >
               <Heart className="h-5 w-5" />
               {wishlist.length > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-secondary px-1 text-[10px] font-bold leading-none text-white">{wishlist.length}</span>}
             </Link>
@@ -438,7 +447,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
                   <div className="h-px w-full bg-border my-2" />
 
-                  <Link href="/wishlist" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                  <Link 
+                    href={session ? "/wishlist" : "#"}
+                    onClick={(e) => {
+                      if (!session) {
+                        e.preventDefault();
+                        setMobileMenu(false);
+                        setIsLoginOpen(true);
+                      } else {
+                        setMobileMenu(false);
+                      }
+                    }}
+                    className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base"
+                  >
                     My Wishlist
                   </Link>
 

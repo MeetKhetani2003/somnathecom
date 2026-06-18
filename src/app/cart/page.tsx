@@ -173,6 +173,8 @@ export default function Cart() {
             id: item.id,
             title: item.title,
             quantity: item.quantity,
+            selectedColor: item.selectedColor,
+            selectedSize: item.selectedSize,
           })),
           shippingDetails: {
             name: shippingName,
@@ -353,7 +355,7 @@ export default function Cart() {
             <div className="space-y-4">
               <h2 className="font-display text-[20px] font-bold text-dark">Order Items ({cartItems.length})</h2>
               {cartItems.map((item) => (
-                <div key={item.id} className="flex gap-5 rounded-[24px] border border-border bg-surface p-5 transition-shadow hover:shadow-lg hover:shadow-dark/5">
+                <div key={item.cartItemId || item.id} className="flex gap-5 rounded-[24px] border border-border bg-surface p-5 transition-shadow hover:shadow-lg hover:shadow-dark/5">
                   <Link href={`/product/${item.id}`} className="block h-[120px] w-[90px] shrink-0 overflow-hidden rounded-xl bg-bg-base border border-border/50">
                     <img src={item.image} alt={item.title} className="h-full w-full object-cover transition hover:scale-105 duration-700" />
                   </Link>
@@ -362,16 +364,30 @@ export default function Cart() {
                       <div>
                         <div className="font-display text-[16px] font-bold text-dark hover:text-primary transition-colors cursor-pointer">{item.title}</div>
                         <div className="mt-1 text-[13px] font-medium text-dark/50">{item.category}</div>
+                        {(item.selectedColor || item.selectedSize) && (
+                          <div className="mt-1.5 flex flex-wrap gap-2">
+                            {item.selectedColor && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-[11px] font-semibold text-purple-700">
+                                <span className="h-2 w-2 rounded-full bg-purple-400" /> {item.selectedColor}
+                              </span>
+                            )}
+                            {item.selectedSize && (
+                              <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
+                                Size: {item.selectedSize}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <button onClick={() => removeFromCart(item.id)} className="grid h-10 w-10 place-items-center rounded-full text-dark/40 transition hover:bg-red-50 hover:text-red-500 shrink-0">
+                      <button onClick={() => removeFromCart(item.cartItemId || String(item.id))} className="grid h-10 w-10 place-items-center rounded-full text-dark/40 transition hover:bg-red-50 hover:text-red-500 shrink-0">
                         <Trash2 className="h-4.5 w-4.5" />
                       </button>
                     </div>
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-4 rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="grid h-6 w-6 place-items-center rounded-full bg-bg-base text-dark transition hover:bg-dark hover:text-white"><Minus className="h-3 w-3" /></button>
+                        <button onClick={() => updateQuantity(item.cartItemId || String(item.id), -1)} className="grid h-6 w-6 place-items-center rounded-full bg-bg-base text-dark transition hover:bg-dark hover:text-white"><Minus className="h-3 w-3" /></button>
                         <span className="w-6 text-center text-[14px] font-bold text-dark">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, 1)} className="grid h-6 w-6 place-items-center rounded-full bg-bg-base text-dark transition hover:bg-dark hover:text-white"><Plus className="h-3 w-3" /></button>
+                        <button onClick={() => updateQuantity(item.cartItemId || String(item.id), 1)} className="grid h-6 w-6 place-items-center rounded-full bg-bg-base text-dark transition hover:bg-dark hover:text-white"><Plus className="h-3 w-3" /></button>
                       </div>
                       <div className="font-display text-[18px] font-bold text-dark">₹{item.price * item.quantity}</div>
                     </div>

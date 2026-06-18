@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Edit, Trash2, Plus, X, ImageIcon } from "lucide-react";
+import { ChevronLeft, Edit, Trash2, Plus, X, ImageIcon, Palette } from "lucide-react";
 import Barcode from "react-barcode";
 import CreatableSelect from "react-select/creatable";
 
@@ -20,6 +20,14 @@ const DEFAULT_MATERIALS = [
 interface SizeEntry {
   size: string;
   stock: number;
+}
+
+interface ColorVariant {
+  name: string;
+  existingImages: string[];      // URLs already saved in DB
+  newImageFiles: File[];         // Newly uploaded files
+  newImagePreviews: string[];    // Object URLs for previews
+  sizes: SizeEntry[];
 }
 
 export default function EditProductPage() {
@@ -43,18 +51,22 @@ export default function EditProductPage() {
   const [formWhatsIncluded, setFormWhatsIncluded] = useState("");
   const [formCareInstructions, setFormCareInstructions] = useState("");
   
-  // Size-stock pairs
+  // Legacy Size-stock pairs (no colors)
   const [sizeEntries, setSizeEntries] = useState<SizeEntry[]>([{ size: "", stock: 0 }]);
 
   const [existingImage, setExistingImage] = useState("");
   const [mainImageFile, setMainImageFile] = useState<File | null>(null);
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
 
-  // Existing detailed images from DB
+  // Legacy detailed images
   const [existingDetailedImages, setExistingDetailedImages] = useState<string[]>([]);
-  // New files chosen by admin
   const [newDetailedFiles, setNewDetailedFiles] = useState<File[]>([]);
   const [newDetailedPreviews, setNewDetailedPreviews] = useState<string[]>([]);
+
+  // Color Variants
+  const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
+  const [activeColorIdx, setActiveColorIdx] = useState(0);
+  const colorImageInputRef = useRef<HTMLInputElement>(null);
 
   const mainInputRef = useRef<HTMLInputElement>(null);
   const detailInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +91,6 @@ export default function EditProductPage() {
     const newOption = { value: inputValue, label: inputValue };
     setMaterials((prev) => [...prev, newOption]);
     
-    // Auto-add it to selection
     if (!selectedMaterials.includes(inputValue)) {
       setFormMaterial([...selectedMaterials, inputValue].join(', '));
     }
@@ -130,7 +141,25 @@ export default function EditProductPage() {
         setFormFeatured(!!product.featured);
         setReviews(product.reviews || []);
 
-        // Load sizes properly — they may be [{size, stock}] or plain strings
+        // Load color variants
+        if (product.colors && product.colors.length > 0) {
+          const loadedColors: ColorVariant[] = product.colors.map((c: any) => ({
+            name: c.name || "",
+            existingImages: c.images || [],
+            newImageFiles: [],
+            newImagePreviews: [],
+            sizes: c.sizes && c.sizes.length > 0
+              ? c.sizes.map((s: any) => ({
+                  size: typeof s === "object" ? s.size || "" : String(s),
+                  stock: typeof s === "object" ? Number(s.stock) || 0 : 0,
+                }))
+              : [{ size: "", stock: 0 }],
+          }));
+          setColorVariants(loadedColors);
+          setActiveColorIdx(0);
+        }
+
+        // Load legacy sizes
         if (product.sizes && product.sizes.length > 0) {
           const loaded: SizeEntry[] = product.sizes.map((s: any) => {
             if (typeof s === "object" && s !== null) {
@@ -172,6 +201,66 @@ export default function EditProductPage() {
     }
   };
 
+  const hasColors = colorVariants.length > 0;
+
+  // ─── Color Variant Helpers ──────────────────────────────────────────────────
+  const addColorVariant = () => {
+    setColorVariants(prev => [...prev, { name: "", existingImages: [], newImageFiles: [], newImagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
+    setActiveColorIdx(colorVariants.length);
+  };
+
+  const removeColorVariant = (idx: number) => {
+    setColorVariants(prev => prev.filter((_, i) => i !== idx));
+    setActiveColorIdx(a => Math.min(a, Math.max(0, colorVariants.length - 2)));
+  };
+
+  const updateColorName = (idx: number, name: string) => {
+    setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, name } : cv));
+  };
+
+  const addColorImage = (idx: number, files: File[]) => {
+    setColorVariants(prev => prev.map((cv, i) => {
+      if (i !== idx) return cv;
+      const newPreviews = files.map(f => URL.createObjectURL(f));
+      return { ...cv, newImageFiles: [...cv.newImageFiles, ...files], newImagePreviews: [...cv.newImagePreviews, ...newPreviews] };
+    }));
+  };
+
+  const removeExistingColorImage = (colorIdx: number, imgIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => {
+      if (i !== colorIdx) return cv;
+      return { ...cv, existingImages: cv.existingImages.filter((_, j) => j !== imgIdx) };
+    }));
+  };
+
+  const removeNewColorImage = (colorIdx: number, imgIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => {
+      if (i !== colorIdx) return cv;
+      URL.revokeObjectURL(cv.newImagePreviews[imgIdx]);
+      return {
+        ...cv,
+        newImageFiles: cv.newImageFiles.filter((_, j) => j !== imgIdx),
+        newImagePreviews: cv.newImagePreviews.filter((_, j) => j !== imgIdx),
+      };
+    }));
+  };
+
+  const addColorSizeRow = (colorIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0 }] } : cv));
+  };
+
+  const removeColorSizeRow = (colorIdx: number, sizeIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: cv.sizes.filter((_, j) => j !== sizeIdx) } : cv));
+  };
+
+  const updateColorSizeRow = (colorIdx: number, sizeIdx: number, field: keyof SizeEntry, value: string | number) => {
+    setColorVariants(prev => prev.map((cv, i) => {
+      if (i !== colorIdx) return cv;
+      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: field === "stock" ? Number(value) : value } : s) };
+    }));
+  };
+
+  // ─── Legacy Size Helpers ────────────────────────────────────────────────────
   const addSizeRow = () => {
     setSizeEntries((prev) => [...prev, { size: "", stock: 0 }]);
   };
@@ -188,7 +277,9 @@ export default function EditProductPage() {
     );
   };
 
-  const totalStock = sizeEntries.reduce((sum, e) => sum + (Number(e.stock) || 0), 0);
+  const totalStock = hasColors
+    ? colorVariants.reduce((sum, cv) => sum + cv.sizes.reduce((s, e) => s + (Number(e.stock) || 0), 0), 0)
+    : sizeEntries.reduce((sum, e) => sum + (Number(e.stock) || 0), 0);
 
   if (status === "loading" || loading) {
     return <div className="p-8 text-center text-dark/50">Loading...</div>;
@@ -209,26 +300,48 @@ export default function EditProductPage() {
     e.preventDefault();
     setSubmitting(true);
     
-    // Validate file sizes
-    const MAX_SIZE = 500 * 1024; // 500KB
+    const MAX_SIZE = 500 * 1024;
     if (mainImageFile && mainImageFile.size > MAX_SIZE) {
       alert("Main image exceeds 500KB limit.");
       setSubmitting(false);
       return;
     }
-    for (const file of newDetailedFiles) {
-      if (file.size > MAX_SIZE) {
-        alert(`Image ${file.name} exceeds 500KB limit.`);
+
+    if (hasColors) {
+      for (const cv of colorVariants) {
+        if (!cv.name.trim()) {
+          alert("Each color variant must have a name.");
+          setSubmitting(false);
+          return;
+        }
+        const validSizes = cv.sizes.filter(s => s.size.trim());
+        if (validSizes.length === 0) {
+          alert(`Color "${cv.name}" needs at least one size.`);
+          setSubmitting(false);
+          return;
+        }
+        for (const file of cv.newImageFiles) {
+          if (file.size > MAX_SIZE) {
+            alert(`Image ${file.name} in color "${cv.name}" exceeds 500KB limit.`);
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+    } else {
+      for (const file of newDetailedFiles) {
+        if (file.size > MAX_SIZE) {
+          alert(`Image ${file.name} exceeds 500KB limit.`);
+          setSubmitting(false);
+          return;
+        }
+      }
+      const validSizes = sizeEntries.filter((e) => e.size.trim());
+      if (validSizes.length === 0) {
+        alert("Please add at least one size with stock quantity.");
         setSubmitting(false);
         return;
       }
-    }
-
-    const validSizes = sizeEntries.filter((e) => e.size.trim());
-    if (validSizes.length === 0) {
-      alert("Please add at least one size with stock quantity.");
-      setSubmitting(false);
-      return;
     }
 
     const formData = new FormData();
@@ -240,19 +353,40 @@ export default function EditProductPage() {
     formData.append("description", formDescription);
     formData.append("tag", formTag);
     formData.append("material", formMaterial);
-    formData.append("sizes", JSON.stringify(validSizes));
     formData.append("whatsIncluded", formWhatsIncluded);
     formData.append("careInstructions", formCareInstructions);
     formData.append("featured", formFeatured ? "true" : "false");
-    // Send which existing detailed images to keep
-    formData.append("keepImages", JSON.stringify(existingDetailedImages));
     
     if (mainImageFile) {
       formData.append("image", mainImageFile);
     }
-    newDetailedFiles.forEach((f) => {
-      formData.append("images", f);
-    });
+
+    if (hasColors) {
+      const colorsMeta = colorVariants.map(cv => ({
+        name: cv.name,
+        sizes: cv.sizes.filter(s => s.size.trim()),
+        imageCount: cv.newImageFiles.length,
+        existingImages: cv.existingImages,
+      }));
+      formData.append("colorsMeta", JSON.stringify(colorsMeta));
+
+      for (const cv of colorVariants) {
+        for (const file of cv.newImageFiles) {
+          formData.append("colorImages", file);
+        }
+      }
+
+      const allSizes = colorVariants.flatMap(cv => cv.sizes.filter(s => s.size.trim()));
+      formData.append("sizes", JSON.stringify(allSizes));
+    } else {
+      const validSizes = sizeEntries.filter((e) => e.size.trim());
+      formData.append("sizes", JSON.stringify(validSizes));
+      formData.append("keepImages", JSON.stringify(existingDetailedImages));
+      formData.append("clearColors", "true");
+      newDetailedFiles.forEach((f) => {
+        formData.append("images", f);
+      });
+    }
 
     try {
       const res = await fetch(`/api/products/${id}`, {
@@ -273,6 +407,8 @@ export default function EditProductPage() {
       setSubmitting(false);
     }
   };
+
+  const activeColor = colorVariants[activeColorIdx];
 
   return (
     <div className="mx-auto max-w-[800px] px-4 py-8 md:py-12">
@@ -370,7 +506,6 @@ export default function EditProductPage() {
               </div>
             </div>
             
-            {/* Profit Display */}
             {formPrice && formNetPrice && (
               <div className="mt-2 text-[13px] font-medium">
                 <span className="text-dark/70">Estimated Profit per unit: </span>
@@ -381,94 +516,294 @@ export default function EditProductPage() {
             )}
           </div>
 
-
-
-          {/* Size & Stock Management */}
-          <div className="rounded-2xl border border-border bg-surface/40 p-5">
+          {/* ════════════ COLOR VARIANTS SECTION ════════════ */}
+          <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-purple-50/50 to-pink-50/30 p-5">
             <div className="mb-4 flex items-center justify-between">
-              <div>
-                <label className="block text-[14px] font-semibold text-dark">Sizes & Stock Inventory</label>
-                <p className="text-[12px] text-dark/50 mt-0.5">
-                  Manage each size with its available stock. Total stock: <span className="font-bold text-primary">{totalStock}</span>
-                </p>
+              <div className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                <div>
+                  <label className="block text-[14px] font-semibold text-dark">Color Variants</label>
+                  <p className="text-[12px] text-dark/50 mt-0.5">
+                    {hasColors
+                      ? `${colorVariants.length} color(s) configured. Each has its own images & sizes.`
+                      : "Optional — Add colors to manage separate images & stock per color."
+                    }
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={addSizeRow}
+                onClick={addColorVariant}
                 className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
               >
-                <Plus className="h-3.5 w-3.5" /> Add Size
+                <Plus className="h-3.5 w-3.5" /> Add Color
               </button>
             </div>
 
-            {/* Header row */}
-            <div className="mb-2 grid grid-cols-[1fr_120px_40px] gap-3 px-1">
-              <span className="text-[12px] font-semibold uppercase tracking-wide text-dark/50">Size / Age Group</span>
-              <span className="text-[12px] font-semibold uppercase tracking-wide text-dark/50 text-center">Stock (Qty)</span>
-              <span></span>
-            </div>
-
-            <div className="space-y-2.5">
-              {sizeEntries.map((entry, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_120px_40px] items-center gap-3">
-                  <input
-                    type="text"
-                    value={entry.size}
-                    onChange={(e) => updateSizeRow(idx, "size", e.target.value)}
-                    placeholder="e.g. 3-4 Yrs, Size 26"
-                    className="h-11 rounded-xl border border-border bg-white px-4 text-[13.5px] outline-none focus:border-primary"
-                  />
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min={0}
-                      value={entry.stock}
-                      onChange={(e) => updateSizeRow(idx, "stock", e.target.value)}
-                      className={`h-11 w-full rounded-xl border px-4 text-[13.5px] text-center font-semibold outline-none focus:border-primary ${
-                        entry.stock === 0
-                          ? "border-red-200 bg-red-50 text-red-600"
-                          : "border-border bg-white text-dark"
+            {hasColors && (
+              <div className="space-y-4">
+                {/* Color Tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {colorVariants.map((cv, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveColorIdx(idx)}
+                      className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium transition ${
+                        activeColorIdx === idx
+                          ? "bg-primary text-white shadow-lg shadow-primary/30"
+                          : "bg-white border border-border text-dark/80 hover:border-primary/50"
                       }`}
-                    />
-                    {entry.stock === 0 && (
-                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-600">
-                        Out of Stock
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeSizeRow(idx)}
-                    disabled={sizeEntries.length === 1}
-                    className="grid h-11 w-11 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                    >
+                      <span className="h-3 w-3 rounded-full border-2 border-current inline-block" />
+                      {cv.name || `Color ${idx + 1}`}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {sizeEntries.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                {sizeEntries.filter((e) => e.size.trim()).map((entry, idx) => (
-                  <span
-                    key={idx}
-                    className={`rounded-full px-3 py-1 text-[12px] font-medium ${
-                      entry.stock === 0
-                        ? "bg-red-50 text-red-500 line-through"
-                        : "bg-[var(--color-primary-light)] text-[#7A187C]"
-                    }`}
-                  >
-                    {entry.size} ({entry.stock > 0 ? `${entry.stock} pcs` : "Out"})
-                  </span>
-                ))}
+                {/* Active Color Panel */}
+                {activeColor && (
+                  <div className="rounded-2xl border border-border bg-white p-5 space-y-5">
+                    {/* Color Name */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">Color Name</label>
+                        <input
+                          type="text"
+                          value={activeColor.name}
+                          onChange={(e) => updateColorName(activeColorIdx, e.target.value)}
+                          placeholder="e.g. Navy Blue, Red, Maroon"
+                          className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeColorVariant(activeColorIdx)}
+                        className="mt-5 grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-red-100 text-red-400 transition hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                        title="Remove this color"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Color Images */}
+                    <div>
+                      <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">
+                        Images for &quot;{activeColor.name || `Color ${activeColorIdx + 1}`}&quot;
+                        {(activeColor.existingImages.length + activeColor.newImagePreviews.length) > 0 && (
+                          <span className="ml-2 rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-[11px] font-semibold text-primary normal-case">
+                            {activeColor.existingImages.length + activeColor.newImagePreviews.length} total
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        ref={colorImageInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) addColorImage(activeColorIdx, files);
+                          if (colorImageInputRef.current) colorImageInputRef.current.value = "";
+                        }}
+                      />
+                      <div className="flex flex-wrap gap-3">
+                        {/* Existing saved images */}
+                        {activeColor.existingImages.map((src, imgIdx) => (
+                          <div key={`existing-${imgIdx}`} className="relative">
+                            <img src={src} alt={`Saved ${imgIdx + 1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/50 shadow-sm" />
+                            <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-dark/50">Saved</span>
+                            <button
+                              type="button"
+                              onClick={() => removeExistingColorImage(activeColorIdx, imgIdx)}
+                              className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* New upload previews */}
+                        {activeColor.newImagePreviews.map((src, imgIdx) => (
+                          <div key={`new-${imgIdx}`} className="relative">
+                            <img src={src} alt={`New ${imgIdx + 1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/60 shadow-sm" />
+                            <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-primary">New</span>
+                            <button
+                              type="button"
+                              onClick={() => removeNewColorImage(activeColorIdx, imgIdx)}
+                              className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => colorImageInputRef.current?.click()}
+                          className="flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-primary/50 bg-surface/50 text-dark/50 transition hover:border-primary hover:text-primary"
+                        >
+                          <Plus className="h-6 w-6" />
+                          <span className="text-[11px] font-medium">Add</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Color Sizes */}
+                    <div>
+                      <div className="mb-3 flex items-center justify-between">
+                        <label className="block text-[12px] font-semibold uppercase tracking-wide text-dark/50">
+                          Sizes & Stock for &quot;{activeColor.name || `Color ${activeColorIdx + 1}`}&quot;
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => addColorSizeRow(activeColorIdx)}
+                          className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[12px] font-medium text-primary transition hover:bg-primary/20"
+                        >
+                          <Plus className="h-3 w-3" /> Add Size
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {activeColor.sizes.map((entry, sIdx) => (
+                          <div key={sIdx} className="grid grid-cols-[1fr_100px_36px] items-center gap-2">
+                            <input
+                              type="text"
+                              value={entry.size}
+                              onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "size", e.target.value)}
+                              placeholder="e.g. M, L, XL"
+                              className="h-10 rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                            />
+                            <input
+                              type="number"
+                              min={0}
+                              value={entry.stock}
+                              onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "stock", e.target.value)}
+                              className={`h-10 w-full rounded-xl border px-3 text-[13px] text-center font-semibold outline-none focus:border-primary ${entry.stock === 0 ? "border-red-200 bg-red-50 text-red-600" : "border-border bg-white text-dark"}`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeColorSizeRow(activeColorIdx, sIdx)}
+                              disabled={activeColor.sizes.length === 1}
+                              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {activeColor.sizes.filter(s => s.size.trim()).length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {activeColor.sizes.filter(s => s.size.trim()).map((entry, idx) => (
+                            <span
+                              key={idx}
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${entry.stock === 0 ? "bg-red-50 text-red-500 line-through" : "bg-[var(--color-primary-light)] text-[#7A187C]"}`}
+                            >
+                              {entry.size} ({entry.stock > 0 ? `${entry.stock}` : "Out"})
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-[13px] text-dark/60 font-medium">
+                  Total stock across all colors: <span className="font-bold text-primary">{totalStock}</span>
+                </div>
               </div>
             )}
           </div>
 
+          {/* Legacy Size & Stock (only shown when no colors) */}
+          {!hasColors && (
+            <div className="rounded-2xl border border-border bg-surface/40 p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <label className="block text-[14px] font-semibold text-dark">Sizes & Stock Inventory</label>
+                  <p className="text-[12px] text-dark/50 mt-0.5">
+                    Manage each size with its available stock. Total stock: <span className="font-bold text-primary">{totalStock}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addSizeRow}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Size
+                </button>
+              </div>
+
+              <div className="mb-2 grid grid-cols-[1fr_120px_40px] gap-3 px-1">
+                <span className="text-[12px] font-semibold uppercase tracking-wide text-dark/50">Size / Age Group</span>
+                <span className="text-[12px] font-semibold uppercase tracking-wide text-dark/50 text-center">Stock (Qty)</span>
+                <span></span>
+              </div>
+
+              <div className="space-y-2.5">
+                {sizeEntries.map((entry, idx) => (
+                  <div key={idx} className="grid grid-cols-[1fr_120px_40px] items-center gap-3">
+                    <input
+                      type="text"
+                      value={entry.size}
+                      onChange={(e) => updateSizeRow(idx, "size", e.target.value)}
+                      placeholder="e.g. 3-4 Yrs, Size 26"
+                      className="h-11 rounded-xl border border-border bg-white px-4 text-[13.5px] outline-none focus:border-primary"
+                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={0}
+                        value={entry.stock}
+                        onChange={(e) => updateSizeRow(idx, "stock", e.target.value)}
+                        className={`h-11 w-full rounded-xl border px-4 text-[13.5px] text-center font-semibold outline-none focus:border-primary ${
+                          entry.stock === 0
+                            ? "border-red-200 bg-red-50 text-red-600"
+                            : "border-border bg-white text-dark"
+                        }`}
+                      />
+                      {entry.stock === 0 && (
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-600">
+                          Out of Stock
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSizeRow(idx)}
+                      disabled={sizeEntries.length === 1}
+                      className="grid h-11 w-11 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {sizeEntries.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
+                  {sizeEntries.filter((e) => e.size.trim()).map((entry, idx) => (
+                    <span
+                      key={idx}
+                      className={`rounded-full px-3 py-1 text-[12px] font-medium ${
+                        entry.stock === 0
+                          ? "bg-red-50 text-red-500 line-through"
+                          : "bg-[var(--color-primary-light)] text-[#7A187C]"
+                      }`}
+                    >
+                      {entry.size} ({entry.stock > 0 ? `${entry.stock} pcs` : "Out"})
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-dark/80">
-              What's Included
+              What&apos;s Included
               <span className="ml-1.5 text-[11px] font-normal text-dark/50">— one item per line</span>
             </label>
             <textarea
@@ -591,77 +926,82 @@ export default function EditProductPage() {
               )}
             </div>
 
-            {/* Detailed / Gallery Images */}
-            <div>
-              <label className="mb-2 block text-[13px] font-medium text-dark/70">
-                Detailed / Gallery Images
-                {(existingDetailedImages.length + newDetailedPreviews.length) > 0 && (
-                  <span className="ml-2 rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-[11px] font-semibold text-primary">
-                    {existingDetailedImages.length + newDetailedPreviews.length} total
-                  </span>
-                )}
-              </label>
-              <input
-                ref={detailInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  newDetailedPreviews.forEach(url => URL.revokeObjectURL(url));
-                  setNewDetailedFiles(files);
-                  setNewDetailedPreviews(files.map(f => URL.createObjectURL(f)));
-                }}
-              />
-              <div className="flex flex-wrap gap-3">
-                {/* Existing DB images */}
-                {existingDetailedImages.map((src, idx) => (
-                  <div key={`existing-${idx}`} className="relative">
-                    <img src={src} alt={`Existing ${idx+1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/50 shadow-sm" />
-                    <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-dark/50">Saved</span>
-                    <button
-                      type="button"
-                      onClick={() => setExistingDetailedImages(prev => prev.filter((_, i) => i !== idx))}
-                      className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
-                      title="Remove this image"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+            {/* Legacy Detailed / Gallery Images (only when no colors) */}
+            {!hasColors && (
+              <div>
+                <label className="mb-2 block text-[13px] font-medium text-dark/70">
+                  Detailed / Gallery Images
+                  {(existingDetailedImages.length + newDetailedPreviews.length) > 0 && (
+                    <span className="ml-2 rounded-full bg-[var(--color-primary-light)] px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      {existingDetailedImages.length + newDetailedPreviews.length} total
+                    </span>
+                  )}
+                </label>
+                <input
+                  ref={detailInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    newDetailedPreviews.forEach(url => URL.revokeObjectURL(url));
+                    setNewDetailedFiles(files);
+                    setNewDetailedPreviews(files.map(f => URL.createObjectURL(f)));
+                  }}
+                />
+                <div className="flex flex-wrap gap-3">
+                  {existingDetailedImages.map((src, idx) => (
+                    <div key={`existing-${idx}`} className="relative">
+                      <img src={src} alt={`Existing ${idx+1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/50 shadow-sm" />
+                      <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-dark/50">Saved</span>
+                      <button
+                        type="button"
+                        onClick={() => setExistingDetailedImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                        title="Remove this image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
 
-                {/* New upload previews */}
-                {newDetailedPreviews.map((src, idx) => (
-                  <div key={`new-${idx}`} className="relative">
-                    <img src={src} alt={`New ${idx+1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/60 shadow-sm" />
-                    <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-primary">New</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        URL.revokeObjectURL(src);
-                        setNewDetailedFiles(prev => prev.filter((_, i) => i !== idx));
-                        setNewDetailedPreviews(prev => prev.filter((_, i) => i !== idx));
-                        if (detailInputRef.current) detailInputRef.current.value = "";
-                      }}
-                      className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                  {newDetailedPreviews.map((src, idx) => (
+                    <div key={`new-${idx}`} className="relative">
+                      <img src={src} alt={`New ${idx+1}`} className="h-24 w-24 rounded-xl object-cover border-2 border-primary/60 shadow-sm" />
+                      <span className="mt-1 block text-center text-[9px] font-semibold uppercase tracking-wide text-primary">New</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          URL.revokeObjectURL(src);
+                          setNewDetailedFiles(prev => prev.filter((_, i) => i !== idx));
+                          setNewDetailedPreviews(prev => prev.filter((_, i) => i !== idx));
+                          if (detailInputRef.current) detailInputRef.current.value = "";
+                        }}
+                        className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
 
-                {/* Add more button */}
-                <button
-                  type="button"
-                  onClick={() => detailInputRef.current?.click()}
-                  className="flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-primary/50 bg-white text-dark/50 transition hover:border-primary hover:text-primary"
-                >
-                  <Plus className="h-6 w-6" />
-                  <span className="text-[11px] font-medium">Add More</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => detailInputRef.current?.click()}
+                    className="flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-primary/50 bg-white text-dark/50 transition hover:border-primary hover:text-primary"
+                  >
+                    <Plus className="h-6 w-6" />
+                    <span className="text-[11px] font-medium">Add More</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {hasColors && (
+              <p className="text-[12px] text-dark/50 italic">
+                ℹ️ Gallery images are managed per color in the Color Variants section above.
+              </p>
+            )}
           </div>
 
           {/* Featured Toggle */}
@@ -683,7 +1023,7 @@ export default function EditProductPage() {
                 ⭐ Featured Product
                 {formFeatured && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Active</span>}
               </span>
-              <p className="mt-0.5 text-[12px] text-dark/50">When checked, this product will appear in the <strong className="text-primary">"Featured This Week"</strong> section on the home page.</p>
+              <p className="mt-0.5 text-[12px] text-dark/50">When checked, this product will appear in the <strong className="text-primary">&quot;Featured This Week&quot;</strong> section on the home page.</p>
             </label>
           </div>
 
@@ -723,7 +1063,7 @@ export default function EditProductPage() {
                     <span className="text-[12px] text-gray-400">•</span>
                     <span className="text-[12px] text-dark/50">{review.createdAt ? new Date(review.createdAt).toLocaleDateString("en-IN") : "N/A"}</span>
                   </div>
-                  <p className="text-[13.5px] text-dark/80 mt-2 italic">"{review.comment}"</p>
+                  <p className="text-[13.5px] text-dark/80 mt-2 italic">&quot;{review.comment}&quot;</p>
                 </div>
                 <div>
                   <button

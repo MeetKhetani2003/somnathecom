@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, Shield, Compass, CheckCircle, Truck, ShoppingBag, Trash2, X } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, Shield, Compass, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
@@ -20,6 +20,9 @@ export default function Profile() {
   const [addresses, setAddresses] = useState<string[]>([]);
   const [defaultAddress, setDefaultAddress] = useState<string>("");
   const [newAddress, setNewAddress] = useState("");
+  
+  const [phone, setPhone] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
 
   // Return & Exchange states
   const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
@@ -202,8 +205,33 @@ export default function Profile() {
       fetchOrders();
       setAddresses((session.user as any).addresses || []);
       setDefaultAddress((session.user as any).defaultAddress || "");
+      setPhone((session.user as any).phone || "");
     }
   }, [session, activeSection]);
+
+  const savePhoneToDb = async () => {
+    if (!session?.user?.email) return;
+    setSavingPhone(true);
+    try {
+      const res = await fetch("/api/user/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.user.email, phone }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await update();
+        alert("Phone number updated successfully.");
+      } else {
+        alert("Failed to save phone number.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving phone number.");
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
   const saveAddressesToDb = async (newAddressesList: string[], newDefault: string) => {
     if (!session?.user?.email) return;
@@ -457,6 +485,25 @@ export default function Profile() {
                     <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Email Address</label>
                     <input type="email" readOnly value={session.user?.email || ""} className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[15px] font-medium text-dark/60 outline-none" />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Mobile Number</label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input 
+                        type="tel" 
+                        value={phone} 
+                        onChange={(e) => setPhone(e.target.value)} 
+                        placeholder="Enter mobile number" 
+                        className="h-12 flex-1 rounded-xl border border-border bg-bg-base px-4 text-[15px] font-medium text-dark outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10" 
+                      />
+                      <button 
+                        onClick={savePhoneToDb}
+                        disabled={savingPhone || phone === (session.user as any)?.phone}
+                        className="h-12 rounded-xl bg-dark px-8 text-[14px] font-bold text-white hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingPhone ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -504,12 +551,12 @@ export default function Profile() {
                         {/* Items */}
                         <ul className="py-6 space-y-4">
                           {order.items.map((item: any, idx: number) => (
-                            <li key={idx} className="flex items-center gap-5 text-[15px]">
+                            <Link href={`/product/${item.productId || item.id}`} key={idx} className="flex items-center gap-5 text-[15px] hover:bg-surface/50 p-2 rounded-xl transition group">
                               <div className="h-16 w-12 rounded-lg bg-bg-base border border-border overflow-hidden shrink-0"><img src={item.image} className="h-full w-full object-cover" /></div>
-                              <span className="font-bold text-dark flex-1 truncate">{item.title}</span>
+                              <span className="font-bold text-dark flex-1 truncate group-hover:text-primary transition">{item.title}</span>
                               <span className="text-dark/60 font-medium">Qty: {item.quantity}</span>
                               <span className="font-display text-[16px] font-bold text-dark w-24 text-right">₹{item.price * item.quantity}</span>
-                            </li>
+                            </Link>
                           ))}
                         </ul>
 
@@ -558,8 +605,15 @@ export default function Profile() {
 
                         <div className="border-t border-border pt-6 mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="font-display text-[16px] font-bold text-dark">
-                            <span>Grand Total:</span>
-                            <span className="ml-2 text-[20px] text-primary">₹{order.total}</span>
+                            {order.couponUsed && (
+                              <div className="text-[13px] text-green-600 font-medium mb-1 flex items-center gap-1.5">
+                                <Tag className="h-4 w-4" /> Coupon Applied: <strong>{order.couponUsed}</strong>
+                              </div>
+                            )}
+                            <div className="flex items-center">
+                              <span>Grand Total:</span>
+                              <span className="ml-2 text-[20px] text-primary">₹{order.total}</span>
+                            </div>
                             {order.exchangeRequested && (
                               <span className="ml-3 text-[12px] font-medium text-dark/50 block sm:inline mt-1 sm:mt-0">
                                 (Includes ₹{order.exchangeFee} Exchange Delivery Fee)

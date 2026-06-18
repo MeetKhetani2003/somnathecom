@@ -18,6 +18,14 @@ const ProductSchema = new Schema({
     size: { type: String, required: true },
     stock: { type: Number, default: 0 }
   }],
+  colors: [{
+    name: { type: String, required: true },
+    images: [{ type: String }],
+    sizes: [{
+      size: { type: String, required: true },
+      stock: { type: Number, default: 0 }
+    }]
+  }],
   whatsIncluded: [{ type: String }],
   careInstructions: { type: String },
   images: [{ type: String }],

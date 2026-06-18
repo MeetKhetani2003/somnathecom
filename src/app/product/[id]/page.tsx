@@ -29,7 +29,7 @@ const ImageMagnifier = ({ src, alt }: { src: string, alt: string }) => {
       onMouseLeave={() => setShowMagnifier(false)}
       onMouseMove={handleMouseMove}
     >
-      <img src={src} alt={alt} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+      <img src={src} alt={alt} className="h-full w-full object-cover object-top transition-transform duration-700 hover:scale-105" />
       {showMagnifier && (
         <div
           className="pointer-events-none absolute inset-0 z-20 bg-white"
@@ -57,6 +57,7 @@ export default function ProductSlug() {
 
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
 
   // Accordion states
   const [openAccordion, setOpenAccordion] = useState<string>("description");
@@ -84,6 +85,10 @@ export default function ProductSlug() {
       const data = await res.json();
       if (data.success) {
         setProduct(data.product);
+        // Auto-select first color if colors exist
+        if (data.product.colors && data.product.colors.length > 0) {
+          setSelectedColor(data.product.colors[0].name);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -188,11 +193,66 @@ export default function ProductSlug() {
   }
 
   const isWishlisted = wishlist.includes(product.id);
+  
+  // ─── Color-aware image computation ────────────────────────────────────────
+  const hasColors = product.colors && product.colors.length > 0;
+  const activeColorObj = hasColors
+    ? product.colors.find((c: any) => c.name === selectedColor) || product.colors[0]
+    : null;
+
+  // Images: if a color is selected and has images, use those. Otherwise use the product-level images.
+  const colorImages = activeColorObj?.images || [];
   const detailedImages: string[] = product.images && product.images.length > 0 ? product.images : [];
-  const images = product.image
-    ? [product.image, ...detailedImages.filter((img: string) => img !== product.image)]
-    : detailedImages.length > 0 ? detailedImages : [];
+  
+  let images: string[];
+  if (hasColors && colorImages.length > 0) {
+    // Use color-specific images
+    images = colorImages;
+  } else {
+    // Fallback to product-level images
+    images = product.image
+      ? [product.image, ...detailedImages.filter((img: string) => img !== product.image)]
+      : detailedImages.length > 0 ? detailedImages : [];
+  }
+
+  // ─── Color-aware sizes ────────────────────────────────────────────────────
+  const availableSizes = hasColors && activeColorObj
+    ? activeColorObj.sizes || []
+    : product.sizes || [];
+  
   const reviewsList = product.reviews || [];
+
+  // Reset activeImage when color changes (handled via effect)
+  const handleColorChange = (colorName: string) => {
+    setSelectedColor(colorName);
+    setSelectedSize(null); // Reset size when color changes
+    setActiveImage(0);     // Reset to first image of new color
+  };
+
+  const handleAddToCart = () => {
+    if (hasColors && !selectedColor) {
+      alert('Please select a color first');
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      alert('Please select a size first');
+      return;
+    }
+    addToCart(product, selectedColor || undefined, selectedSize || undefined);
+  };
+
+  const handleBuyNow = () => {
+    if (hasColors && !selectedColor) {
+      alert('Please select a color first');
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      alert('Please select a size first');
+      return;
+    }
+    addToCart(product, selectedColor || undefined, selectedSize || undefined);
+    router.push("/cart");
+  };
 
   return (
     <div className="bg-bg-base py-6 md:py-12">
@@ -213,7 +273,7 @@ export default function ProductSlug() {
           {/* Images Section */}
           <div className="flex flex-col gap-4 sticky top-28 h-fit">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[32px] bg-surface shadow-sm border border-border group">
-              <ImageMagnifier src={images[activeImage]} alt={product.title} />
+              <ImageMagnifier src={images[activeImage] || product.image} alt={product.title} />
               <button
                 onClick={() => toggleWishlist(product.id)}
                 className="absolute right-6 top-6 z-30 grid h-12 w-12 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-lg backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
@@ -238,7 +298,7 @@ export default function ProductSlug() {
                       activeImage === idx ? "border-primary" : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
                     )}
                   >
-                    <img src={img} alt={`${product.title} view ${idx + 1}`} className="h-full w-full object-cover" />
+                    <img src={img} alt={`${product.title} view ${idx + 1}`} className="h-full w-full object-cover object-top" />
                   </button>
                 ))}
               </div>
@@ -276,8 +336,50 @@ export default function ProductSlug() {
             </div>
             <p className="mt-2 text-[13px] text-dark/50">Inclusive of all taxes. Free shipping on prepaid orders.</p>
 
-            {/* Sizes */}
-            {product.sizes && product.sizes.length > 0 && (
+            {/* ════════════ COLOR SELECTOR ════════════ */}
+            {hasColors && (
+              <div className="mt-10">
+                <h3 className="font-display text-[16px] font-bold text-dark mb-4">
+                  Select Color
+                  {selectedColor && (
+                    <span className="ml-2 text-[14px] font-medium text-primary">— {selectedColor}</span>
+                  )}
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {product.colors.map((colorObj: any, idx: number) => {
+                    const isSelected = selectedColor === colorObj.name;
+                    const colorTotalStock = (colorObj.sizes || []).reduce((s: number, sz: any) => s + (Number(sz.stock) || 0), 0);
+                    const isOutOfStock = colorTotalStock === 0;
+                    
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => !isOutOfStock && handleColorChange(colorObj.name)}
+                        disabled={isOutOfStock}
+                        title={isOutOfStock ? `${colorObj.name} — Out of Stock` : colorObj.name}
+                        className={cn(
+                          "relative flex items-center gap-2 rounded-xl border-2 px-5 py-3 font-display text-[14px] font-bold transition-all focus:outline-none",
+                          isOutOfStock
+                            ? "cursor-not-allowed border-border bg-bg-base text-dark/30 line-through"
+                            : isSelected
+                              ? "border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-105"
+                              : "border-border bg-surface text-dark hover:border-primary/50"
+                        )}
+                      >
+                        <span className={cn(
+                          "h-4 w-4 rounded-full border-2 shrink-0",
+                          isSelected ? "border-white bg-white/30" : "border-current"
+                        )} />
+                        {colorObj.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ════════════ SIZES ════════════ */}
+            {availableSizes.length > 0 && (
               <div className="mt-10">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-display text-[16px] font-bold text-dark">Select Size</h3>
@@ -286,7 +388,7 @@ export default function ProductSlug() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {product.sizes.map((sizeObj: any, idx: number) => {
+                  {availableSizes.map((sizeObj: any, idx: number) => {
                     const sizeLabel = typeof sizeObj === "object" && sizeObj !== null ? sizeObj.size : sizeObj;
                     const sizeStock = typeof sizeObj === "object" && sizeObj !== null ? Number(sizeObj.stock) : 1;
                     const isOutOfStock = sizeStock === 0;
@@ -320,25 +422,28 @@ export default function ProductSlug() {
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               <button
-                onClick={() => {
-                  if (!selectedSize && product.sizes?.length > 0) return alert('Please select a size first');
-                  addToCart(product);
-                }}
+                onClick={handleAddToCart}
                 className="flex items-center justify-center gap-2 rounded-full border-2 border-border bg-surface py-4 text-[15px] font-bold text-dark transition hover:border-primary hover:text-primary active:scale-[0.98]"
               >
                 <ShoppingBag className="h-5 w-5" /> Add to Cart
               </button>
               <button
-                onClick={() => {
-                  if (!selectedSize && product.sizes?.length > 0) return alert('Please select a size first');
-                  addToCart(product);
-                  router.push("/cart");
-                }}
+                onClick={handleBuyNow}
                 className="flex items-center justify-center gap-2 rounded-full bg-primary py-4 text-[15px] font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-[#2E2387] active:scale-[0.98]"
               >
                 Buy It Now
               </button>
             </div>
+
+            {/* Selected variant summary */}
+            {(selectedColor || selectedSize) && (
+              <div className="mt-4 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3 text-[13px] text-dark/80">
+                <span className="font-bold text-primary">Your Selection: </span>
+                {selectedColor && <span>{selectedColor}</span>}
+                {selectedColor && selectedSize && <span> — </span>}
+                {selectedSize && <span>Size {selectedSize}</span>}
+              </div>
+            )}
 
             {/* Trust badges */}
             <div className="mt-10 grid grid-cols-2 gap-4 rounded-[24px] border border-border bg-surface p-6 sm:grid-cols-4 shadow-sm">
@@ -377,7 +482,7 @@ export default function ProductSlug() {
                       </div>
                       {product.whatsIncluded && (
                          <div>
-                           <strong className="text-dark">What's Included:</strong> {Array.isArray(product.whatsIncluded) ? product.whatsIncluded.join(", ") : product.whatsIncluded}
+                           <strong className="text-dark">What&apos;s Included:</strong> {Array.isArray(product.whatsIncluded) ? product.whatsIncluded.join(", ") : product.whatsIncluded}
                          </div>
                       )}
                     </div>
@@ -516,7 +621,7 @@ export default function ProductSlug() {
                         ))}
                       </div>
                     </div>
-                    <p className="text-[15px] leading-relaxed text-dark/80">"{rev.comment}"</p>
+                    <p className="text-[15px] leading-relaxed text-dark/80">&quot;{rev.comment}&quot;</p>
 
                     {isAdmin && (
                       <div className="mt-4 flex justify-end border-t border-border pt-4">
@@ -548,7 +653,7 @@ export default function ProductSlug() {
                   <div className="overflow-hidden rounded-[24px] bg-surface transition-all duration-300 hover:shadow-xl hover:shadow-dark/5 border border-border">
                     <div className="relative aspect-[3/4] overflow-hidden bg-bg-base">
                       <Link href={`/product/${p.id}`}>
-                        <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-1000 group-hover:scale-105" />
+                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
                       </Link>
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }}

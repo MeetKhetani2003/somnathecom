@@ -307,10 +307,10 @@ function ProductsContent() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
               {filteredProducts.map((p) => (
                 <div key={p.id} className="group relative w-full shrink-0">
-                  <div className="overflow-hidden rounded-[28px] bg-surface transition-all duration-300 hover:shadow-2xl hover:shadow-dark/5">
-                    <div className="relative aspect-[3/4] overflow-hidden bg-bg-base rounded-[28px]">
+                  <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
                       <Link href={`/product/${p.id}`}>
-                        <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-1000 group-hover:scale-105" />
+                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
                       </Link>
                       <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
                         {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
@@ -323,35 +323,29 @@ function ProductsContent() {
                         <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
                       </button>
                       
-                      {/* Quick Add overlay */}
-                      <div className="absolute inset-x-4 bottom-4 translate-y-[120%] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 hidden md:block">
-                        <button 
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-surface/95 py-3.5 text-[14px] font-bold text-dark backdrop-blur-md hover:bg-primary hover:text-white transition-colors shadow-xl"
-                        >
-                          <ShoppingBag className="h-4 w-4" /> Quick Add
-                        </button>
-                      </div>
+                      {/* Removed hover overlay */}
                     </div>
-                    <div className="p-5">
-                      <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                      <div className="mt-1 flex items-center justify-between">
-                        <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category}</div>
-                      </div>
-                      <div className="mt-4 flex items-baseline gap-2">
-                        <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
-                        {p.mrp > p.price && (
-                          <>
-                            <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                            <span className="ml-1 rounded-md bg-secondary/10 px-2 py-0.5 text-[12px] font-bold text-secondary">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% OFF</span>
-                          </>
-                        )}
+                    <div className="p-5 flex flex-col justify-between flex-1">
+                      <div>
+                        <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                        <div className="mt-1 flex items-center justify-between">
+                          <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category}</div>
+                        </div>
+                        <div className="mt-4 flex items-baseline gap-2">
+                          <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
+                          {p.mrp > p.price && (
+                            <>
+                              <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
+                              <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* Mobile Quick Add */}
+                      {/* Add to Cart */}
                       <button 
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-border bg-transparent py-2.5 text-[13px] font-bold text-dark transition hover:border-primary hover:bg-primary hover:text-white md:hidden"
+                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
                       >
                         <ShoppingBag className="h-4 w-4" /> Add to cart
                       </button>

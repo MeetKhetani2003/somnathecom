@@ -56,29 +56,79 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData.image = `/api/image/${fileId}`;
     }
 
-    // keepImages: existing DB URLs the admin chose to keep
-    const keepImagesStr = formData.get("keepImages");
-    let keepImages: string[] = [];
-    if (keepImagesStr) {
-      try { keepImages = JSON.parse(keepImagesStr as string); } catch {}
-    }
+    // ─── Color Variants ──────────────────────────────────────────────────────
+    const colorsMetaStr = formData.get("colorsMeta") as string;
+    const colorImageFiles = formData.getAll("colorImages") as File[];
 
-    // Upload any new detailed image files
-    const imagesFiles = formData.getAll("images") as File[];
-    let newImageUrls: string[] = [];
-    for (const file of imagesFiles) {
-      if (file && file.size > 0) {
-        if (file.size > MAX_SIZE) {
-          return NextResponse.json({ success: false, message: `Image ${file.name} exceeds 500KB limit` }, { status: 400 });
+    if (colorsMetaStr) {
+      try {
+        const colorsMeta: { name: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        
+        let colorImageIdx = 0;
+        const colors: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+        
+        for (const meta of colorsMeta) {
+          const colorImages: string[] = [...(meta.existingImages || [])];
+          
+          for (let i = 0; i < meta.imageCount; i++) {
+            const file = colorImageFiles[colorImageIdx];
+            if (file && file.size > 0) {
+              if (file.size > MAX_SIZE) {
+                return NextResponse.json({ success: false, message: `Image in color "${meta.name}" exceeds 500KB limit` }, { status: 400 });
+              }
+              const fileId = await uploadToGridFS(file);
+              colorImages.push(`/api/image/${fileId}`);
+            }
+            colorImageIdx++;
+          }
+          colors.push({
+            name: meta.name,
+            images: colorImages,
+            sizes: meta.sizes,
+          });
         }
-        const fileId = await uploadToGridFS(file);
-        newImageUrls.push(`/api/image/${fileId}`);
+        
+        updateData.colors = colors;
+        
+        // Recompute total stock from all color sizes
+        updateData.stock = colors.reduce((sum, c) => sum + c.sizes.reduce((s, sz) => s + (Number(sz.stock) || 0), 0), 0);
+        
+        // Also update the flat sizes array with the union for backward compat
+        updateData.sizes = colors.flatMap(c => c.sizes);
+      } catch (e) {
+        console.error("Error parsing colorsMeta:", e);
+      }
+    } else {
+      // If colorsMeta is explicitly not sent but "clearColors" flag is set, clear colors
+      const clearColors = formData.get("clearColors");
+      if (clearColors === "true") {
+        updateData.colors = [];
       }
     }
 
-    // Final images = kept existing + newly uploaded
-    if (keepImagesStr !== null || newImageUrls.length > 0) {
-      updateData.images = [...keepImages, ...newImageUrls];
+    // ─── Legacy images (no colors) ───────────────────────────────────────────
+    if (!colorsMetaStr) {
+      const keepImagesStr = formData.get("keepImages");
+      let keepImages: string[] = [];
+      if (keepImagesStr) {
+        try { keepImages = JSON.parse(keepImagesStr as string); } catch {}
+      }
+
+      const imagesFiles = formData.getAll("images") as File[];
+      let newImageUrls: string[] = [];
+      for (const file of imagesFiles) {
+        if (file && file.size > 0) {
+          if (file.size > MAX_SIZE) {
+            return NextResponse.json({ success: false, message: `Image ${file.name} exceeds 500KB limit` }, { status: 400 });
+          }
+          const fileId = await uploadToGridFS(file);
+          newImageUrls.push(`/api/image/${fileId}`);
+        }
+      }
+
+      if (keepImagesStr !== null || newImageUrls.length > 0) {
+        updateData.images = [...keepImages, ...newImageUrls];
+      }
     }
 
     let product;

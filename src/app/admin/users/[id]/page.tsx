@@ -257,14 +257,14 @@ export default function UserDetailPage() {
                 {userData.cart && userData.cart.length > 0 ? (
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
                     {userData.cart.map((item: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 rounded-xl border border-border p-2 hover:bg-surface/30 transition">
+                      <Link href={`/product/${item.id}`} key={i} className="flex items-center gap-3 rounded-xl border border-border p-2 hover:bg-surface/30 transition group">
                         <img src={item.image} alt="" className="h-10 w-9 rounded object-cover bg-gray-50 border shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-[13px] font-semibold text-dark truncate">{item.title}</h4>
+                          <h4 className="text-[13px] font-semibold text-dark truncate group-hover:text-primary transition">{item.title}</h4>
                           <p className="text-[11px] text-dark/50">Qty: {item.quantity} • ₹{item.price} each</p>
                         </div>
                         <span className="text-[13px] font-bold text-dark">₹{item.price * item.quantity}</span>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 ) : (
@@ -282,12 +282,12 @@ export default function UserDetailPage() {
                     {userData.wishlist.map((wId: number, i: number) => {
                       const prod = products.find(p => p.id === wId);
                       return (
-                        <div key={i} className="flex items-center gap-3 rounded-xl border border-border p-2 hover:bg-red-50/10 transition">
+                        <Link href={`/product/${wId}`} key={i} className="flex items-center gap-3 rounded-xl border border-border p-2 hover:bg-red-50/10 transition group">
                           {prod ? (
                             <>
                               <img src={prod.image} alt="" className="h-10 w-9 rounded object-cover bg-gray-50 border shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-[13px] font-semibold text-dark truncate">{prod.title}</h4>
+                                <h4 className="text-[13px] font-semibold text-dark truncate group-hover:text-primary transition">{prod.title}</h4>
                                 <p className="text-[11px] text-dark/50">Category: {prod.category}</p>
                               </div>
                               <span className="text-[13.5px] font-semibold text-primary">₹{prod.price}</span>
@@ -295,7 +295,7 @@ export default function UserDetailPage() {
                           ) : (
                             <div className="text-[12px] text-gray-500">Product ID: {wId}</div>
                           )}
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>
@@ -361,12 +361,12 @@ export default function UserDetailPage() {
                         <div className="md:col-span-2">
                           <ul className="space-y-2.5">
                             {order.items.map((item: any, idx: number) => (
-                              <li key={idx} className="flex items-center gap-3 text-[13px] text-dark/80">
+                              <Link href={`/product/${item.productId || item.id}`} key={idx} className="flex items-center gap-3 text-[13px] text-dark/80 hover:bg-surface/50 p-1.5 rounded-lg transition group">
                                 <img src={item.image} alt="" className="h-8 w-7 rounded bg-gray-50 border shrink-0 object-cover" />
-                                <span className="font-medium text-dark truncate">{item.title}</span>
+                                <span className="font-medium text-dark truncate group-hover:text-primary transition">{item.title}</span>
                                 <span className="text-dark/50 shrink-0">({item.quantity}x)</span>
                                 <span className="ml-auto font-semibold">₹{item.price * item.quantity}</span>
-                              </li>
+                              </Link>
                             ))}
                           </ul>
                         </div>

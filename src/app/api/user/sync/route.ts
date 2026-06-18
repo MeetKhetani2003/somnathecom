@@ -21,7 +21,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       cart: user.cart || [],
-      wishlist: user.wishlist || []
+      wishlist: user.wishlist || [],
+      phone: user.phone || ""
     });
   } catch (error) {
     console.error("Error in sync GET:", error);
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { email, cart, wishlist } = await req.json();
+    const { email, cart, wishlist, phone } = await req.json();
 
     if (!email) {
       return NextResponse.json({ success: false, message: "Missing email" }, { status: 400 });
@@ -50,6 +51,9 @@ export async function POST(req: Request) {
     if (wishlist !== undefined) {
       user.wishlist = wishlist;
     }
+    if (phone !== undefined) {
+      user.phone = phone;
+    }
 
     await user.save();
 
@@ -57,7 +61,8 @@ export async function POST(req: Request) {
       success: true,
       message: "Sync successful",
       cart: user.cart,
-      wishlist: user.wishlist
+      wishlist: user.wishlist,
+      phone: user.phone
     });
   } catch (error) {
     console.error("Error in sync POST:", error);

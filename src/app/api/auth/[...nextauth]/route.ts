@@ -126,6 +126,7 @@ const handler = NextAuth({
             (session.user as any).id = dbUser._id.toString();
             (session.user as any).addresses = dbUser.addresses || [];
             (session.user as any).defaultAddress = dbUser.defaultAddress || "";
+            (session.user as any).phone = dbUser.phone || "";
           }
         } catch (err) {
           console.error("Error during session callback:", err);

@@ -26,8 +26,32 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: `Product ${item.title} not found` }, { status: 404 });
       }
 
-      // Check size-specific stock if sizes exist
-      if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
+      // Color-specific stock check
+      const hasColors = product.colors && product.colors.length > 0;
+      if (hasColors && item.selectedColor) {
+        const colorObj = product.colors.find((c: any) => c.name === item.selectedColor);
+        if (!colorObj) {
+          return NextResponse.json({
+            success: false,
+            message: `Color ${item.selectedColor} is not available for ${product.title}.`
+          }, { status: 400 });
+        }
+        if (item.selectedSize) {
+          const sizeObj = colorObj.sizes.find((s: any) => s.size === item.selectedSize);
+          if (!sizeObj) {
+            return NextResponse.json({
+              success: false,
+              message: `Size ${item.selectedSize} in ${item.selectedColor} is not available for ${product.title}.`
+            }, { status: 400 });
+          }
+          if (sizeObj.stock < item.quantity) {
+            return NextResponse.json({
+              success: false,
+              message: `Insufficient stock for ${product.title} (${item.selectedColor} / ${sizeObj.size}). Only ${sizeObj.stock} left.`
+            }, { status: 400 });
+          }
+        }
+      } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
         const sizeObj = product.sizes.find((s: any) => s.size === item.selectedSize);
         if (!sizeObj) {
           return NextResponse.json({
@@ -58,7 +82,8 @@ export async function POST(req: Request) {
         price: product.price,
         quantity: item.quantity,
         image: product.image,
-        selectedSize: item.selectedSize || ""
+        selectedSize: item.selectedSize || "",
+        selectedColor: item.selectedColor || ""
       });
     }
 
@@ -77,7 +102,16 @@ export async function POST(req: Request) {
 
     // 3. Deduct Stock Temporarily (Reservation)
     for (const item of itemsToOrder) {
-      if (item.productDocument.sizes && item.productDocument.sizes.length > 0 && item.selectedSize) {
+      const hasColors = item.productDocument.colors && item.productDocument.colors.length > 0;
+      if (hasColors && item.selectedColor) {
+        const colorObj = item.productDocument.colors.find((c: any) => c.name === item.selectedColor);
+        if (colorObj && item.selectedSize) {
+          const sizeObj = colorObj.sizes.find((s: any) => s.size === item.selectedSize);
+          if (sizeObj) {
+            sizeObj.stock -= item.quantity;
+          }
+        }
+      } else if (item.productDocument.sizes && item.productDocument.sizes.length > 0 && item.selectedSize) {
         const sizeObj = item.productDocument.sizes.find((s: any) => s.size === item.selectedSize);
         if (sizeObj) {
           sizeObj.stock -= item.quantity;
@@ -97,7 +131,8 @@ export async function POST(req: Request) {
         price: item.price,
         quantity: item.quantity,
         image: item.image,
-        size: item.selectedSize || null
+        size: item.selectedSize || null,
+        color: item.selectedColor || null
       })),
       shippingDetails,
       subtotal,

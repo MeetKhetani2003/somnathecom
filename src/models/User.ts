@@ -8,6 +8,7 @@ const UserSchema = new Schema({
   role: { type: String, enum: ["user", "admin"], default: "user", set: (v: string) => v?.toLowerCase() ?? "user" },
   addresses: [{ type: String }],
   defaultAddress: { type: String, default: "" },
+  phone: { type: String, default: "" },
   cart: [{
     id: { type: Number },
     title: { type: String },

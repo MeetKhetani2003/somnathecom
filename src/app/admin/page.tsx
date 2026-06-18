@@ -12,7 +12,7 @@ import {
 function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "banners">("overview");
 
   const isEnvAdmin = (session?.user as any)?.isEnvAdmin === true;
 
@@ -22,6 +22,8 @@ function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [exchanges, setExchanges] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>([]);
 
   // Loading & Action states
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries"].includes(tabParam)) {
+    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons", "banners"].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -91,6 +93,14 @@ function AdminDashboard() {
         const res = await fetch("/api/inquiries");
         const data = await res.json();
         if (data.success) setInquiries(data.inquiries);
+      } else if (activeTab === "coupons") {
+        const res = await fetch("/api/admin/coupons");
+        const data = await res.json();
+        if (data.success) setCoupons(data.coupons);
+      } else if (activeTab === "banners") {
+        const res = await fetch("/api/admin/banners");
+        const data = await res.json();
+        if (data.success) setBanners(data.banners);
       }
     } catch (err) {
       console.error("Error fetching admin data:", err);
@@ -171,6 +181,23 @@ function AdminDashboard() {
     }
   };
 
+  const handleUpdateTracking = async (orderId: string, trackingNum: string) => {
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, trackingNumber: trackingNum }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Tracking number updated to: ${trackingNum}`);
+        fetchData();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   // Toggle user admin role
   const handleToggleUserRole = async (email: string, currentRole: string) => {
     const targetRole = currentRole === "admin" ? "user" : "admin";
@@ -244,6 +271,8 @@ function AdminDashboard() {
             { id: "exchanges", label: "Exchange Requests", icon: ArrowLeftRight, badge: exchanges.length },
             { id: "users", label: "User Accounts", icon: Users },
             { id: "inquiries", label: "Support Inquiries", icon: HelpCircle },
+            { id: "coupons", label: "Discount Coupons", icon: DollarSign },
+            { id: "banners", label: "Home Banners", icon: Star },
           ].map((tab: any) => {
             const Icon = tab.icon;
             const isTabActive = activeTab === tab.id;
@@ -559,12 +588,12 @@ function AdminDashboard() {
                               <div className="text-[13.5px] font-semibold text-dark mb-2">Products</div>
                               <ul className="space-y-2">
                                 {order.items.map((item: any, i: number) => (
-                                  <li key={i} className="flex items-center gap-3 text-[13.5px] text-dark/80">
+                                  <Link href={`/product/${item.productId || item.id}`} key={i} className="flex items-center gap-3 text-[13.5px] text-dark/80 hover:bg-surface/50 p-1.5 rounded-lg transition group">
                                     <div className="h-8 w-7 rounded bg-gray-50 border border-gray-100 overflow-hidden shrink-0"><img src={item.image} className="h-full w-full object-cover" /></div>
-                                    <span className="font-medium text-dark">{item.title}</span>
+                                    <span className="font-medium text-dark group-hover:text-primary transition">{item.title}</span>
                                     <span className="text-dark/50">({item.quantity}x)</span>
                                     <span className="ml-auto font-semibold">₹{item.price * item.quantity}</span>
-                                  </li>
+                                  </Link>
                                 ))}
                               </ul>
                             </div>
@@ -573,12 +602,38 @@ function AdminDashboard() {
                               <div><strong>Customer:</strong> {order.shippingDetails?.name ?? "—"}</div>
                               <div><strong>Address:</strong> {order.shippingDetails?.address ?? "—"}</div>
                               <div><strong>Phone:</strong> {order.shippingDetails?.phone ?? "—"}</div>
+                              {order.couponUsed && (
+                                <div className="text-green-600 font-medium mt-1 text-[12.5px]">
+                                  <strong>Coupon:</strong> {order.couponUsed}
+                                </div>
+                              )}
                               <div className="mt-2 border-t border-border pt-2 flex justify-between font-bold text-dark">
                                 <span>Grand Total:</span>
                                 <span>₹{order.total}</span>
                               </div>
                             </div>
                           </div>
+
+                          {/* Tracking number section */}
+                          <div className="mt-4 border-t border-border pt-3 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2 text-[12.5px] text-dark/70 w-full max-w-[320px]">
+                              <span>Tracking #:</span>
+                              <input 
+                                type="text" 
+                                placeholder="Enter tracking ID..." 
+                                defaultValue={order.trackingNumber || ""}
+                                onBlur={(e) => handleUpdateTracking(order._id, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdateTracking(order._id, (e.target as HTMLInputElement).value);
+                                  }
+                                }}
+                                className="flex-1 rounded-lg border border-border px-2.5 py-1 text-[12.5px] focus:outline-primary bg-white text-dark"
+                              />
+                            </div>
+                            <div className="text-[11.5px] text-dark/50 italic">Press Enter / Click away to save tracking #</div>
+                          </div>
+
                         </div>
                       ))
                     )}
@@ -650,10 +705,10 @@ function AdminDashboard() {
                                   const origSize = order.exchangeDetails?.originalSizes?.find((s: any) => s.productId === item.productId)?.size;
                                   const newSize = order.exchangeDetails?.newSizes?.find((s: any) => s.productId === item.productId)?.size;
                                   return (
-                                    <div key={i} className="flex items-center gap-2 text-[13px] bg-white rounded-xl p-2.5 border border-orange-100">
+                                    <Link href={`/product/${item.productId || item.id}`} key={i} className="flex items-center gap-2 text-[13px] bg-white rounded-xl p-2.5 border border-orange-100 hover:border-orange-300 transition group">
                                       <img src={item.image} className="h-10 w-8 rounded object-cover border border-gray-100 shrink-0" />
                                       <div className="min-w-0 flex-1">
-                                        <div className="font-medium text-dark truncate text-[12px]">{item.title}</div>
+                                        <div className="font-medium text-dark truncate text-[12px] group-hover:text-primary transition">{item.title}</div>
                                         {origSize && newSize && origSize !== newSize ? (
                                           <div className="flex items-center gap-1.5 mt-0.5">
                                             <span className="text-[10.5px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md border border-red-100 line-through">{origSize}</span>
@@ -664,7 +719,7 @@ function AdminDashboard() {
                                           <div className="text-[10.5px] text-gray-400 mt-0.5">Size unchanged — {item.size}</div>
                                         )}
                                       </div>
-                                    </div>
+                                    </Link>
                                   );
                                 })}
                               </div>
@@ -800,7 +855,31 @@ function AdminDashboard() {
               {/* 4. INQUIRIES TAB */}
               {activeTab === "inquiries" && (
                 <div>
-                  <h2 className="mb-6 text-[18px] font-semibold text-dark">Customer Support Inquiries</h2>
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-[18px] font-semibold text-dark">Customer Support Inquiries</h2>
+                    <button
+                      onClick={() => {
+                        const csvContent = [
+                          ["Name", "Email", "Date", "Status", "Message"].join(","),
+                          ...inquiries.map(inq => [
+                            `"${inq.name?.replace(/"/g, '""') || ''}"`,
+                            `"${inq.email || ''}"`,
+                            `"${new Date(inq.createdAt).toLocaleDateString("en-IN")}"`,
+                            `"${inq.status || 'pending'}"`,
+                            `"${inq.message?.replace(/"/g, '""') || ''}"`
+                          ].join(","))
+                        ].join("\n");
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = "support_inquiries.csv";
+                        link.click();
+                      }}
+                      className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
+                    >
+                      Export to CSV
+                    </button>
+                  </div>
                   <div className="space-y-4">
                     {inquiries.length === 0 ? (
                       <p className="text-[14px] text-center text-dark/50 py-8">No customer inquiries submitted.</p>
@@ -820,6 +899,181 @@ function AdminDashboard() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. COUPONS TAB */}
+              {activeTab === "coupons" && (
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-[18px] font-semibold text-dark">Discount Coupons</h2>
+                    <button
+                      onClick={() => {
+                        const code = prompt("Enter Coupon Code (e.g., FESTIVAL20):");
+                        if (!code) return;
+                        const percentStr = prompt("Enter Discount Percentage (e.g., 20 for 20%):");
+                        if (!percentStr) return;
+                        fetch("/api/admin/coupons", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            code: code.trim(),
+                            discountPercent: parseInt(percentStr),
+                            active: true
+                          })
+                        }).then(r => r.json()).then(data => {
+                          if (data.success) {
+                            alert("Coupon Created!");
+                            fetchData();
+                          } else {
+                            alert("Error: " + data.message);
+                          }
+                        });
+                      }}
+                      className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
+                    >
+                      <Plus className="h-4 w-4" /> Add Coupon
+                    </button>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-[14px]">
+                      <thead>
+                        <tr className="border-b border-border text-left text-dark/50 font-medium">
+                          <th className="pb-3 pr-4">Code</th>
+                          <th className="pb-3 pr-4">Discount</th>
+                          <th className="pb-3 pr-4">Status</th>
+                          <th className="pb-3 pr-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {coupons.map((c) => (
+                          <tr key={c._id} className="border-b border-border last:border-0 hover:bg-surface/30">
+                            <td className="py-3.5 pr-4 font-mono font-bold text-primary">{c.code}</td>
+                            <td className="py-3.5 pr-4 font-medium text-dark">{c.discountPercent}% OFF</td>
+                            <td className="py-3.5 pr-4">
+                              <button
+                                onClick={() => {
+                                  fetch("/api/admin/coupons", {
+                                    method: "PUT",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ id: c._id, code: c.code, discountPercent: c.discountPercent, active: !c.active })
+                                  }).then(r=>r.json()).then(d => { if(d.success) fetchData(); });
+                                }}
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition ${c.active ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700" : "bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"}`}
+                                title="Click to toggle status"
+                              >
+                                {c.active ? "Active" : "Inactive"}
+                              </button>
+                            </td>
+                            <td className="py-3.5 pr-4 text-right">
+                              <button
+                                onClick={() => {
+                                  if(!confirm("Delete this coupon?")) return;
+                                  fetch(`/api/admin/coupons?id=${c._id}`, { method: "DELETE" })
+                                    .then(r=>r.json()).then(d => { if(d.success) fetchData(); });
+                                }}
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 ml-auto"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {coupons.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-[14px] text-dark/50">No coupons available.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. BANNERS TAB */}
+              {activeTab === "banners" && (
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-[18px] font-semibold text-dark">Home Page Banners</h2>
+                    <button
+                      onClick={() => {
+                        const title = prompt("Enter Banner Title:");
+                        if (!title) return;
+                        const subtitle = prompt("Enter Subtitle:");
+                        const imageId = prompt("Enter Image ID from Media Library:");
+                        if (!imageId) return;
+                        const imageUrl = `/api/image/${imageId}`;
+                        fetch("/api/banners", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            title, subtitle, image: imageUrl, active: true
+                          })
+                        }).then(r => r.json()).then(data => {
+                          if (data.success) fetchData();
+                          else alert("Error: " + data.message);
+                        });
+                      }}
+                      className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
+                    >
+                      <Plus className="h-4 w-4" /> Add Banner
+                    </button>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-[14px]">
+                      <thead>
+                        <tr className="border-b border-border text-left text-dark/50 font-medium">
+                          <th className="pb-3 pr-4">Image</th>
+                          <th className="pb-3 pr-4">Title</th>
+                          <th className="pb-3 pr-4">Status</th>
+                          <th className="pb-3 pr-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {banners.map((b) => (
+                          <tr key={b._id} className="border-b border-border last:border-0 hover:bg-surface/30">
+                            <td className="py-3.5 pr-4">
+                              <img src={b.image} alt={b.title} className="h-12 w-24 object-cover rounded border" />
+                            </td>
+                            <td className="py-3.5 pr-4 font-medium text-dark">{b.title}</td>
+                            <td className="py-3.5 pr-4">
+                              <button
+                                onClick={() => {
+                                  fetch("/api/banners", {
+                                    method: "PUT",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ id: b._id, active: !b.active })
+                                  }).then(r=>r.json()).then(d => { if(d.success) fetchData(); });
+                                }}
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition ${b.active ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700" : "bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"}`}
+                              >
+                                {b.active ? "Active" : "Inactive"}
+                              </button>
+                            </td>
+                            <td className="py-3.5 pr-4 text-right">
+                              <button
+                                onClick={() => {
+                                  if(!confirm("Delete this banner?")) return;
+                                  fetch(`/api/banners?id=${b._id}`, { method: "DELETE" })
+                                    .then(r=>r.json()).then(d => { if(d.success) fetchData(); });
+                                }}
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 ml-auto"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {banners.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-[14px] text-dark/50">No banners available.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}

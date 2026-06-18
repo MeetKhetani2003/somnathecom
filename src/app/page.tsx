@@ -17,10 +17,26 @@ const fadeInUp = {
 };
 
 function HeroCarousel() {
+  const [slides, setSlides] = useState(heroSlides);
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/banners").then(r => r.json()).then(d => {
+      if (d.success && d.banners.length > 0) {
+        setSlides(d.banners.map((b: any) => ({
+          id: b._id,
+          image: b.image,
+          title: b.title,
+          subtitle: b.subtitle,
+          eyebrow: b.eyebrow,
+          cta: b.cta,
+        })));
+      }
+    });
+  }, []);
 
   const goTo = (idx: number) => {
     if (transitioning || idx === current) return;
@@ -30,18 +46,18 @@ function HeroCarousel() {
     setTimeout(() => { setPrev(null); setTransitioning(false); }, 900);
   };
 
-  const next = () => goTo((current + 1) % heroSlides.length);
-  const prev2 = () => goTo((current - 1 + heroSlides.length) % heroSlides.length);
+  const next = () => goTo((current + 1) % slides.length);
+  const prev2 = () => goTo((current - 1 + slides.length) % slides.length);
 
   useEffect(() => {
     timerRef.current = setTimeout(next, 5000);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [current]);
+  }, [current, slides.length]);
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100svh", minHeight: 560 }}>
       {/* Slides */}
-      {heroSlides.map((slide, i) => (
+      {slides.map((slide, i) => (
         <div
           key={slide.id}
           className="absolute inset-0 transition-opacity"
@@ -56,7 +72,7 @@ function HeroCarousel() {
           <img
             src={slide.image}
             alt={slide.title}
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-top"
             style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
           />
           {/* Dark gradient overlay — centered layout */}
@@ -68,7 +84,7 @@ function HeroCarousel() {
       {/* Content — only active slide's text animates in */}
       <div className="relative z-10 flex h-full items-center justify-center">
         <div className="mx-auto w-full max-w-[900px] px-6 md:px-12 text-center">
-          {heroSlides.map((slide, i) => (
+          {slides.map((slide, i) => (
             <div
               key={slide.id}
               className="w-full transition-all"
@@ -154,7 +170,7 @@ function HeroCarousel() {
 
       {/* Dot navigation */}
       <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3">
-        {heroSlides.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => goTo(i)}
@@ -260,7 +276,7 @@ export default function Home() {
         <div className="grid h-auto grid-cols-1 gap-4 md:h-[600px] md:grid-cols-3 md:grid-rows-2 md:gap-6">
           {/* Women's Nightwear */}
           <Link href="/products?category=Women's Nightwear" className="group relative col-span-1 overflow-hidden rounded-[32px] bg-bg-base md:col-span-2 md:row-span-2">
-            <img src="/images/products/oversized_cargo.png" alt="Women's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+            <img src="/images/products/oversized_cargo.png" alt="Women's Nightwear" className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-1000 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-dark/20 to-transparent" />
             <div className="absolute bottom-8 left-8 right-8">
               <div className="text-[13px] font-bold uppercase tracking-widest text-white/80">Explore</div>
@@ -273,7 +289,7 @@ export default function Home() {
 
           {/* Men's Nightwear */}
           <Link href="/products?category=Men's Nightwear" className="group relative overflow-hidden rounded-[32px] bg-bg-base">
-            <img src="/images/products/gents_stripe.png" alt="Men's Nightwear" className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+            <img src="/images/products/gents_stripe.png" alt="Men's Nightwear" className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-1000 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <h3 className="font-display text-[22px] font-bold text-white">Men's Classic</h3>
@@ -282,7 +298,7 @@ export default function Home() {
 
           {/* Premium Tencel */}
           <Link href="/products?category=Tencel Collection" className="group relative overflow-hidden rounded-[32px] bg-primary">
-            <img src="/images/products/tencel_plazo.png" alt="Tencel Collection" className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-1000 group-hover:scale-105 mix-blend-overlay" />
+            <img src="/images/products/tencel_plazo.png" alt="Tencel Collection" className="absolute inset-0 h-full w-full object-cover object-top opacity-60 transition-transform duration-1000 group-hover:scale-105 mix-blend-overlay" />
             <div className="absolute inset-0 bg-gradient-to-t from-primary to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <h3 className="font-display text-[22px] font-bold text-white">Premium Tencel</h3>
@@ -321,10 +337,10 @@ export default function Home() {
           ) : (
             productsList.map((p) => (
               <motion.div key={p.id} whileHover={{ y: -8 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
-                <div className="overflow-hidden rounded-[24px] bg-surface transition-all duration-300">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-bg-base">
+                <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
                     <Link href={`/product/${p.id}`}>
-                      <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                      <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                     </Link>
                     <div className="absolute left-4 top-4 flex items-center gap-2">
                       <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">{p.category.replace(" Collection", "").replace(" Nightwear", "")}</span>
@@ -333,15 +349,11 @@ export default function Home() {
                     <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md transition-all hover:text-primary hover:scale-110">
                       <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
                     </button>
-                    {/* Quick Add overlay */}
-                    <div className="absolute inset-x-4 bottom-4 translate-y-[120%] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface/95 py-3.5 text-[14px] font-semibold text-dark backdrop-blur-md hover:bg-primary hover:text-white transition-colors shadow-lg">
-                        <ShoppingBag className="h-4 w-4" /> Quick Add
-                      </button>
-                    </div>
+                    {/* Removed Quick Add overlay */}
                   </div>
-                  <div className="pt-5">
-                    <Link href={`/product/${p.id}`} className="font-display text-[18px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                  <div className="p-5 flex flex-col justify-between flex-1">
+                    <div>
+                      <Link href={`/product/${p.id}`} className="font-display text-[18px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
                     <div className="mt-2 flex items-center gap-1.5">
                       <div className="flex items-center gap-0.5">
                         {Array.from({ length: 5 }).map((_, i) => (
@@ -355,10 +367,18 @@ export default function Home() {
                       {p.mrp > p.price && (
                         <>
                           <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                          <span className="ml-2 rounded-md bg-secondary/10 px-2 py-0.5 text-[12px] font-bold text-secondary">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% OFF</span>
+                          <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
                         </>
                       )}
                     </div>
+                    </div>
+                    {/* Add to Cart button */}
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
+                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+                    >
+                      <ShoppingBag className="h-4 w-4" /> Add to cart
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -403,7 +423,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative h-[400px] w-full md:h-auto">
-            <img src="/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover" />
+            <img src="/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/20 to-transparent md:hidden" />
           </div>
         </div>
