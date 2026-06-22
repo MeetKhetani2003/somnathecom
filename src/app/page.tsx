@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag } from "lucide-react";
-import { heroSlides, testimonials } from "@/data/mockData";
+import { heroSlides, testimonials, categories } from "@/data/mockData";
 import { useShop } from "@/context/ShopContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
@@ -33,6 +33,7 @@ function HeroCarousel() {
           subtitle: b.subtitle,
           eyebrow: b.eyebrow,
           cta: b.cta,
+          badge: b.badge || "New Collection",
         })));
       }
     });
@@ -47,7 +48,7 @@ function HeroCarousel() {
   };
 
   const next = () => goTo((current + 1) % slides.length);
-  const prev2 = () => goTo((current - 1 + slides.length) % slides.length);
+  const prevSlide = () => goTo((current - 1 + slides.length) % slides.length);
 
   useEffect(() => {
     timerRef.current = setTimeout(next, 5000);
@@ -55,159 +56,128 @@ function HeroCarousel() {
   }, [current, slides.length]);
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "100svh", minHeight: 560 }}>
-      {/* Slides */}
-      {slides.map((slide, i) => (
-        <div
-          key={slide.id}
-          className="absolute inset-0 transition-opacity"
-          style={{
-            opacity: i === current ? 1 : i === prev ? 0 : 0,
-            transitionDuration: "900ms",
-            transitionTimingFunction: "cubic-bezier(0.4,0,0.2,1)",
-            zIndex: i === current ? 2 : i === prev ? 1 : 0,
-          }}
-        >
-          {/* Background image */}
-          <img
-            src={slide.image}
-            alt={slide.title}
-            className="absolute inset-0 h-full w-full object-cover object-top"
-            style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
-          />
-          {/* Dark gradient overlay — centered layout */}
-          <div className="absolute inset-0 bg-dark/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark/70 via-dark/20 to-transparent" />
-        </div>
-      ))}
+    <section className="mx-auto max-w-[1400px] px-4 pt-6 pb-16 md:px-8 md:pt-8 md:pb-24">
+      {/* Outer Rounded Container */}
+      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-[40px] bg-dark aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/8] lg:h-[580px] shadow-2xl">
+        {/* Slides */}
+        {slides.map((slide, i) => (
+          <div
+            key={slide.id}
+            className="absolute inset-0 transition-opacity"
+            style={{
+              opacity: i === current ? 1 : i === prev ? 0 : 0,
+              transitionDuration: "900ms",
+              transitionTimingFunction: "cubic-bezier(0.4,0,0.2,1)",
+              zIndex: i === current ? 2 : i === prev ? 1 : 0,
+            }}
+          >
+            {/* Background image */}
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="absolute inset-0 h-full w-full object-cover object-top"
+              style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
+            />
+            {/* Gradient overlays matching premium design */}
+            <div className="absolute inset-0 bg-dark/40" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-dark/65 via-dark/15 to-transparent" />
+          </div>
+        ))}
 
-      {/* Content — only active slide's text animates in */}
-      <div className="relative z-10 flex h-full items-center justify-center">
-        <div className="mx-auto w-full max-w-[900px] px-6 md:px-12 text-center">
-          {slides.map((slide, i) => (
-            <div
-              key={slide.id}
-              className="w-full transition-all"
-              style={{
-                opacity: i === current ? 1 : 0,
-                transform: i === current ? "translateY(0)" : "translateY(24px)",
-                transitionDuration: "700ms",
-                transitionDelay: i === current ? "200ms" : "0ms",
-                position: i === current ? "relative" : "absolute",
-                pointerEvents: i === current ? "auto" : "none",
-              }}
-            >
-              {/* Eyebrow */}
-              <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
-                {slide.eyebrow}
-              </div>
-
-              {/* Headline */}
-              <h1
-                className="font-display text-[44px] font-bold leading-[1.1] tracking-tight text-white md:text-[60px] lg:text-[72px]"
-                style={{ textWrap: "balance" } as any}
+        {/* Content Overlay */}
+        <div className="relative z-10 flex h-full items-center">
+          <div className="w-full px-6 py-10 md:px-16 md:py-16">
+            {slides.map((slide, i) => (
+              <div
+                key={slide.id}
+                className="transition-all"
+                style={{
+                  opacity: i === current ? 1 : 0,
+                  transform: i === current ? "translateY(0)" : "translateY(24px)",
+                  transitionDuration: "700ms",
+                  transitionDelay: i === current ? "200ms" : "0ms",
+                  position: i === current ? "relative" : "absolute",
+                  pointerEvents: i === current ? "auto" : "none",
+                }}
               >
-                {slide.title}
-              </h1>
-
-              {/* Subtitle */}
-              <p className="mt-6 mx-auto max-w-[600px] text-[17px] leading-relaxed text-white/75 md:text-[19px]">
-                {slide.subtitle}
-              </p>
-
-              {/* CTAs */}
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                <Link
-                  href="/products"
-                  className="group flex items-center gap-2 rounded-full bg-white px-8 py-4 text-[15px] font-bold text-dark transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-white hover:shadow-2xl hover:shadow-primary/30"
-                >
-                  {slide.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-                <Link
-                  href="/products"
-                  className="flex items-center gap-2 rounded-full border-2 border-white/40 bg-white/10 px-8 py-4 text-[15px] font-bold text-white backdrop-blur-md transition-all hover:border-white hover:bg-white/20"
-                >
-                  View All
-                </Link>
-              </div>
-
-              {/* Trust badge */}
-              <div className="mt-10 hidden items-center justify-center gap-6 md:flex">
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-[#F5A524] text-[#F5A524]" />
-                    ))}
+                {/* Badges */}
+                <div className="mb-6 flex flex-wrap items-center gap-2.5">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-dark/60 border border-white/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    {slide.eyebrow}
                   </div>
-                  <span className="text-[14px] font-semibold text-white">4.9/5</span>
+                  <div className="inline-flex items-center rounded-full bg-white/10 border border-white/20 px-3.5 py-1.5 text-[11px] font-bold text-white backdrop-blur-md">
+                    {slide.badge || "New Collection"}
+                  </div>
                 </div>
-                <div className="h-4 w-px bg-white/30" />
-                <span className="text-[14px] text-white/70">10,000+ Happy Sleepers</span>
-                <div className="h-4 w-px bg-white/30" />
-                <span className="text-[14px] text-white/70">Free Pan-India Shipping</span>
+
+                {/* Headline */}
+                <h1
+                  className="font-display text-[32px] font-bold leading-[1.1] tracking-tight text-white sm:text-[44px] md:text-[54px] lg:text-[62px] max-w-[750px]"
+                  style={{ textWrap: "balance" } as any}
+                >
+                  {slide.title}
+                </h1>
+
+                {/* Subtitle */}
+                <p className="mt-5 max-w-[550px] text-[15px] leading-relaxed text-white/80 md:text-[17px]">
+                  {slide.subtitle}
+                </p>
+
+                {/* CTA Button */}
+                <div className="mt-8">
+                  <Link
+                    href="/products"
+                    className="group inline-flex items-center gap-2.5 rounded-full bg-white px-7 py-3.5 text-[14.5px] font-bold text-primary transition-all hover:bg-white/95 hover:scale-105 hover:shadow-xl"
+                  >
+                    {slide.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        {/* Carousel controls in the bottom-right */}
+        <div className="absolute bottom-6 right-6 z-20 flex gap-2 md:bottom-8 md:right-8">
+          <button
+            onClick={prevSlide}
+            className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={next}
+            className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105"
+            aria-label="Next Slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
-      {/* Arrow controls */}
-      <button
-        onClick={prev2}
-        className="absolute left-5 top-1/2 z-20 -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 hover:scale-110 md:left-8 md:h-14 md:w-14"
-        aria-label="Previous"
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </button>
-      <button
-        onClick={next}
-        className="absolute right-5 top-1/2 z-20 -translate-y-1/2 grid h-12 w-12 place-items-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-md transition hover:bg-white/25 hover:scale-110 md:right-8 md:h-14 md:w-14"
-        aria-label="Next"
-      >
-        <ChevronRight className="h-6 w-6" />
-      </button>
-
-      {/* Dot navigation */}
-      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
-            className={cn(
-              "rounded-full transition-all duration-500",
-              i === current
-                ? "w-8 h-2.5 bg-white"
-                : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"
-            )}
-            aria-label={`Go to slide ${i + 1}`}
-          />
+      {/* Overlapping Stat Cards */}
+      <div className="relative z-30 mx-4 -mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 md:mx-12 md:-mt-8 md:gap-6">
+        {[
+          { label: "HAPPY SLEEPERS", val: "10,000+" },
+          { label: "STYLES DELIVERED", val: "50,000+" },
+          { label: "CUSTOMER RATING", val: "4.9 / 5" }
+        ].map((stat, idx) => (
+          <div key={idx} className="rounded-3xl border border-border/40 bg-white/95 p-5 shadow-lg backdrop-blur-md transition hover:-translate-y-1 hover:shadow-xl text-center sm:text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-primary/70">{stat.label}</div>
+            <div className="mt-1 text-[22px] font-extrabold text-dark md:text-[26px]">{stat.val}</div>
+          </div>
         ))}
       </div>
-
-      {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 z-20 h-[3px] w-full bg-white/10">
-        <div
-          key={current}
-          className="h-full bg-secondary"
-          style={{ animation: "heroProgress 5s linear forwards" }}
-        />
-      </div>
-
-      <style>{`
-        @keyframes heroProgress {
-          from { width: 0% }
-          to { width: 100% }
-        }
-      `}</style>
     </section>
   );
 }
 
 export default function Home() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
-  const carouselRef = useRef<HTMLDivElement>(null);
   const testimonialCarouselRef = useRef<HTMLDivElement>(null);
+  const featuredCarouselRef = useRef<HTMLDivElement>(null);
 
   const [productsList, setProductsList] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -235,11 +205,8 @@ export default function Home() {
       if (testimonialCarouselRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = testimonialCarouselRef.current;
         if (scrollLeft + clientWidth >= scrollWidth - 10) {
-          // Loop back to start
           testimonialCarouselRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
-          // Scroll right by exactly the card width + gap for clean sliding
-          // A card is roughly 300px on mobile and 400px on desktop + 24px gap (gap-6)
           const cardWidth = window.innerWidth >= 768 ? 424 : 324;
           testimonialCarouselRef.current.scrollBy({ left: cardWidth, behavior: "smooth" });
         }
@@ -254,125 +221,83 @@ export default function Home() {
     testimonialCarouselRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
   };
 
-  const scrollCarousel = (dir: "left" | "right") => {
-    if (!carouselRef.current) return;
-    const amount = carouselRef.current.clientWidth * 0.8;
-    carouselRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+  const scrollFeaturedCarousel = (dir: "left" | "right") => {
+    if (!featuredCarouselRef.current) return;
+    const amount = featuredCarouselRef.current.clientWidth * 0.8;
+    featuredCarouselRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
   };
 
   return (
     <>
-      {/* SECTION 1: Full-Viewport Background Carousel Hero */}
+      {/* SECTION 1: Redesigned Hero Carousel */}
       <HeroCarousel />
 
-
-      {/* SECTION 2: Shop By Collection (Bento Grid) */}
-      <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
-        <div className="mb-10 text-center">
-          <h2 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">Shop By Collection</h2>
-          <p className="mt-3 text-[16px] text-dark/60">Curated styles for your comfort</p>
-        </div>
-        
-        <div className="grid h-auto grid-cols-1 gap-4 md:h-[600px] md:grid-cols-3 md:grid-rows-2 md:gap-6">
-          {/* Women's Nightwear */}
-          <Link href="/products?category=Women's Nightwear" className="group relative col-span-1 overflow-hidden rounded-[32px] bg-bg-base md:col-span-2 md:row-span-2">
-            <img src="/images/products/oversized_cargo.png" alt="Women's Nightwear" className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-1000 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-dark/20 to-transparent" />
-            <div className="absolute bottom-8 left-8 right-8">
-              <div className="text-[13px] font-bold uppercase tracking-widest text-white/80">Explore</div>
-              <h3 className="font-display text-[28px] font-bold text-white md:text-[40px]">Women's Collection</h3>
-            </div>
-            <div className="absolute bottom-8 right-8 grid h-12 w-12 place-items-center rounded-full bg-white/20 text-white backdrop-blur-md transition-colors group-hover:bg-white group-hover:text-primary">
-              <ArrowRight className="h-5 w-5" />
-            </div>
-          </Link>
-
-          {/* Men's Nightwear */}
-          <Link href="/products?category=Men's Nightwear" className="group relative overflow-hidden rounded-[32px] bg-bg-base">
-            <img src="/images/products/gents_stripe.png" alt="Men's Nightwear" className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-1000 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-dark/80 to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6">
-              <h3 className="font-display text-[22px] font-bold text-white">Men's Classic</h3>
-            </div>
-          </Link>
-
-          {/* Premium Tencel */}
-          <Link href="/products?category=Tencel Collection" className="group relative overflow-hidden rounded-[32px] bg-primary">
-            <img src="/images/products/tencel_plazo.png" alt="Tencel Collection" className="absolute inset-0 h-full w-full object-cover object-top opacity-60 transition-transform duration-1000 group-hover:scale-105 mix-blend-overlay" />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6">
-              <h3 className="font-display text-[22px] font-bold text-white">Premium Tencel</h3>
-            </div>
-          </Link>
-        </div>
-      </motion.section>
-
-      {/* SECTION 3: Trending This Week */}
-      <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
+      {/* SECTION 2: Featured Products Carousel */}
+      <motion.section {...fadeInUp} className="mx-auto mt-12 max-w-[1400px] px-4 md:mt-20 md:px-8">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h2 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">Trending This Week</h2>
-            <p className="mt-2 text-[16px] text-dark/60">Most loved styles by our community</p>
+            <h2 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">Featured Products</h2>
+            <p className="mt-2 text-[16px] text-dark/60">Our handpicked best-selling comfort styles</p>
           </div>
           <div className="hidden items-center gap-3 md:flex">
-            <button onClick={() => scrollCarousel("left")} className="grid h-12 w-12 place-items-center rounded-full border border-border text-dark transition hover:bg-bg-base hover:text-primary">
+            <button onClick={() => scrollFeaturedCarousel("left")} className="grid h-12 w-12 place-items-center rounded-full border border-border text-dark transition hover:bg-bg-base hover:text-primary cursor-pointer">
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <button onClick={() => scrollCarousel("right")} className="grid h-12 w-12 place-items-center rounded-full border border-border text-dark transition hover:bg-bg-base hover:text-primary">
+            <button onClick={() => scrollFeaturedCarousel("right")} className="grid h-12 w-12 place-items-center rounded-full border border-border text-dark transition hover:bg-bg-base hover:text-primary cursor-pointer">
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <div ref={carouselRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-8 pt-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {loadingProducts ? (
-            <div className="flex w-full items-center justify-center py-20 text-[15px] text-dark/50">
-              <div className="mr-3 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              Loading premium collection...
-            </div>
-          ) : productsList.length === 0 ? (
-            <div className="flex w-full items-center justify-center py-20 text-[15px] text-dark/50">
-              No products available right now. Check back later!
-            </div>
-          ) : (
-            productsList.map((p) => (
-              <motion.div key={p.id} whileHover={{ y: -8 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
+        {loadingProducts ? (
+          <div className="flex w-full items-center justify-center py-20 text-[15px] text-dark/50">
+            <div className="mr-3 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            Loading premium collection...
+          </div>
+        ) : productsList.length === 0 ? (
+          <div className="flex w-full items-center justify-center py-20 text-[15px] text-dark/50">
+            No products available right now. Check back later!
+          </div>
+        ) : (
+          <div ref={featuredCarouselRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-8 pt-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {productsList.map((p) => (
+              <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
                 <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
                   <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
                     <Link href={`/product/${p.id}`}>
                       <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                     </Link>
                     <div className="absolute left-4 top-4 flex items-center gap-2">
-                      <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">{p.category.replace(" Collection", "").replace(" Nightwear", "")}</span>
+                      <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">
+                        {p.category.replace(" Collection", "").replace(" Nightwear", "")}
+                      </span>
                       {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">{p.tag}</span>}
                     </div>
                     <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md transition-all hover:text-primary hover:scale-110">
                       <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
                     </button>
-                    {/* Removed Quick Add overlay */}
                   </div>
                   <div className="p-5 flex flex-col justify-between flex-1">
                     <div>
-                      <Link href={`/product/${p.id}`} className="font-display text-[18px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={cn("h-4 w-4", i < Math.floor(p.rating) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
-                        ))}
+                      <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                          ))}
+                        </div>
+                        <span className="text-[12.5px] text-dark/60 ml-1">{p.rating} Reviews</span>
                       </div>
-                      <span className="text-[13px] text-dark/60 ml-1">{p.rating} Reviews</span>
+                      <div className="mt-3 flex items-baseline gap-2">
+                        <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+                        {p.mrp > p.price && (
+                          <>
+                            <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                            <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-baseline gap-2">
-                      <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
-                      {p.mrp > p.price && (
-                        <>
-                          <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                          <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                        </>
-                      )}
-                    </div>
-                    </div>
-                    {/* Add to Cart button */}
                     <button 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
@@ -382,12 +307,44 @@ export default function Home() {
                   </div>
                 </div>
               </motion.div>
-            ))
-          )}
+            ))}
+          </div>
+        )}
+      </motion.section>
+
+      {/* SECTION 3: Proper Category Grid */}
+      <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
+        <div className="mb-10 text-center">
+          <h2 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">Shop By Category</h2>
+          <p className="mt-3 text-[16px] text-dark/60">Find the perfect comfort styles curated for you</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6">
+          {categories.map((cat) => (
+            <Link 
+              key={cat.name} 
+              href={`/products?category=${encodeURIComponent(cat.name)}`}
+              className="group relative flex flex-col items-center text-center p-6 rounded-[28px] border border-border/60 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20"
+            >
+              <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-full bg-bg-base border border-border/40 md:h-28 md:w-28">
+                <img 
+                  src={cat.image} 
+                  alt={cat.name} 
+                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              <h3 className="font-display text-[14px] font-semibold text-dark transition-colors group-hover:text-primary leading-tight">
+                {cat.name}
+              </h3>
+              <span className="mt-1.5 text-[12px] text-dark/50 font-medium">
+                {cat.count}
+              </span>
+            </Link>
+          ))}
         </div>
       </motion.section>
 
-      {/* SECTION 4 & 5: Tencel Experience / Fabric Story */}
+      {/* SECTION 4: Tencel Experience / Fabric Story */}
       <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
         <div className="overflow-hidden rounded-[40px] bg-dark text-surface md:grid md:grid-cols-2">
           <div className="flex flex-col justify-center p-10 md:p-16 lg:p-24 relative overflow-hidden">
@@ -429,7 +386,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* SECTION 7: Why Customers Love Us */}
+      {/* SECTION 5: Why Customers Love Us */}
       <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -449,9 +406,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-
-
-      {/* SECTION 10: Reviews */}
+      {/* SECTION 6: Reviews */}
       <motion.section {...fadeInUp} className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8">
         <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div>
@@ -508,7 +463,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* SECTION 12: CTA Banner */}
+      {/* SECTION 7: CTA Banner */}
       <section className="mx-auto mt-20 max-w-[1400px] px-4 md:mt-32 md:px-8 pb-20">
         <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-primary via-[#2E2387] to-secondary px-6 py-16 md:px-16 md:py-24 text-center">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=2000&q=20')] opacity-10 mix-blend-overlay object-cover" />
@@ -530,3 +485,4 @@ export default function Home() {
     </>
   );
 }
+
