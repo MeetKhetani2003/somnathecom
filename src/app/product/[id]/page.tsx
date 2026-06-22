@@ -271,7 +271,7 @@ export default function ProductSlug() {
 
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr] lg:gap-16">
           {/* Images Section */}
-          <div className="flex flex-col gap-4 sticky top-28 h-fit">
+          <div className="flex flex-col gap-4 md:sticky md:top-28 h-fit">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[32px] bg-surface shadow-sm border border-border group">
               <ImageMagnifier src={images[activeImage] || product.image} alt={product.title} />
               <button
@@ -618,7 +618,7 @@ export default function ProductSlug() {
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (
                            <Star key={i} className={cn("h-4 w-4", i < rev.rating ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
-                        ))}
+                         ))}
                       </div>
                     </div>
                     <p className="text-[15px] leading-relaxed text-dark/80">&quot;{rev.comment}&quot;</p>
@@ -643,34 +643,58 @@ export default function ProductSlug() {
         {/* Recommended Products */}
         <div className="mt-20 border-t border-border pt-20 pb-10">
           <h2 className="font-display text-[32px] font-bold text-dark mb-10 text-center">Complete Your Collection</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {allProducts
               .filter((p) => p.id !== product.id && p.category === product.category)
               .concat(allProducts.filter((p) => p.id !== product.id && p.category !== product.category))
               .slice(0, 4)
               .map((p) => (
-                <div key={p.id} className="group relative w-full shrink-0">
-                  <div className="overflow-hidden rounded-[24px] bg-surface transition-all duration-300 hover:shadow-xl hover:shadow-dark/5 border border-border">
-                    <div className="relative aspect-[3/4] overflow-hidden bg-bg-base">
+                <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-full">
+                  <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
                       <Link href={`/product/${p.id}`}>
-                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
+                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                       </Link>
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }}
-                        className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-sm backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
-                      >
-                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
+                      <div className="absolute left-4 top-4 flex items-center gap-2">
+                        <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">
+                          {p.category.replace(" Collection", "").replace(" Nightwear", "")}
+                        </span>
+                        {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">{p.tag}</span>}
+                      </div>
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md transition-all hover:text-primary hover:scale-110">
+                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
                       </button>
                     </div>
-                    <div className="p-5">
-                      <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                      <div className="mt-3 flex items-baseline gap-2">
-                        <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
-                        {p.mrp > p.price && <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>}
+                    <div className="p-5 flex flex-col justify-between flex-1">
+                      <div>
+                        <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <div className="flex items-center gap-0.5">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                            ))}
+                          </div>
+                          <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
+                        </div>
+                        <div className="mt-3 flex items-baseline gap-2">
+                          <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+                          {p.mrp > p.price && (
+                            <>
+                              <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                              <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                            </>
+                          )}
+                        </div>
                       </div>
+                      <button 
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
+                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+                      >
+                        <ShoppingBag className="h-4 w-4" /> Add to cart
+                      </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
           </div>
         </div>

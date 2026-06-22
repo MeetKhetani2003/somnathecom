@@ -158,7 +158,7 @@ function HeroCarousel() {
       </div>
 
       {/* Overlapping Stat Cards */}
-      <div className="relative z-30 mx-4 -mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 md:mx-12 md:-mt-8 md:gap-6">
+      <div className="relative z-30 mx-4 mt-8 sm:-mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 md:mx-12 md:-mt-8 md:gap-6">
         {[
           { label: "HAPPY SLEEPERS", val: "10,000+" },
           { label: "STYLES DELIVERED", val: "50,000+" },
