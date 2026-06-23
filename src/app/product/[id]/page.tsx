@@ -655,15 +655,21 @@ export default function ProductSlug() {
                       <Link href={`/product/${p.id}`}>
                         <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                       </Link>
-                      <div className="absolute left-4 top-4 flex items-center gap-2">
-                        <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">
-                          {p.category.replace(" Collection", "").replace(" Nightwear", "")}
-                        </span>
-                        {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">{p.tag}</span>}
+                      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                            {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+                          </span>
+                          {p.tag && (
+                            <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                              {p.tag}
+                            </span>
+                          )}
+                        </div>
+                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+                          <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+                        </button>
                       </div>
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md transition-all hover:text-primary hover:scale-110">
-                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
-                      </button>
                     </div>
                     <div className="p-5 flex flex-col justify-between flex-1">
                       <div>

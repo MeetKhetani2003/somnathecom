@@ -9,33 +9,46 @@ import { useShop } from "@/context/ShopContext";
 
 const categoryGroups = [
   {
-    title: "Women's Nightwear",
+    title: "Ladies Collection",
     categories: [
-      "Ladies Full Night Suit",
-      "Ladies Capri Night Suit",
-      "Ladies Short Night Suit",
-      "Oversized T-Shirt",
-      "Oversized T-Shirt + Plazo",
-      "Oversized T-Shirt + Cargo Plazo",
-      "Valentino Plazo",
-      "Tencel Plazo"
+      { label: "Ladies Full Night Suit", value: "Ladies Collection > Night Suits > Ladies Full Night Suit" },
+      { label: "Ladies Capri Night Suit", value: "Ladies Collection > Night Suits > Ladies Capri Night Suit" },
+      { label: "Ladies Short Night Suit", value: "Ladies Collection > Night Suits > Ladies Short Night Suit" },
+      { label: "Oversized T-Shirt", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt" },
+      { label: "Oversized T-Shirt & Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Plazo Set" },
+      { label: "Oversized T-Shirt & Cargo Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set" },
+      { label: "Valentino Plazo", value: "Ladies Collection > Plazo Collection > Valentino Plazo" },
+      { label: "Tencel Plazo", value: "Ladies Collection > Plazo Collection > Tencel Plazo" }
     ]
   },
   {
-    title: "Men's Nightwear",
+    title: "Men's Collection",
     categories: [
-      "Gents Full Night Suit",
-      "Gents Capri Night Suit",
-      "Gents Short Night Suit"
+      { label: "Gents Full Night Suit", value: "Men's Collection > Night Suits > Gents Full Night Suit" },
+      { label: "Gents Capri Night Suit", value: "Men's Collection > Night Suits > Gents Capri Night Suit" },
+      { label: "Gents Short Night Suit", value: "Men's Collection > Night Suits > Gents Short Night Suit" }
     ]
   },
   {
-    title: "Collections",
+    title: "Tencel Collection",
     categories: [
-      "Tencel Collection",
-      "Hosiery Collection",
-      "Oversized Collection",
-      "Valentino Collection"
+      { label: "Tencel Full Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Full Night Suit" },
+      { label: "Tencel Capri Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Capri Night Suit" },
+      { label: "Tencel Short Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Short Night Suit" },
+      { label: "Tencel Plazo", value: "Tencel Collection > Tencel Plazo > Tencel Plazo" },
+      { label: "Tencel Lounge Wear", value: "Tencel Collection > Future Collections > Tencel Lounge Wear" },
+      { label: "Tencel Couple Set", value: "Tencel Collection > Future Collections > Tencel Couple Set" }
+    ]
+  },
+  {
+    title: "Hosiery Collection",
+    categories: [
+      { label: "Hosiery Full Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit" },
+      { label: "Hosiery Capri Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Capri Night Suit" },
+      { label: "Hosiery Short Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Short Night Suit" },
+      { label: "Hosiery Oversized T-Shirt", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt" },
+      { label: "Hosiery Oversized T-Shirt & Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Plazo Set" },
+      { label: "Hosiery Oversized T-Shirt & Cargo Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Cargo Plazo Set" }
     ]
   }
 ];
@@ -133,7 +146,7 @@ function ProductsContent() {
       <div className="mb-8 md:flex md:items-end md:justify-between">
         <div>
           <h1 className="font-display text-[32px] font-bold tracking-tight text-dark md:text-[40px]">
-            {activeCategory === "All" ? "All Collections" : activeCategory}
+            {activeCategory === "All" ? "All Collections" : activeCategory.split(" > ").pop()}
           </h1>
           <p className="mt-2 text-[15px] text-dark/60 font-medium">
             Showing {filteredProducts.length} Premium Styles
@@ -197,20 +210,20 @@ function ProductsContent() {
                   </div>
                   <ul className="space-y-1 pl-3 border-l-2 border-border ml-1.5">
                     {group.categories.map((cat) => (
-                      <li key={cat}>
+                      <li key={cat.value}>
                         <button
                           onClick={() => {
-                            router.push(`/products?category=${encodeURIComponent(cat)}`);
+                            router.push(`/products?category=${encodeURIComponent(cat.value)}`);
                             handleMobileFilterAction();
                           }}
                           className={cn(
                             "w-full rounded-lg px-3 py-2 text-left text-[14px] transition-all",
-                            activeCategory.toLowerCase() === cat.toLowerCase()
+                            activeCategory.toLowerCase() === cat.value.toLowerCase()
                               ? "bg-primary/10 font-bold text-primary" 
                               : "text-dark/70 font-medium hover:bg-bg-base hover:text-primary"
                           )}
                         >
-                          {cat}
+                          {cat.label}
                         </button>
                       </li>
                     ))}
@@ -312,16 +325,18 @@ function ProductsContent() {
                       <Link href={`/product/${p.id}`}>
                         <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
                       </Link>
-                      <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-                        {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
-                        {p.category.includes("Tencel") && <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-md">Tencel</span>}
+                      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
+                          {p.category.includes("Tencel") && <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-md">Tencel</span>}
+                        </div>
+                        <button 
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
+                          className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-md backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
+                        >
+                          <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
+                        </button>
                       </div>
-                      <button 
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
-                        className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-md backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
-                      >
-                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
-                      </button>
                       
                       {/* Removed hover overlay */}
                     </div>
@@ -329,7 +344,7 @@ function ProductsContent() {
                       <div>
                         <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
                         <div className="mt-1 flex items-center justify-between">
-                          <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category}</div>
+                          <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category.split(" > ").pop()}</div>
                         </div>
                         <div className="mt-4 flex items-baseline gap-2">
                           <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>

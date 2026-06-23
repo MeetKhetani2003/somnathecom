@@ -12,38 +12,46 @@ import LoginModal from "@/components/LoginModal";
 
 const megaMenuGroups = [
   {
-    title: "Women's Nightwear",
+    title: "Ladies Collection",
     categories: [
-      "Ladies Full Night Suit",
-      "Ladies Capri Night Suit",
-      "Ladies Short Night Suit",
-      "Oversized T-Shirt",
-      "Oversized T-Shirt + Plazo",
-      "Oversized T-Shirt + Cargo Plazo",
-      "Valentino Plazo",
-      "Tencel Plazo"
+      { label: "Ladies Full Night Suit", value: "Ladies Collection > Night Suits > Ladies Full Night Suit" },
+      { label: "Ladies Capri Night Suit", value: "Ladies Collection > Night Suits > Ladies Capri Night Suit" },
+      { label: "Ladies Short Night Suit", value: "Ladies Collection > Night Suits > Ladies Short Night Suit" },
+      { label: "Oversized T-Shirt", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt" },
+      { label: "Oversized T-Shirt & Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Plazo Set" },
+      { label: "Oversized T-Shirt & Cargo Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set" },
+      { label: "Valentino Plazo", value: "Ladies Collection > Plazo Collection > Valentino Plazo" },
+      { label: "Tencel Plazo", value: "Ladies Collection > Plazo Collection > Tencel Plazo" }
     ]
   },
   {
-    title: "Men's Nightwear",
+    title: "Men's Collection",
     categories: [
-      "Gents Full Night Suit",
-      "Gents Capri Night Suit",
-      "Gents Short Night Suit"
+      { label: "Gents Full Night Suit", value: "Men's Collection > Night Suits > Gents Full Night Suit" },
+      { label: "Gents Capri Night Suit", value: "Men's Collection > Night Suits > Gents Capri Night Suit" },
+      { label: "Gents Short Night Suit", value: "Men's Collection > Night Suits > Gents Short Night Suit" }
     ]
   },
   {
-    title: "Premium Fabrics",
+    title: "Tencel Collection",
     categories: [
-      "Tencel Collection",
-      "Hosiery Collection"
+      { label: "Tencel Full Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Full Night Suit" },
+      { label: "Tencel Capri Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Capri Night Suit" },
+      { label: "Tencel Short Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Short Night Suit" },
+      { label: "Tencel Plazo", value: "Tencel Collection > Tencel Plazo > Tencel Plazo" },
+      { label: "Tencel Lounge Wear", value: "Tencel Collection > Future Collections > Tencel Lounge Wear" },
+      { label: "Tencel Couple Set", value: "Tencel Collection > Future Collections > Tencel Couple Set" }
     ]
   },
   {
-    title: "Special Collections",
+    title: "Hosiery Collection",
     categories: [
-      "Oversized Collection",
-      "Valentino Collection"
+      { label: "Hosiery Full Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit" },
+      { label: "Hosiery Capri Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Capri Night Suit" },
+      { label: "Hosiery Short Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Short Night Suit" },
+      { label: "Hosiery Oversized T-Shirt", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt" },
+      { label: "Hosiery Oversized T-Shirt & Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Plazo Set" },
+      { label: "Hosiery Oversized T-Shirt & Cargo Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Cargo Plazo Set" }
     ]
   }
 ];
@@ -176,12 +184,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         </div>
                         <ul className="space-y-3 border-l-2 border-bg-base pl-4">
                           {group.categories.map((cat) => (
-                            <li key={cat}>
+                            <li key={cat.value}>
                               <Link 
-                                href={`/products?category=${encodeURIComponent(cat)}`}
+                                href={`/products?category=${encodeURIComponent(cat.value)}`}
                                 className="block text-[13.5px] text-dark/70 transition-all duration-200 hover:translate-x-1 hover:text-primary hover:font-medium"
                               >
-                                {cat}
+                                {cat.label}
                               </Link>
                             </li>
                           ))}
@@ -264,7 +272,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                </h4>
                                 <div className="flex items-center justify-between mt-0.5">
                                   <span className="text-[11.5px] text-dark/50 truncate">
-                                    {p.category}
+                                    {p.category.split(" > ").pop()}
                                   </span>
                                   <span className="text-[13.5px] font-semibold text-primary">
                                     ₹{p.price}
@@ -394,7 +402,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                 {p.title}
                               </h4>
                               <p className="text-[11px] text-dark/50 truncate">
-                                {p.category} • ₹{p.price}
+                                {p.category.split(" > ").pop()} • ₹{p.price}
                               </p>
                             </div>
                           </Link>
@@ -423,12 +431,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           <div className="space-y-1 pl-1">
                             {group.categories.map((cat) => (
                               <Link 
-                                key={cat} 
-                                href={`/products?category=${encodeURIComponent(cat)}`}
+                                key={cat.value} 
+                                href={`/products?category=${encodeURIComponent(cat.value)}`}
                                 onClick={() => setMobileMenu(false)}
                                 className="block rounded-lg px-3 py-2 text-[14px] text-dark/70 hover:bg-bg-base hover:text-primary hover:font-medium"
                               >
-                                {cat}
+                                {cat.label}
                               </Link>
                             ))}
                           </div>

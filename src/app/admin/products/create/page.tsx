@@ -33,7 +33,7 @@ export default function CreateProductPage() {
   const router = useRouter();
 
   const [formTitle, setFormTitle] = useState("");
-  const [formCategory, setFormCategory] = useState("Animal Product");
+  const [formCategory, setFormCategory] = useState("Ladies Collection > Night Suits > Ladies Full Night Suit");
   const [formPrice, setFormPrice] = useState("");
   const [formMrp, setFormMrp] = useState("");
   const [formNetPrice, setFormNetPrice] = useState("");
@@ -346,29 +346,37 @@ export default function CreateProductPage() {
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-dark/80">Category</label>
               <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)} className="h-12 w-full rounded-xl border border-border px-3 text-[14px] outline-none bg-white">
-                <option value="Animal Product">Animal Product</option>
-                <option value="Birds Product">Birds Product</option>
-                <option value="Indian State Product">Indian State Product</option>
-                <option value="Fruit Product">Fruit Product</option>
-                <option value="Vegetable Product">Vegetable Product</option>
-                <option value="Water Animals Product">Water Animals Product</option>
-                <option value="Hair Wigs">Hair Wigs</option>
-                <option value="Super Heroes">Super Heroes</option>
-                <option value="Insect Product">Insect Product</option>
-                <option value="Our Helpers">Our Helpers</option>
-                <option value="Flower Product">Flower Product</option>
-                <option value="Cartoon Characters Product">Cartoon Characters Product</option>
-                <option value="Community Helpers">Community Helpers</option>
-                <option value="Indian Mythology Product">Indian Mythology Product</option>
-                <option value="Republic Day / Independence Day">Republic Day / Independence Day</option>
-                <option value="Indian Dance Product">Indian Dance Product</option>
-                <option value="Caps / Hats / Safa / Pagdi">Caps / Hats / Safa / Pagdi</option>
-                <option value="Face Masks">Face Masks</option>
-                <option value="Halloween Products">Halloween Products</option>
-                <option value="National Heroes">National Heroes</option>
-                <option value="Silver / Golden Jewellery">Silver / Golden Jewellery</option>
-                <option value="Offer Products">Offer Products</option>
-                <option value="Umbrella / Fans">Umbrella / Fans</option>
+                <optgroup label="Ladies Collection">
+                  <option value="Ladies Collection > Night Suits > Ladies Full Night Suit">Ladies Full Night Suit</option>
+                  <option value="Ladies Collection > Night Suits > Ladies Capri Night Suit">Ladies Capri Night Suit</option>
+                  <option value="Ladies Collection > Night Suits > Ladies Short Night Suit">Ladies Short Night Suit</option>
+                  <option value="Ladies Collection > Oversized Collection > Oversized T-Shirt">Oversized T-Shirt</option>
+                  <option value="Ladies Collection > Oversized Collection > Oversized T-Shirt & Plazo Set">Oversized T-Shirt & Plazo Set</option>
+                  <option value="Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set">Oversized T-Shirt & Cargo Plazo Set</option>
+                  <option value="Ladies Collection > Plazo Collection > Valentino Plazo">Valentino Plazo</option>
+                  <option value="Ladies Collection > Plazo Collection > Tencel Plazo">Tencel Plazo</option>
+                </optgroup>
+                <optgroup label="Men's Collection">
+                  <option value="Men's Collection > Night Suits > Gents Full Night Suit">Gents Full Night Suit</option>
+                  <option value="Men's Collection > Night Suits > Gents Capri Night Suit">Gents Capri Night Suit</option>
+                  <option value="Men's Collection > Night Suits > Gents Short Night Suit">Gents Short Night Suit</option>
+                </optgroup>
+                <optgroup label="Tencel Collection">
+                  <option value="Tencel Collection > Tencel Nightwear > Tencel Full Night Suit">Tencel Full Night Suit</option>
+                  <option value="Tencel Collection > Tencel Nightwear > Tencel Capri Night Suit">Tencel Capri Night Suit</option>
+                  <option value="Tencel Collection > Tencel Nightwear > Tencel Short Night Suit">Tencel Short Night Suit</option>
+                  <option value="Tencel Collection > Tencel Plazo > Tencel Plazo">Tencel Plazo</option>
+                  <option value="Tencel Collection > Future Collections > Tencel Lounge Wear">Tencel Lounge Wear</option>
+                  <option value="Tencel Collection > Future Collections > Tencel Couple Set">Tencel Couple Set</option>
+                </optgroup>
+                <optgroup label="Hosiery Collection">
+                  <option value="Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit">Hosiery Full Night Suit</option>
+                  <option value="Hosiery Collection > Hosiery Nightwear > Hosiery Capri Night Suit">Hosiery Capri Night Suit</option>
+                  <option value="Hosiery Collection > Hosiery Nightwear > Hosiery Short Night Suit">Hosiery Short Night Suit</option>
+                  <option value="Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt">Hosiery Oversized T-Shirt</option>
+                  <option value="Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Plazo Set">Hosiery Oversized T-Shirt & Plazo Set</option>
+                  <option value="Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Cargo Plazo Set">Hosiery Oversized T-Shirt & Cargo Plazo Set</option>
+                </optgroup>
               </select>
             </div>
             <div>

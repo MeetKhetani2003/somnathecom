@@ -75,11 +75,11 @@ function HeroCarousel() {
             <img
               src={slide.image}
               alt={slide.title}
-              className="absolute inset-0 h-full w-full object-cover object-top"
+              className="absolute inset-0 h-full w-full object-cover object-top "
               style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
             />
             {/* Gradient overlays matching premium design */}
-            <div className="absolute inset-0 bg-dark/40" />
+            <div className="absolute inset-0 bg-dark/5" />
             <div className="absolute inset-0 bg-gradient-to-tr from-dark/65 via-dark/15 to-transparent" />
           </div>
         ))}
@@ -113,14 +113,14 @@ function HeroCarousel() {
 
                 {/* Headline */}
                 <h1
-                  className="font-display text-[32px] font-bold leading-[1.1] tracking-tight text-white sm:text-[44px] md:text-[54px] lg:text-[62px] max-w-[750px]"
+                  className="font-display text-[28px] font-bold leading-[1.1] tracking-tight text-white/95 sm:text-[38px] md:text-[46px] lg:text-[52px] max-w-[700px]"
                   style={{ textWrap: "balance" } as any}
                 >
                   {slide.title}
                 </h1>
 
                 {/* Subtitle */}
-                <p className="mt-5 max-w-[550px] text-[15px] leading-relaxed text-white/80 md:text-[17px]">
+                <p className="mt-5 max-w-[500px] text-[14px] leading-relaxed text-white/70 md:text-[15px]">
                   {slide.subtitle}
                 </p>
 
@@ -267,15 +267,21 @@ export default function Home() {
                     <Link href={`/product/${p.id}`}>
                       <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                     </Link>
-                    <div className="absolute left-4 top-4 flex items-center gap-2">
-                      <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md">
-                        {p.category.replace(" Collection", "").replace(" Nightwear", "")}
-                      </span>
-                      {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">{p.tag}</span>}
+                    <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                          {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+                        </span>
+                        {p.tag && (
+                          <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                            {p.tag}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+                      </button>
                     </div>
-                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md transition-all hover:text-primary hover:scale-110">
-                      <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
-                    </button>
                   </div>
                   <div className="p-5 flex flex-col justify-between flex-1">
                     <div>
@@ -298,8 +304,8 @@ export default function Home() {
                         )}
                       </div>
                     </div>
-                    <button 
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }}
                       className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
                     >
                       <ShoppingBag className="h-4 w-4" /> Add to cart
@@ -321,24 +327,25 @@ export default function Home() {
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6">
           {categories.map((cat) => (
-            <Link 
-              key={cat.name} 
+            <Link
+              key={cat.name}
               href={`/products?category=${encodeURIComponent(cat.name)}`}
-              className="group relative flex flex-col items-center text-center p-6 rounded-[28px] border border-border/60 bg-white shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20"
+              className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-[24px] border border-border/40 bg-dark shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-dark/5"
             >
-              <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-full bg-bg-base border border-border/40 md:h-28 md:w-28">
-                <img 
-                  src={cat.image} 
-                  alt={cat.name} 
-                  className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                />
+              <img
+                src={cat.image}
+                alt={cat.name}
+                className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/30 to-transparent transition-opacity duration-300 group-hover:opacity-90" />
+              <div className="relative z-10 p-5 text-left text-white">
+                <h3 className="font-display text-[16px] font-bold leading-tight tracking-tight text-white transition-colors group-hover:text-secondary md:text-[18px]">
+                  {cat.name.split(" > ").pop()}
+                </h3>
+                <span className="mt-1 block text-[12px] font-medium text-white/75">
+                  {cat.count}
+                </span>
               </div>
-              <h3 className="font-display text-[14px] font-semibold text-dark transition-colors group-hover:text-primary leading-tight">
-                {cat.name}
-              </h3>
-              <span className="mt-1.5 text-[12px] text-dark/50 font-medium">
-                {cat.count}
-              </span>
             </Link>
           ))}
         </div>
@@ -352,7 +359,7 @@ export default function Home() {
             <div className="relative z-10">
               <div className="text-[12px] font-bold uppercase tracking-widest text-secondary mb-4">The Tencel Experience</div>
               <h2 className="font-display text-[36px] font-bold leading-[1.1] md:text-[48px] lg:text-[56px]">
-                Sleep Like <br/> Never Before.
+                Sleep Like <br /> Never Before.
               </h2>
               <p className="mt-6 text-[16px] leading-relaxed text-surface/80 md:text-[18px]">
                 Our signature Tencel fabric is derived from sustainably sourced wood pulp. It offers incredible softness, superior breathability, and a luxurious drape that feels like a second skin.
@@ -447,10 +454,10 @@ export default function Home() {
                   <div className="font-display text-[16px] font-bold text-dark">{t.name}</div>
                   <div className="text-[13px] text-dark/60 flex items-center gap-1.5 mt-0.5">
                     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                     </svg>
                     <span className="flex items-center gap-1 font-medium">
                       Google Verified
@@ -472,7 +479,7 @@ export default function Home() {
               Upgrade Your Nightwear Experience Today.
             </h2>
             <p className="mt-6 text-[18px] text-white/80">
-              Join thousands of others who have discovered the ultimate comfort of Somnath NX. 
+              Join thousands of others who have discovered the ultimate comfort of Somnath NX.
             </p>
             <div className="mt-10 flex justify-center gap-4">
               <Link href="/products" className="rounded-full bg-white px-10 py-4 text-[16px] font-bold text-primary transition-all hover:scale-105 hover:shadow-xl">

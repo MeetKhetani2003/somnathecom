@@ -35,7 +35,7 @@ const CouponSchema = new mongoose.Schema({
 
 const products = [
   {
-    id: 201, title: "Premium Tencel Plazo Set", category: "Tencel Collection",
+    id: 201, title: "Premium Tencel Plazo Set", category: "Tencel Collection > Tencel Plazo > Tencel Plazo",
     price: 1499, mrp: 2499, rating: 4.9,
     image: "/images/products/tencel_plazo.png",
     images: ["/images/products/tencel_plazo.png", "/images/products/valentino_plazo.png", "/images/products/short_suit.png"],
@@ -47,7 +47,7 @@ const products = [
     careInstructions: "Machine wash cold on gentle cycle. Do not bleach. Tumble dry low.",
   },
   {
-    id: 202, title: "Ladies Full Night Suit - Silk Finish", category: "Women's Nightwear",
+    id: 202, title: "Ladies Full Night Suit - Silk Finish", category: "Ladies Collection > Night Suits > Ladies Full Night Suit",
     price: 1899, mrp: 2999, rating: 4.8,
     image: "/images/products/silk_suit.png",
     images: ["/images/products/silk_suit.png", "/images/products/tencel_plazo.png"],
@@ -59,7 +59,7 @@ const products = [
     careInstructions: "Hand wash cold or dry clean. Iron on low heat.",
   },
   {
-    id: 203, title: "Oversized T-Shirt & Cargo Plazo", category: "Oversized Collection",
+    id: 203, title: "Oversized T-Shirt & Cargo Plazo", category: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set",
     price: 1299, mrp: 1999, rating: 4.7,
     image: "/images/products/oversized_cargo.png",
     images: ["/images/products/oversized_cargo.png", "/images/products/short_suit.png"],
@@ -71,7 +71,7 @@ const products = [
     careInstructions: "Machine wash cold with like colors. Do not bleach.",
   },
   {
-    id: 204, title: "Gents Full Night Suit - Classic Stripe", category: "Men's Nightwear",
+    id: 204, title: "Gents Full Night Suit - Classic Stripe", category: "Men's Collection > Night Suits > Gents Full Night Suit",
     price: 1599, mrp: 2499, rating: 4.8,
     image: "/images/products/gents_stripe.png",
     images: ["/images/products/gents_stripe.png"],
@@ -83,7 +83,7 @@ const products = [
     careInstructions: "Machine wash cold. Tumble dry low.",
   },
   {
-    id: 205, title: "Valentino Plazo Signature Set", category: "Valentino Collection",
+    id: 205, title: "Valentino Plazo Signature Set", category: "Ladies Collection > Plazo Collection > Valentino Plazo",
     price: 1799, mrp: 2899, rating: 4.9,
     image: "/images/products/valentino_plazo.png",
     images: ["/images/products/valentino_plazo.png", "/images/products/silk_suit.png"],
@@ -95,7 +95,7 @@ const products = [
     careInstructions: "Dry clean recommended. Hand wash cold if necessary.",
   },
   {
-    id: 206, title: "Ladies Short Night Suit", category: "Women's Nightwear",
+    id: 206, title: "Ladies Short Night Suit", category: "Ladies Collection > Night Suits > Ladies Short Night Suit",
     price: 1099, mrp: 1799, rating: 4.6,
     image: "/images/products/short_suit.png",
     images: ["/images/products/short_suit.png", "/images/products/oversized_cargo.png"],

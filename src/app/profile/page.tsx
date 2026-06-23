@@ -3,14 +3,31 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, Shield, Compass, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag, Star } from "lucide-react";
+import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
 export default function Profile() {
   const { data: session, update } = useSession();
-  const { wishlist } = useShop();
+  const { wishlist, toggleWishlist, addToCart } = useShop();
+  const [productsList, setProductsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        if (data.success) {
+          setProductsList(data.products || []);
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
+    }
+    fetchProducts();
+  }, []);
 
   const [activeSection, setActiveSection] = useState<"info" | "orders" | "wishlist" | "addresses">("info");
   const [orders, setOrders] = useState<any[]>([]);
@@ -198,8 +215,6 @@ export default function Profile() {
     }
   };
 
-  const isAdmin = (session?.user as any)?.role === "admin";
-
   useEffect(() => {
     if (session?.user?.email) {
       fetchOrders();
@@ -303,25 +318,6 @@ export default function Profile() {
     }
   };
 
-  const handleDevBypass = async () => {
-    if (!session?.user?.email) return;
-    try {
-      const targetRole = isAdmin ? "user" : "admin";
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: session.user.email, role: targetRole }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`Your role has been set to ${targetRole}. Please refresh.`);
-        window.location.reload();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   // Sign in state check
   if (!session) {
     return (
@@ -358,28 +354,6 @@ export default function Profile() {
             </svg>
             Continue with Google
           </button>
-
-          <div className="mt-8 flex flex-col gap-3">
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-border"></div>
-              <span className="flex-shrink mx-4 text-[11px] font-bold text-dark/40 uppercase tracking-widest">Local Dev Bypass</span>
-              <div className="flex-grow border-t border-border"></div>
-            </div>
-
-            <button
-              onClick={() => signIn("bypass-login", { email: "tester@example.com", name: "Tester User", role: "user" })}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-bg-base hover:bg-dark/5 py-3.5 text-[14px] font-bold text-dark transition"
-            >
-              Sign In as Tester
-            </button>
-
-            <button
-              onClick={() => signIn("bypass-login", { email: "admin@example.com", name: "Admin User", role: "admin" })}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-primary/10 hover:bg-primary/20 py-3.5 text-[14px] font-bold text-primary transition"
-            >
-              Sign In as Admin
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -437,25 +411,6 @@ export default function Profile() {
               );
             })}
 
-            {/* Admin Panel button if role is admin */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="mt-4 flex items-center gap-3 rounded-2xl px-5 py-4 text-[15px] font-bold text-white bg-primary hover:bg-[#2E2387] shadow-lg shadow-primary/20 transition-all"
-              >
-                <Shield className="h-5 w-5" />
-                <span>Admin Console</span>
-              </Link>
-            )}
-
-            {/* Dev Bypass Toggler */}
-            <button
-              onClick={handleDevBypass}
-              className="mt-4 flex items-center gap-3 rounded-2xl px-5 py-3 text-[13px] font-bold text-secondary bg-secondary/10 hover:bg-secondary/20 transition border border-dashed border-secondary/30"
-            >
-              <Compass className="h-4 w-4" />
-              <span>Dev: Toggle Admin Role</span>
-            </button>
 
             <button onClick={() => signOut()} className="mt-8 flex items-center gap-3 rounded-2xl px-5 py-4 text-[15px] font-bold text-red-500 transition hover:bg-red-50 hover:text-red-600">
               <LogOut className="h-5 w-5" />
@@ -473,13 +428,9 @@ export default function Profile() {
                 <p className="mt-2 text-[15px] text-dark/60">Manage your personal details and account settings.</p>
 
                 <div className="mt-10 grid gap-6 md:grid-cols-2">
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Full Name</label>
                     <input type="text" readOnly value={session.user?.name || ""} className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[15px] font-medium text-dark/60 outline-none" />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Account Role</label>
-                    <input type="text" readOnly value={(session.user as any)?.role || "user"} className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[15px] font-medium text-dark/60 outline-none capitalize" />
                   </div>
                   <div className="md:col-span-2">
                     <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Email Address</label>
@@ -668,15 +619,63 @@ export default function Profile() {
                       <Link href="/products" className="inline-block mt-6 font-bold text-primary hover:underline">Browse Collection</Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                      {wishlist.map((id) => (
-                        <Link href={`/product/${id}`} key={id} className="group block rounded-[24px] border border-border bg-surface p-4 text-center hover:shadow-lg transition-shadow">
-                          <div className="aspect-[3/4] rounded-xl bg-bg-base overflow-hidden mb-4 border border-border/50">
-                            <div className="grid h-full place-items-center text-[13px] font-bold text-dark/40">Product ID: {id}</div>
-                          </div>
-                          <span className="text-[14px] font-bold text-dark group-hover:text-primary transition-colors">View Product</span>
-                        </Link>
-                      ))}
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {productsList
+                        .filter((p) => wishlist.includes(p.id))
+                        .map((p) => (
+                          <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-full">
+                            <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+                              <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
+                                <Link href={`/product/${p.id}`}>
+                                  <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
+                                </Link>
+                                <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+                                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                    <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                                      {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+                                    </span>
+                                    {p.tag && (
+                                      <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                        {p.tag}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+                                    <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="p-5 flex flex-col justify-between flex-1">
+                                <div>
+                                  <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                                  <div className="mt-2 flex items-center gap-1.5">
+                                    <div className="flex items-center gap-0.5">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                                      ))}
+                                    </div>
+                                    <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
+                                  </div>
+                                  <div className="mt-3 flex items-baseline gap-2">
+                                    <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+                                    {p.mrp > p.price && (
+                                      <>
+                                        <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                                        <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
+                                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+                                >
+                                  <ShoppingBag className="h-4 w-4" /> Add to cart
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
                     </div>
                   )}
                 </div>

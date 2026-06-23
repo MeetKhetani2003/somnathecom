@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from 'next/link';
-
+import { motion } from "framer-motion";
 import { Heart, Star, ShoppingBag } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
 
@@ -19,7 +19,7 @@ export default function Wishlist() {
         const res = await fetch("/api/products");
         const data = await res.json();
         if (data.success) {
-          setProductsList(data.products);
+          setProductsList(data.products || []);
         }
       } catch (err) {
         console.error("Error fetching products:", err);
@@ -34,22 +34,23 @@ export default function Wishlist() {
 
   if (loading) {
     return (
-      <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-center px-4 py-20 text-center md:py-32 text-[#8B7A8F]">
-        <div className="mb-4 animate-spin rounded-full h-8 w-8 border-2 border-t-[#8B1D8F] border-r-transparent border-b-[#8B1D8F] border-l-transparent" />
+      <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-center px-4 py-20 text-center md:py-32 text-dark/50">
+        <div className="mb-4 animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
         Loading wishlist...
       </div>
     );
   }
+
   if (wishlistedProducts.length === 0) {
     return (
       <div className="mx-auto flex max-w-[1240px] flex-col items-center justify-center px-4 py-20 text-center md:py-32">
-        <div className="mb-6 grid h-24 w-24 place-items-center rounded-full bg-[#FCF7FD] text-[#E91E7A]">
+        <div className="mb-6 grid h-24 w-24 place-items-center rounded-full bg-primary/5 text-primary">
           <Heart className="h-10 w-10" />
         </div>
-        <h2 className="text-[24px] font-semibold text-[#1A0F1C]">Your wishlist is empty</h2>
-        <p className="mt-2 text-[15px] text-[#6B5A6F]">Save your favorite costumes to review them later.</p>
-        <Link href="/products" className="mt-8 rounded-full bg-[#8B1D8F] px-8 py-3.5 text-[15px] font-medium text-white transition hover:bg-[#7A187C]">
-          Explore Costumes
+        <h2 className="text-[24px] font-bold text-dark">Your wishlist is empty</h2>
+        <p className="mt-2 text-[15px] text-dark/60">Save your favorite comfort styles to review them later.</p>
+        <Link href="/products" className="mt-8 rounded-full bg-primary px-8 py-3.5 text-[15px] font-bold text-white transition hover:bg-dark">
+          Explore Collection
         </Link>
       </div>
     );
@@ -59,48 +60,65 @@ export default function Wishlist() {
     <div className="mx-auto max-w-[1240px] px-4 py-8 md:py-12">
       <div className="mb-8 flex items-end justify-between">
         <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-[#1A0F1C] md:text-[36px]">My Wishlist</h1>
-          <p className="mt-2 text-[15px] text-[#6B5A6F]">{wishlistedProducts.length} items saved</p>
+          <h1 className="text-[28px] font-bold tracking-tight text-dark md:text-[36px]">My Wishlist</h1>
+          <p className="mt-2 text-[15px] text-dark/60">{wishlistedProducts.length} items saved</p>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {wishlistedProducts.map((p) => (
-          <div key={p.id} className="group relative w-full shrink-0">
-            <div className="overflow-hidden rounded-[20px] border border-[#F0E6F2] bg-white shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:shadow-[#8B1D8F]/10">
-              <div className="relative aspect-[4/5] overflow-hidden bg-[#FCF7FD]">
+          <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-full">
+            <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+              <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
                 <Link href={`/product/${p.id}`}>
-                  <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                  <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
                 </Link>
-                <button 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
-                  className="absolute right-2.5 top-2.5 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[#E91E7A] shadow-sm backdrop-blur transition-all hover:scale-110"
-                >
-                  <Heart className="h-4 w-4 fill-[#E91E7A]" />
-                </button>
+                <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                    <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                      {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+                    </span>
+                    {p.tag && (
+                      <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                        {p.tag}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+                    <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+                  </button>
+                </div>
               </div>
-              <div className="p-3.5 flex flex-col h-full">
-                <Link href={`/product/${p.id}`} className="line-clamp-1 text-[14px] font-medium text-[#2E1F31] hover:text-[#8B1D8F]">{p.title}</Link>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={cn("h-3 w-3", i < Math.floor(p.rating) ? "fill-[#F5A524] text-[#F5A524]" : "text-[#E8DDE9]")} />
-                    ))}
+              <div className="p-5 flex flex-col justify-between flex-1">
+                <div>
+                  <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <div className="flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                      ))}
+                    </div>
+                    <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
+                  </div>
+                  <div className="mt-3 flex items-baseline gap-2">
+                    <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+                    {p.mrp > p.price && (
+                      <>
+                        <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                        <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                      </>
+                    )}
                   </div>
                 </div>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="text-[16px] font-semibold text-[#1A0F1C]">₹{p.price}</span>
-                  <span className="text-[12px] text-[#9A8A9D] line-through">₹{p.mrp}</span>
-                </div>
                 <button 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); toggleWishlist(p.id); }} 
-                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#F3E7F5] bg-[#FCF7FD] py-2 text-[13px] font-medium text-[#8B1D8F] transition hover:bg-[#8B1D8F] hover:text-white"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
                 >
-                  <ShoppingBag className="h-3.5 w-3.5" /> Move to cart
+                  <ShoppingBag className="h-4 w-4" /> Add to cart
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
