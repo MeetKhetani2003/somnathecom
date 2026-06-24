@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check, Heart, ShoppingBag, IndianRupee } from "lucide-react";
 import { heroSlides, testimonials, categories } from "@/data/mockData";
 import { useShop } from "@/context/ShopContext";
 
@@ -58,7 +58,7 @@ function HeroCarousel() {
   return (
     <section className="mx-auto max-w-[1400px] px-4 pt-6 pb-16 md:px-8 md:pt-8 md:pb-24">
       {/* Outer Rounded Container */}
-      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-[40px] bg-dark aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/8] lg:h-[580px] shadow-2xl">
+      <div className="relative w-full overflow-hidden rounded-[32px] md:rounded-[40px] bg-dark aspect-[3/4] sm:aspect-[16/10] md:aspect-[16/8] lg:h-[580px] lg:aspect-auto shadow-2xl">
         {/* Slides */}
         {slides.map((slide, i) => (
           <div
@@ -85,8 +85,8 @@ function HeroCarousel() {
         ))}
 
         {/* Content Overlay */}
-        <div className="relative z-10 flex h-full items-center">
-          <div className="w-full px-6 py-10 md:px-16 md:py-16">
+        <div className="relative z-10 flex h-full items-end md:items-center">
+          <div className="w-full px-6 pb-20 pt-12 md:px-16 md:py-16">
             {slides.map((slide, i) => (
               <div
                 key={slide.id}
@@ -138,35 +138,59 @@ function HeroCarousel() {
           </div>
         </div>
 
-        {/* Carousel controls in the bottom-right */}
-        <div className="absolute bottom-6 right-6 z-20 flex gap-2 md:bottom-8 md:right-8">
-          <button
-            onClick={prevSlide}
-            className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105"
-            aria-label="Previous Slide"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            onClick={next}
-            className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105"
-            aria-label="Next Slide"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+        {/* Carousel controls & indicators */}
+        <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between md:bottom-8 md:left-16 md:right-16">
+          {/* Slide Indicators */}
+          <div className="flex gap-2 items-center">
+            {slides.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => goTo(idx)}
+                className={cn(
+                  "h-1 rounded-full transition-all duration-300 cursor-pointer",
+                  idx === current ? "w-8 bg-white" : "w-4 bg-white/40 hover:bg-white/60"
+                )}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Navigation Arrows */}
+          <div className="flex gap-2">
+            <button
+              onClick={prevSlide}
+              className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105 cursor-pointer"
+              aria-label="Previous Slide"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={next}
+              className="grid h-11 w-11 place-items-center rounded-full bg-dark/50 text-white border border-white/10 transition hover:bg-dark/70 hover:scale-105 cursor-pointer"
+              aria-label="Next Slide"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Overlapping Stat Cards */}
-      <div className="relative z-30 mx-4 mt-8 sm:-mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 md:mx-12 md:-mt-8 md:gap-6">
+      {/* Redesigned Features Grid */}
+      <div className="relative z-30 mx-4 mt-8 sm:-mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:mx-12 md:-mt-8 md:gap-6">
         {[
-          { label: "HAPPY SLEEPERS", val: "10,000+" },
-          { label: "STYLES DELIVERED", val: "50,000+" },
-          { label: "CUSTOMER RATING", val: "4.9 / 5" }
-        ].map((stat, idx) => (
-          <div key={idx} className="rounded-3xl border border-border/40 bg-white/95 p-5 shadow-lg backdrop-blur-md transition hover:-translate-y-1 hover:shadow-xl text-center sm:text-left">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-primary/70">{stat.label}</div>
-            <div className="mt-1 text-[22px] font-extrabold text-dark md:text-[26px]">{stat.val}</div>
+          { title: "Next-Day Delivery", desc: "Metro cities", icon: Truck },
+          { title: "Premium Fabrics", desc: "Kid-safe & soft", icon: ShieldCheck },
+          { title: "Easy Returns", desc: "7-day exchanges", icon: RotateCcw },
+          { title: "COD Available", desc: "Pay on delivery", icon: IndianRupee }
+        ].map((feat, idx) => (
+          <div key={idx} className="flex items-center gap-3.5 rounded-[24px] border border-border/40 bg-white/95 p-4 shadow-md backdrop-blur-md transition hover:-translate-y-1 hover:shadow-lg">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              <feat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="font-display text-[13.5px] font-bold text-dark leading-tight">{feat.title}</div>
+              <div className="text-[11px] text-dark/50 mt-0.5 leading-none">{feat.desc}</div>
+            </div>
           </div>
         ))}
       </div>
