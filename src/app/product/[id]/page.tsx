@@ -345,32 +345,47 @@ export default function ProductSlug() {
                     <span className="ml-2 text-[14px] font-medium text-primary">— {selectedColor}</span>
                   )}
                 </h3>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-5">
                   {product.colors.map((colorObj: any, idx: number) => {
                     const isSelected = selectedColor === colorObj.name;
                     const colorTotalStock = (colorObj.sizes || []).reduce((s: number, sz: any) => s + (Number(sz.stock) || 0), 0);
                     const isOutOfStock = colorTotalStock === 0;
+                    const colorThumb = colorObj.images && colorObj.images.length > 0 ? colorObj.images[0] : product.image;
                     
                     return (
                       <button
                         key={idx}
-                        onClick={() => !isOutOfStock && handleColorChange(colorObj.name)}
-                        disabled={isOutOfStock}
-                        title={isOutOfStock ? `${colorObj.name} — Out of Stock` : colorObj.name}
-                        className={cn(
-                          "relative flex items-center gap-2 rounded-xl border-2 px-5 py-3 font-display text-[14px] font-bold transition-all focus:outline-none",
-                          isOutOfStock
-                            ? "cursor-not-allowed border-border bg-bg-base text-dark/30 line-through"
-                            : isSelected
-                              ? "border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-105"
-                              : "border-border bg-surface text-dark hover:border-primary/50"
-                        )}
+                        onClick={() => handleColorChange(colorObj.name)}
+                        title={isOutOfStock ? `${colorObj.name} — Out of Stock` : `${colorObj.name} (${colorTotalStock} available)`}
+                        className="group relative flex flex-col items-center gap-2 focus:outline-none transition-all cursor-pointer"
                       >
+                        <div className={cn(
+                          "relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all duration-300 shadow-sm",
+                          isSelected 
+                            ? "border-primary ring-2 ring-primary/20 scale-105 shadow-md" 
+                            : "border-border hover:border-primary/50 group-hover:scale-105"
+                        )}>
+                          <img src={colorThumb} alt={colorObj.name} className="h-full w-full object-cover object-top" />
+                          {isOutOfStock && (
+                            <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
+                              <div className="w-full h-[1.5px] bg-red-500/60 rotate-45" />
+                            </div>
+                          )}
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                              <Check className="h-5 w-5 text-primary bg-white rounded-full p-0.5 shadow-sm" />
+                            </div>
+                          )}
+                        </div>
                         <span className={cn(
-                          "h-4 w-4 rounded-full border-2 shrink-0",
-                          isSelected ? "border-white bg-white/30" : "border-current"
-                        )} />
-                        {colorObj.name}
+                          "text-[12px] font-bold tracking-tight transition-colors flex items-center gap-1",
+                          isSelected ? "text-primary font-extrabold" : "text-dark/70 group-hover:text-primary"
+                        )}>
+                          {colorObj.name}
+                          {isOutOfStock && (
+                            <span className="text-[9px] font-semibold text-red-500 bg-red-50 px-1 rounded border border-red-100 leading-normal">Out</span>
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -412,11 +427,55 @@ export default function ProductSlug() {
                     );
                   })}
                 </div>
-                {selectedSize && (
-                  <div className="mt-4 flex items-center gap-2 text-[13px] font-medium text-dark/70">
-                    <Check className="h-4 w-4 text-green-500" /> Selected: <span className="font-bold text-dark">{selectedSize}</span>
-                  </div>
-                )}
+                
+                {/* Real-time Stock Status Card */}
+                <div className="mt-6">
+                  {selectedSize ? (
+                    (() => {
+                      const selectedSizeObj = availableSizes.find(
+                        (s: any) => (typeof s === "object" && s !== null ? s.size : s) === selectedSize
+                      );
+                      const stockCount = selectedSizeObj ? (typeof selectedSizeObj === "object" ? Number(selectedSizeObj.stock) : 10) : 0;
+                      
+                      if (stockCount === 0) {
+                        return (
+                          <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200/50 p-4 text-[14px] text-red-700 font-medium">
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                            </span>
+                            <span>Out of stock in size <strong className="font-bold">{selectedSize}</strong>. Please select another variant.</span>
+                          </div>
+                        );
+                      } else if (stockCount <= 5) {
+                        return (
+                          <div className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200/50 p-4 text-[14px] text-amber-800 font-medium animate-pulse">
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                            </span>
+                            <span>Hurry! Only <strong className="font-bold">{stockCount}</strong> items left in size <strong className="font-bold">{selectedSize}</strong>!</span>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="flex items-center gap-3 rounded-2xl bg-green-50 border border-green-200/50 p-4 text-[14px] text-green-700 font-medium">
+                            <span className="relative flex h-2.5 w-2.5 shrink-0">
+                              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                            </span>
+                            <span>In Stock. <strong className="font-bold">{stockCount}</strong> items available. Ready to ship!</span>
+                          </div>
+                        );
+                      }
+                    })()
+                  ) : (
+                    <div className="flex items-center gap-3 rounded-2xl bg-bg-base border border-border p-4 text-[13.5px] text-dark/60 font-medium">
+                      <span className="h-2 w-2 rounded-full bg-dark/40 shrink-0 animate-pulse"></span>
+                      <span>Select a size to view real-time availability and stock levels.</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

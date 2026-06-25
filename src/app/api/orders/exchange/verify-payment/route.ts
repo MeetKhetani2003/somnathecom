@@ -83,16 +83,35 @@ export async function POST(req: Request) {
           recordedNewSizes.push({ productId: reqItem.productId, size: reqItem.newSize });
 
           const product = await Product.findOne({ id: reqItem.productId });
-          if (product && product.sizes && product.sizes.length > 0) {
-            // Restore stock of old size
-            const oldSizeObj = product.sizes.find((s: any) => s.size === orderItem.size);
-            if (oldSizeObj) {
-              oldSizeObj.stock += orderItem.quantity;
-            }
-            // Deduct stock of new size
-            const newSizeObj = product.sizes.find((s: any) => s.size === reqItem.newSize);
-            if (newSizeObj) {
-              newSizeObj.stock -= orderItem.quantity;
+          if (product) {
+            const hasColors = product.colors && product.colors.length > 0;
+            if (hasColors && orderItem.color) {
+              const colorObj = product.colors.find((c: any) => c.name === orderItem.color);
+              if (colorObj) {
+                // Restore stock of old size
+                const oldSizeObj = colorObj.sizes.find((s: any) => s.size === orderItem.size);
+                if (oldSizeObj) {
+                  oldSizeObj.stock += orderItem.quantity;
+                }
+                // Deduct stock of new size
+                const newSizeObj = colorObj.sizes.find((s: any) => s.size === reqItem.newSize);
+                if (newSizeObj) {
+                  newSizeObj.stock -= orderItem.quantity;
+                }
+              }
+              // Synchronize flat sizes array with color-specific sizes for backward compatibility
+              product.set("sizes", product.colors.flatMap((c: any) => c.sizes));
+            } else if (product.sizes && product.sizes.length > 0) {
+              // Restore stock of old size
+              const oldSizeObj = product.sizes.find((s: any) => s.size === orderItem.size);
+              if (oldSizeObj) {
+                oldSizeObj.stock += orderItem.quantity;
+              }
+              // Deduct stock of new size
+              const newSizeObj = product.sizes.find((s: any) => s.size === reqItem.newSize);
+              if (newSizeObj) {
+                newSizeObj.stock -= orderItem.quantity;
+              }
             }
             await product.save();
           }

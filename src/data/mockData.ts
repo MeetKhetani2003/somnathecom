@@ -54,7 +54,28 @@ export const products = [
     tag: "Bestseller",
     description: "Experience the ultimate softness with our premium Tencel Plazo Set. Lightweight, breathable, and perfectly styled for lounging.",
     material: "100% Premium Tencel",
-    sizes: ["M", "L", "XL", "XXL", "3XL"],
+    sizes: [
+      { size: "M", stock: 15 },
+      { size: "L", stock: 3 },
+      { size: "XL", stock: 0 },
+      { size: "XXL", stock: 10 },
+      { size: "L", stock: 0 },
+      { size: "XL", stock: 5 },
+      { size: "XXL", stock: 25 },
+      { size: "3XL", stock: 12 }
+    ],
+    colors: [
+      {
+        name: "Dusty Rose",
+        images: ["/images/products/tencel_plazo.png", "/images/products/short_suit.png"],
+        sizes: [{ size: "M", stock: 15 }, { size: "L", stock: 3 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 10 }]
+      },
+      {
+        name: "Ocean Blue",
+        images: ["/images/products/silk_suit.png", "/images/products/valentino_plazo.png"],
+        sizes: [{ size: "L", stock: 0 }, { size: "XL", stock: 5 }, { size: "XXL", stock: 25 }, { size: "3XL", stock: 12 }]
+      }
+    ],
     whatsIncluded: ["Top", "Plazo Bottom"],
     careInstructions: "Machine wash cold on gentle cycle. Do not bleach. Tumble dry low."
   },
@@ -73,7 +94,26 @@ export const products = [
     tag: "Premium",
     description: "A luxurious full night suit featuring a sleek silk-like finish. Perfect for elegant evenings and comfortable sleep.",
     material: "Satin Silk Blend",
-    sizes: ["M", "L", "XL", "XXL"],
+    sizes: [
+      { size: "M", stock: 8 },
+      { size: "L", stock: 12 },
+      { size: "XL", stock: 2 },
+      { size: "M", stock: 0 },
+      { size: "L", stock: 15 },
+      { size: "XL", stock: 20 }
+    ],
+    colors: [
+      {
+        name: "Champagne Gold",
+        images: ["/images/products/silk_suit.png"],
+        sizes: [{ size: "M", stock: 8 }, { size: "L", stock: 12 }, { size: "XL", stock: 2 }]
+      },
+      {
+        name: "Emerald Green",
+        images: ["/images/products/tencel_plazo.png"],
+        sizes: [{ size: "M", stock: 0 }, { size: "L", stock: 15 }, { size: "XL", stock: 20 }]
+      }
+    ],
     whatsIncluded: ["Long Sleeve Shirt", "Trousers"],
     careInstructions: "Hand wash cold or dry clean. Iron on low heat."
   },
@@ -92,7 +132,26 @@ export const products = [
     tag: "Trending",
     description: "Casual, modern, and extremely comfortable. Our oversized tee paired with a functional cargo plazo is your go-to weekend look.",
     material: "100% Breathable Cotton",
-    sizes: ["L", "XL", "XXL", "3XL"],
+    sizes: [
+      { size: "L", stock: 20 },
+      { size: "XL", stock: 0 },
+      { size: "XXL", stock: 15 },
+      { size: "L", stock: 4 },
+      { size: "XL", stock: 22 },
+      { size: "3XL", stock: 0 }
+    ],
+    colors: [
+      {
+        name: "Classic Charcoal",
+        images: ["/images/products/oversized_cargo.png"],
+        sizes: [{ size: "L", stock: 20 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 15 }]
+      },
+      {
+        name: "Lilac Lavender",
+        images: ["/images/products/short_suit.png"],
+        sizes: [{ size: "L", stock: 4 }, { size: "XL", stock: 22 }, { size: "3XL", stock: 0 }]
+      }
+    ],
     whatsIncluded: ["Oversized T-Shirt", "Cargo Plazo"],
     careInstructions: "Machine wash cold with like colors. Do not bleach."
   },
@@ -110,7 +169,7 @@ export const products = [
     tag: "New",
     description: "Classic design meets supreme comfort. Features a relaxed fit and incredibly soft fabric.",
     material: "Premium Cotton Blend",
-    sizes: ["M", "L", "XL", "XXL"],
+    sizes: [{ size: "M", stock: 20 }, { size: "L", stock: 20 }, { size: "XL", stock: 20 }, { size: "XXL", stock: 20 }],
     whatsIncluded: ["Shirt", "Pyjama"],
     careInstructions: "Machine wash cold. Tumble dry low."
   },
@@ -129,7 +188,7 @@ export const products = [
     tag: "Exclusive",
     description: "The Valentino signature collection brings elegant draping and high-end fabric feel to everyday loungewear.",
     material: "Viscose Spandex Blend",
-    sizes: ["M", "L", "XL"],
+    sizes: [{ size: "M", stock: 20 }, { size: "L", stock: 20 }, { size: "XL", stock: 20 }],
     whatsIncluded: ["Sleeveless Top", "Wide-leg Plazo"],
     careInstructions: "Dry clean recommended. Hand wash cold if necessary."
   },
@@ -148,7 +207,7 @@ export const products = [
     tag: "-38%",
     description: "Perfect for warm nights. A soft, lightweight short set featuring a comfortable elastic waist.",
     material: "Hosiery Cotton",
-    sizes: ["M", "L", "XL", "XXL"],
+    sizes: [{ size: "M", stock: 20 }, { size: "L", stock: 20 }, { size: "XL", stock: 20 }, { size: "XXL", stock: 20 }],
     whatsIncluded: ["Top", "Shorts"],
     careInstructions: "Machine wash cold. Do not iron print."
   },

@@ -13,6 +13,9 @@ export type Product = {
   image: string;
   tag: string;
   description?: string;
+  stock?: number;
+  colors?: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[];
+  sizes?: { size: string; stock: number }[];
 };
 
 export type CartItem = Product & {
@@ -115,12 +118,44 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const addToCart = (product: Product, color?: string, size?: string) => {
     const cartItemId = makeCartItemId(product.id, color, size);
     
+    // Find stock limit of the selected variant
+    let maxStock = product.stock || 0;
+    const hasColors = product.colors && product.colors.length > 0;
+    
+    if (hasColors && color) {
+      const colorObj = product.colors?.find((c: any) => c.name === color);
+      if (colorObj && size) {
+        const sizeObj = colorObj.sizes.find((s: any) => s.size === size);
+        if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+      }
+    } else if (product.sizes && product.sizes.length > 0 && size) {
+      const sizeObj = product.sizes.find((s: any) => s.size === size);
+      if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+    }
+
+    // Find color-specific image for cart thumbnail
+    let itemImage = product.image;
+    if (hasColors && color) {
+      const colorObj = product.colors?.find((c: any) => c.name === color);
+      if (colorObj && colorObj.images && colorObj.images.length > 0) {
+        itemImage = colorObj.images[0];
+      }
+    }
+
     setCartItems((prev) => {
       const existing = prev.find((p) => p.cartItemId === cartItemId);
       if (existing) {
+        if (existing.quantity >= maxStock) {
+          alert(`Cannot add more items. Only ${maxStock} items available in this variant.`);
+          return prev;
+        }
         return prev.map((p) => (p.cartItemId === cartItemId ? { ...p, quantity: p.quantity + 1 } : p));
       }
-      return [...prev, { ...product, quantity: 1, selectedColor: color, selectedSize: size, cartItemId }];
+      if (maxStock <= 0) {
+        alert("Sorry, this variant is out of stock.");
+        return prev;
+      }
+      return [...prev, { ...product, image: itemImage, quantity: 1, selectedColor: color, selectedSize: size, cartItemId }];
     });
     setShowCart(true);
     setTimeout(() => setShowCart(false), 2000);
@@ -133,7 +168,29 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const updateQuantity = (cartItemId: string, delta: number) => {
     setCartItems((prev) => prev.map((p) => {
       if (p.cartItemId === cartItemId) {
-        return { ...p, quantity: Math.max(1, p.quantity + delta) };
+        const newQty = Math.max(1, p.quantity + delta);
+        
+        // Find stock limit of the selected variant
+        let maxStock = p.stock || 0;
+        const hasColors = p.colors && p.colors.length > 0;
+        
+        if (hasColors && p.selectedColor) {
+          const colorObj = p.colors?.find((c: any) => c.name === p.selectedColor);
+          if (colorObj && p.selectedSize) {
+            const sizeObj = colorObj.sizes.find((s: any) => s.size === p.selectedSize);
+            if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+          }
+        } else if (p.sizes && p.sizes.length > 0 && p.selectedSize) {
+          const sizeObj = p.sizes.find((s: any) => s.size === p.selectedSize);
+          if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+        }
+
+        if (delta > 0 && newQty > maxStock) {
+          alert(`Cannot add more items. Only ${maxStock} items available in this variant.`);
+          return p;
+        }
+
+        return { ...p, quantity: newQty };
       }
       return p;
     }));
@@ -148,10 +205,19 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       const updatedSize = newSize !== undefined ? newSize : item.selectedSize;
       const newCartItemId = makeCartItemId(item.id, updatedColor, updatedSize);
 
+      // Find color-specific image for the updated color
+      let updatedImage = item.image;
+      const hasColors = item.colors && item.colors.length > 0;
+      if (hasColors && updatedColor) {
+        const colorObj = item.colors?.find((c: any) => c.name === updatedColor);
+        if (colorObj && colorObj.images && colorObj.images.length > 0) {
+          updatedImage = colorObj.images[0];
+        }
+      }
+
       // Check if an item with the new variant already exists
       const existingTarget = prev.find(p => p.cartItemId === newCartItemId);
       if (existingTarget && existingTarget.cartItemId !== cartItemId) {
-        // Merge quantities
         return prev
           .map(p => p.cartItemId === newCartItemId ? { ...p, quantity: p.quantity + item.quantity } : p)
           .filter(p => p.cartItemId !== cartItemId);
@@ -159,7 +225,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
       return prev.map(p =>
         p.cartItemId === cartItemId
-          ? { ...p, selectedColor: updatedColor, selectedSize: updatedSize, cartItemId: newCartItemId }
+          ? { ...p, image: updatedImage, selectedColor: updatedColor, selectedSize: updatedSize, cartItemId: newCartItemId }
           : p
       );
     });

@@ -1,9 +1,40 @@
 import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
+
+// Load .env.local if MONGODB_URI is not defined (for standalone execution)
+if (!process.env.MONGODB_URI) {
+  try {
+    const envPath = path.resolve(process.cwd(), ".env.local");
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, "utf-8");
+      envContent.split("\n").forEach(line => {
+        const match = line.trim().match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+        if (match) {
+          const key = match[1];
+          let value = match[2] || "";
+          // Strip quotes if present
+          if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+          }
+          process.env[key] = value;
+        }
+      });
+    }
+  } catch (err: any) {
+    console.error("Failed to load .env.local:", err.message);
+  }
+}
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
 // Inline schema (avoids Next.js-specific model pattern)
 const SizeSchema = new mongoose.Schema({ size: String, stock: { type: Number, default: 0 } });
+const ColorSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  images: [String],
+  sizes: [SizeSchema]
+});
 const ReviewSchema = new mongoose.Schema({
   userName: String, userEmail: String, rating: Number, comment: String, createdAt: { type: Date, default: Date.now }
 });
@@ -22,6 +53,7 @@ const ProductSchema = new mongoose.Schema({
   stock: { type: Number, default: 0 },
   material: String,
   sizes: [SizeSchema],
+  colors: [ColorSchema],
   whatsIncluded: [String],
   careInstructions: String,
   featured: { type: Boolean, default: false },
@@ -42,7 +74,19 @@ const products = [
     tag: "Bestseller", featured: true,
     description: "Experience the ultimate softness with our premium Tencel Plazo Set. Lightweight, breathable, and perfectly styled for lounging.",
     material: "100% Premium Tencel",
-    sizes: [{ size: "M", stock: 20 }, { size: "L", stock: 20 }, { size: "XL", stock: 20 }, { size: "XXL", stock: 20 }, { size: "3XL", stock: 20 }],
+    sizes: [], // will be populated from colors during map
+    colors: [
+      {
+        name: "Dusty Rose",
+        images: ["/images/products/tencel_plazo.png", "/images/products/short_suit.png"],
+        sizes: [{ size: "M", stock: 15 }, { size: "L", stock: 3 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 10 }]
+      },
+      {
+        name: "Ocean Blue",
+        images: ["/images/products/silk_suit.png", "/images/products/valentino_plazo.png"],
+        sizes: [{ size: "L", stock: 0 }, { size: "XL", stock: 5 }, { size: "XXL", stock: 25 }, { size: "3XL", stock: 12 }]
+      }
+    ],
     whatsIncluded: ["Top", "Plazo Bottom"],
     careInstructions: "Machine wash cold on gentle cycle. Do not bleach. Tumble dry low.",
   },
@@ -54,7 +98,19 @@ const products = [
     tag: "Premium", featured: true,
     description: "A luxurious full night suit featuring a sleek silk-like finish. Perfect for elegant evenings and comfortable sleep.",
     material: "Satin Silk Blend",
-    sizes: [{ size: "M", stock: 20 }, { size: "L", stock: 20 }, { size: "XL", stock: 20 }, { size: "XXL", stock: 20 }],
+    sizes: [],
+    colors: [
+      {
+        name: "Champagne Gold",
+        images: ["/images/products/silk_suit.png"],
+        sizes: [{ size: "M", stock: 8 }, { size: "L", stock: 12 }, { size: "XL", stock: 2 }]
+      },
+      {
+        name: "Emerald Green",
+        images: ["/images/products/tencel_plazo.png"],
+        sizes: [{ size: "M", stock: 0 }, { size: "L", stock: 15 }, { size: "XL", stock: 20 }]
+      }
+    ],
     whatsIncluded: ["Long Sleeve Shirt", "Trousers"],
     careInstructions: "Hand wash cold or dry clean. Iron on low heat.",
   },
@@ -66,7 +122,19 @@ const products = [
     tag: "Trending", featured: true,
     description: "Casual, modern, and extremely comfortable. Our oversized tee paired with a functional cargo plazo is your go-to weekend look.",
     material: "100% Breathable Cotton",
-    sizes: [{ size: "L", stock: 20 }, { size: "XL", stock: 20 }, { size: "XXL", stock: 20 }, { size: "3XL", stock: 20 }],
+    sizes: [],
+    colors: [
+      {
+        name: "Classic Charcoal",
+        images: ["/images/products/oversized_cargo.png"],
+        sizes: [{ size: "L", stock: 20 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 15 }]
+      },
+      {
+        name: "Lilac Lavender",
+        images: ["/images/products/short_suit.png"],
+        sizes: [{ size: "L", stock: 4 }, { size: "XL", stock: 22 }, { size: "3XL", stock: 0 }]
+      }
+    ],
     whatsIncluded: ["Oversized T-Shirt", "Cargo Plazo"],
     careInstructions: "Machine wash cold with like colors. Do not bleach.",
   },
@@ -120,11 +188,22 @@ async function reseed() {
   const deleted = await ProductModel.deleteMany({});
   console.log(`Deleted ${deleted.deletedCount} old products.`);
 
-  const toInsert = products.map(p => ({
-    ...p,
-    sku: `SOM-NX-${p.id}`,
-    stock: p.sizes.reduce((sum, s) => sum + s.stock, 0),
-  }));
+  const toInsert = products.map(p => {
+    const hasColors = p.colors && p.colors.length > 0;
+    const sizes = hasColors 
+      ? p.colors.flatMap(c => c.sizes)
+      : p.sizes || [];
+    const stock = hasColors
+      ? p.colors.reduce((sum, c) => sum + c.sizes.reduce((s, sz) => s + sz.stock, 0), 0)
+      : p.sizes ? p.sizes.reduce((sum, s) => sum + s.stock, 0) : 0;
+
+    return {
+      ...p,
+      sku: `SOM-NX-${p.id}`,
+      sizes,
+      stock,
+    };
+  });
 
   const inserted = await ProductModel.insertMany(toInsert);
   console.log(`✅ Inserted ${inserted.length} Somnath NX products with custom images.`);

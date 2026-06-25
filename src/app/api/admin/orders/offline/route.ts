@@ -58,14 +58,36 @@ export async function POST(req: Request) {
 
     // 2. Deduct Stock
     for (const item of itemsToOrder) {
-      if (item.productDocument.sizes && item.productDocument.sizes.length > 0 && item.selectedSize) {
-        const sizeObj = item.productDocument.sizes.find((s: any) => s.size === item.selectedSize);
+      const product = item.productDocument;
+      const hasColors = product.colors && product.colors.length > 0;
+      
+      if (hasColors && item.selectedSize) {
+        // Find the first color variant that has this size in stock, or fallback to the first color that has this size
+        let targetColorObj = product.colors.find((c: any) => 
+          c.sizes.some((s: any) => s.size === item.selectedSize && s.stock >= item.quantity)
+        );
+        if (!targetColorObj) {
+          targetColorObj = product.colors.find((c: any) => 
+            c.sizes.some((s: any) => s.size === item.selectedSize)
+          );
+        }
+        
+        if (targetColorObj) {
+          const sizeObj = targetColorObj.sizes.find((s: any) => s.size === item.selectedSize);
+          if (sizeObj) {
+            sizeObj.stock -= item.quantity;
+          }
+        }
+        // Synchronize flat sizes array with color-specific sizes for backward compatibility
+        product.set("sizes", product.colors.flatMap((c: any) => c.sizes));
+      } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
+        const sizeObj = product.sizes.find((s: any) => s.size === item.selectedSize);
         if (sizeObj) {
           sizeObj.stock -= item.quantity;
         }
       }
-      item.productDocument.stock -= item.quantity;
-      await item.productDocument.save();
+      product.stock -= item.quantity;
+      await product.save();
     }
 
     const manualDiscount = Number(discount) || 0;

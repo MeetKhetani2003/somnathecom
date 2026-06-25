@@ -111,6 +111,8 @@ export async function POST(req: Request) {
             sizeObj.stock -= item.quantity;
           }
         }
+        // Synchronize flat sizes array with color-specific sizes for backward compatibility
+        item.productDocument.set("sizes", item.productDocument.colors.flatMap((c: any) => c.sizes));
       } else if (item.productDocument.sizes && item.productDocument.sizes.length > 0 && item.selectedSize) {
         const sizeObj = item.productDocument.sizes.find((s: any) => s.size === item.selectedSize);
         if (sizeObj) {
