@@ -8,7 +8,7 @@ import Razorpay from "razorpay";
 
 export async function POST(req: Request) {
   try {
-    const { cartItems, shippingDetails, email, couponCode, userId, paymentMethod } = await req.json();
+    const { cartItems, shippingDetails, email, couponCode, referralCode, username, userId, paymentMethod } = await req.json();
 
     if (!cartItems || cartItems.length === 0 || !shippingDetails || !email) {
       return NextResponse.json({ success: false, message: "Missing required details" }, { status: 400 });
@@ -141,6 +141,8 @@ export async function POST(req: Request) {
       discount,
       total,
       couponUsed: couponCode || null,
+      referralCode: referralCode || null,
+      username: username || email || "Guest User",
       paymentStatus: "pending",
       paymentMethod: paymentMethod || "online",
       shippingStatus: "Processing"

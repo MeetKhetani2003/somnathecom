@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Package, ShoppingBag, Users, HelpCircle, Plus, Edit, Trash2, 
-  RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck
+  RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck, X, Download
 } from "lucide-react";
 
 function AdminDashboard() {
@@ -24,6 +24,14 @@ function AdminDashboard() {
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
+
+  // Coupon Form Modal States
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<any | null>(null);
+  const [newCouponCode, setNewCouponCode] = useState("");
+  const [newCouponDiscount, setNewCouponDiscount] = useState("");
+  const [newCouponExpiry, setNewCouponExpiry] = useState("");
+  const [newCouponReseller, setNewCouponReseller] = useState("");
 
   // Loading & Action states
   const [loading, setLoading] = useState(true);
@@ -43,6 +51,108 @@ function AdminDashboard() {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
+
+  const handleExportCouponReport = async () => {
+    try {
+      const res = await fetch("/api/admin/orders");
+      const data = await res.json();
+      if (!data.success) {
+        alert("Failed to load orders for report: " + data.message);
+        return;
+      }
+      
+      const allOrders = data.orders || [];
+      const couponOrders = allOrders.filter((o: any) => o.couponUsed || o.referralCode);
+      
+      if (couponOrders.length === 0) {
+        alert("No orders with coupons or referral links found.");
+        return;
+      }
+      
+      const csvRows = [
+        [
+          "Order Date",
+          "Order ID",
+          "Coupon Code",
+          "Referral Code",
+          "Reseller Name",
+          "Coupon User (Username)",
+          "Customer Name",
+          "Customer Phone",
+          "Subtotal (INR)",
+          "Discount (INR)",
+          "Total Paid (INR)",
+          "Payment Method",
+          "Shipping Status",
+          "Ordered Items Details"
+        ].join(",")
+      ];
+      
+      const couponResellerMap: Record<string, string> = {};
+      coupons.forEach((c: any) => {
+        if (c.code && c.resellerName) {
+          couponResellerMap[c.code.toUpperCase()] = c.resellerName;
+        }
+      });
+      
+      couponOrders.forEach((order: any) => {
+        const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "";
+        const orderId = order._id || "";
+        const coupon = order.couponUsed ? order.couponUsed.toUpperCase() : "";
+        const refCode = order.referralCode || "";
+        const reseller = coupon ? (couponResellerMap[coupon] || "Coupon Owner") : (refCode || "");
+        
+        const couponUser = order.username ? `"${order.username.replace(/"/g, '""')}"` : `"${(order.email || 'Guest').replace(/"/g, '""')}"`;
+        const customerName = order.shippingDetails?.name ? `"${order.shippingDetails.name.replace(/"/g, '""')}"` : "";
+        const customerPhone = order.shippingDetails?.phone ? `"${order.shippingDetails.phone.replace(/"/g, '""')}"` : "";
+        
+        const subtotal = order.subtotal || 0;
+        const discount = order.discount || 0;
+        const total = order.total || 0;
+        const paymentMethod = order.paymentMethod || "";
+        const shippingStatus = order.shippingStatus || "";
+        
+        const itemsDetail = order.items && order.items.length > 0 
+          ? order.items.map((item: any) => {
+              const details = [];
+              if (item.size) details.push(`Size: ${item.size}`);
+              if (item.color) details.push(`Color: ${item.color}`);
+              const detailsStr = details.length > 0 ? ` (${details.join(", ")})` : "";
+              return `${item.title}${detailsStr} x${item.quantity}`;
+            }).join(" ; ")
+          : "";
+        const formattedItemsDetail = `"${itemsDetail.replace(/"/g, '""')}"`;
+        
+        csvRows.push([
+          dateStr,
+          orderId,
+          coupon,
+          refCode,
+          reseller,
+          couponUser,
+          customerName,
+          customerPhone,
+          subtotal,
+          discount,
+          total,
+          paymentMethod,
+          shippingStatus,
+          formattedItemsDetail
+        ].join(","));
+      });
+      
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `somnath_coupon_sales_report_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      alert("Error generating report: " + err.message);
+    }
+  };
 
   useEffect(() => {
     if (isEnvAdmin) {
@@ -906,35 +1016,32 @@ function AdminDashboard() {
               {/* 5. COUPONS TAB */}
               {activeTab === "coupons" && (
                 <div>
-                  <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-[18px] font-semibold text-dark">Discount Coupons</h2>
-                    <button
-                      onClick={() => {
-                        const code = prompt("Enter Coupon Code (e.g., FESTIVAL20):");
-                        if (!code) return;
-                        const percentStr = prompt("Enter Discount Percentage (e.g., 20 for 20%):");
-                        if (!percentStr) return;
-                        fetch("/api/admin/coupons", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            code: code.trim(),
-                            discountPercent: parseInt(percentStr),
-                            active: true
-                          })
-                        }).then(r => r.json()).then(data => {
-                          if (data.success) {
-                            alert("Coupon Created!");
-                            fetchData();
-                          } else {
-                            alert("Error: " + data.message);
-                          }
-                        });
-                      }}
-                      className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
-                    >
-                      <Plus className="h-4 w-4" /> Add Coupon
-                    </button>
+                  <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h2 className="text-[18px] font-semibold text-dark">Discount Coupons</h2>
+                      <p className="text-[12.5px] text-dark/50">Manage coupon codes, reseller assignments, and view total usages.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleExportCouponReport}
+                        className="flex items-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-[13px] font-medium text-dark/80 transition hover:bg-surface hover:text-dark cursor-pointer"
+                      >
+                        <Download className="h-4 w-4" /> Export Report (CSV)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingCoupon(null);
+                          setNewCouponCode("");
+                          setNewCouponDiscount("");
+                          setNewCouponReseller("");
+                          setNewCouponExpiry("");
+                          setCouponModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C] cursor-pointer shadow-sm"
+                      >
+                        <Plus className="h-4 w-4" /> Add Coupon
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="overflow-x-auto">
@@ -943,6 +1050,9 @@ function AdminDashboard() {
                         <tr className="border-b border-border text-left text-dark/50 font-medium">
                           <th className="pb-3 pr-4">Code</th>
                           <th className="pb-3 pr-4">Discount</th>
+                          <th className="pb-3 pr-4">Reseller</th>
+                          <th className="pb-3 pr-4">Expiry Date</th>
+                          <th className="pb-3 pr-4">Total Uses</th>
                           <th className="pb-3 pr-4">Status</th>
                           <th className="pb-3 pr-4 text-right">Actions</th>
                         </tr>
@@ -952,42 +1062,180 @@ function AdminDashboard() {
                           <tr key={c._id} className="border-b border-border last:border-0 hover:bg-surface/30">
                             <td className="py-3.5 pr-4 font-mono font-bold text-primary">{c.code}</td>
                             <td className="py-3.5 pr-4 font-medium text-dark">{c.discountPercent}% OFF</td>
+                            <td className="py-3.5 pr-4 text-dark/80">{c.resellerName || "—"}</td>
+                            <td className="py-3.5 pr-4 text-dark/60">
+                              {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}
+                            </td>
+                            <td className="py-3.5 pr-4 font-bold text-dark">{c.usedCount || 0}</td>
                             <td className="py-3.5 pr-4">
                               <button
                                 onClick={() => {
                                   fetch("/api/admin/coupons", {
                                     method: "PUT",
                                     headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ id: c._id, code: c.code, discountPercent: c.discountPercent, active: !c.active })
+                                    body: JSON.stringify({ 
+                                      id: c._id, 
+                                      code: c.code, 
+                                      discountPercent: c.discountPercent, 
+                                      active: !c.active,
+                                      resellerName: c.resellerName,
+                                      expiresAt: c.expiresAt 
+                                    })
                                   }).then(r=>r.json()).then(d => { if(d.success) fetchData(); });
                                 }}
-                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition ${c.active ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700" : "bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"}`}
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition cursor-pointer ${c.active ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700" : "bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"}`}
                                 title="Click to toggle status"
                               >
                                 {c.active ? "Active" : "Inactive"}
                               </button>
                             </td>
                             <td className="py-3.5 pr-4 text-right">
-                              <button
-                                onClick={() => {
-                                  if(!confirm("Delete this coupon?")) return;
-                                  fetch(`/api/admin/coupons?id=${c._id}`, { method: "DELETE" })
-                                    .then(r=>r.json()).then(d => { if(d.success) fetchData(); });
-                                }}
-                                className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 ml-auto"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  onClick={() => {
+                                    setEditingCoupon(c);
+                                    setNewCouponCode(c.code);
+                                    setNewCouponDiscount(c.discountPercent);
+                                    setNewCouponReseller(c.resellerName || "");
+                                    setNewCouponExpiry(c.expiresAt ? new Date(c.expiresAt).toISOString().split('T')[0] : "");
+                                    setCouponModalOpen(true);
+                                  }}
+                                  className="grid h-8 w-8 place-items-center rounded-lg border border-border text-dark/70 transition hover:bg-surface cursor-pointer"
+                                  title="Edit Coupon"
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if(!confirm("Delete this coupon?")) return;
+                                    fetch(`/api/admin/coupons?id=${c._id}`, { method: "DELETE" })
+                                      .then(r=>r.json()).then(d => { if(d.success) fetchData(); });
+                                  }}
+                                  className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 cursor-pointer"
+                                  title="Delete Coupon"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
                         {coupons.length === 0 && (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-[14px] text-dark/50">No coupons available.</td>
+                            <td colSpan={7} className="py-8 text-center text-[14px] text-dark/50">No coupons available.</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Add/Edit Coupon Modal */}
+              {couponModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark/60 p-4 backdrop-blur-sm">
+                  <div className="w-full max-w-md rounded-3xl border border-border bg-white p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-[18px] font-semibold text-dark">
+                        {editingCoupon ? "Edit Discount Coupon" : "Add Discount Coupon"}
+                      </h3>
+                      <button
+                        onClick={() => setCouponModalOpen(false)}
+                        className="rounded-full p-1 text-dark/40 hover:bg-surface hover:text-dark transition cursor-pointer"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[12.5px] font-bold text-dark/70 uppercase tracking-wider mb-1.5">Coupon Code</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. WELCOME10"
+                          value={newCouponCode}
+                          onChange={(e) => setNewCouponCode(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                          className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[12.5px] font-bold text-dark/70 uppercase tracking-wider mb-1.5">Discount Percentage</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 15 for 15% off"
+                          value={newCouponDiscount}
+                          onChange={(e) => setNewCouponDiscount(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[12.5px] font-bold text-dark/70 uppercase tracking-wider mb-1.5">Reseller Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Somnath Reseller 1"
+                          value={newCouponReseller}
+                          onChange={(e) => setNewCouponReseller(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[12.5px] font-bold text-dark/70 uppercase tracking-wider mb-1.5">Expiry Date</label>
+                        <input
+                          type="date"
+                          value={newCouponExpiry}
+                          onChange={(e) => setNewCouponExpiry(e.target.value)}
+                          className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button
+                        onClick={() => setCouponModalOpen(false)}
+                        className="rounded-full border border-border px-5 py-2 text-[13px] font-medium text-dark hover:bg-surface transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!newCouponCode.trim() || !newCouponDiscount) {
+                            alert("Code and Discount are required!");
+                            return;
+                          }
+                          
+                          const payload = {
+                            id: editingCoupon?._id,
+                            code: newCouponCode.trim(),
+                            discountPercent: parseInt(newCouponDiscount.toString()),
+                            expiresAt: newCouponExpiry ? new Date(newCouponExpiry).toISOString() : null,
+                            resellerName: newCouponReseller.trim(),
+                            active: editingCoupon ? editingCoupon.active : true
+                          };
+
+                          fetch("/api/admin/coupons", {
+                            method: editingCoupon ? "PUT" : "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                          })
+                          .then(r => r.json())
+                          .then(data => {
+                            if (data.success) {
+                              alert(editingCoupon ? "Coupon Updated!" : "Coupon Created!");
+                              setCouponModalOpen(false);
+                              fetchData();
+                            } else {
+                              alert("Error: " + data.message);
+                            }
+                          });
+                        }}
+                        className="rounded-full bg-primary px-5 py-2 text-[13px] font-medium text-white hover:bg-[#7A187C] transition shadow-md cursor-pointer"
+                      >
+                        {editingCoupon ? "Save Changes" : "Create Coupon"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

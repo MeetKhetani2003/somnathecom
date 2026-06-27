@@ -11,7 +11,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle, 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
 export default function Cart() {
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = useShop();
+  const { cartItems, updateQuantity, removeFromCart, clearCart, referralCode } = useShop();
   const { data: session, update } = useSession();
   const router = useRouter();
 
@@ -183,7 +183,9 @@ export default function Cart() {
           },
           email: session.user?.email,
           userId: (session.user as any)?.id,
+          username: session.user?.name || session.user?.email || "Guest User",
           couponCode: appliedCoupon,
+          referralCode,
           paymentMethod,
         }),
       });

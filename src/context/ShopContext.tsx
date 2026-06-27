@@ -37,6 +37,8 @@ type ShopContextType = {
   clearCart: () => void;
   showCart: boolean;
   setShowCart: (v: boolean) => void;
+  referralCode: string | null;
+  setReferralCode: (code: string | null) => void;
 };
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -51,6 +53,33 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [referralCode, setReferralCodeState] = useState<string | null>(null);
+
+  const setReferralCode = (code: string | null) => {
+    if (typeof window !== "undefined") {
+      if (code) {
+        localStorage.setItem("somnath_ref", code);
+      } else {
+        localStorage.removeItem("somnath_ref");
+      }
+    }
+    setReferralCodeState(code);
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        setReferralCode(ref);
+      } else {
+        const savedRef = localStorage.getItem("somnath_ref");
+        if (savedRef) {
+          setReferralCodeState(savedRef);
+        }
+      }
+    }
+  }, []);
 
   // Load cart and wishlist from DB on session mount
   useEffect(() => {
@@ -239,7 +268,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   return (
     <ShopContext.Provider
-      value={{ wishlist, toggleWishlist, cartCount, cartItems, addToCart, removeFromCart, updateQuantity, updateCartItemVariant, clearCart, showCart, setShowCart }}
+      value={{ wishlist, toggleWishlist, cartCount, cartItems, addToCart, removeFromCart, updateQuantity, updateCartItemVariant, clearCart, showCart, setShowCart, referralCode, setReferralCode }}
     >
       {children}
     </ShopContext.Provider>

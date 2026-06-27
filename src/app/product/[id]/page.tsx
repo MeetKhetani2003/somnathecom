@@ -73,6 +73,33 @@ export default function ProductSlug() {
 
   const isAdmin = (session?.user as any)?.role === "admin";
 
+  // Reseller sharing states
+  const [resellerCode, setResellerCode] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (session?.user) {
+      const defaultCode = (session.user as any).referralCode || session.user.name?.replace(/\s+/g, "").toUpperCase() || "";
+      setResellerCode(defaultCode);
+    } else {
+      if (typeof window !== "undefined") {
+        const savedCode = localStorage.getItem("somnath_ref");
+        if (savedCode) {
+          setResellerCode(savedCode);
+        }
+      }
+    }
+  }, [session]);
+
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined" && product) {
+      const shareUrl = window.location.origin + "/product/" + product.id + (resellerCode ? "?ref=" + encodeURIComponent(resellerCode) : "");
+      navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
   useEffect(() => {
     if (id) fetchProductDetails();
     fetchProductsList();
@@ -503,6 +530,81 @@ export default function ProductSlug() {
                 {selectedSize && <span>Size {selectedSize}</span>}
               </div>
             )}
+
+            {/* 📢 RESELLER ONE-CLICK SHARE PANEL */}
+            <div className="mt-8 rounded-3xl border border-primary/20 bg-primary/5 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h3 className="font-display text-[16px] font-bold text-dark">Reseller & Affiliate Sharing</h3>
+              </div>
+              <p className="text-[13px] text-dark/70 mb-4">
+                Share this product with your customers and earn commissions! Enter your Reseller Code to customize the links:
+              </p>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Enter Reseller Code (e.g., RESELLER10)..."
+                  value={resellerCode}
+                  onChange={(e) => setResellerCode(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                  className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `Check out this premium nightwear: *${product?.title}* at only *₹${product?.price}*! Buy here: ${
+                      typeof window !== "undefined" && product
+                        ? window.location.origin + "/product/" + product.id + (resellerCode ? "?ref=" + encodeURIComponent(resellerCode) : "")
+                        : ""
+                    }`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-emerald-500 py-3 text-[11px] font-bold text-white transition hover:bg-emerald-600 hover:scale-[1.02] shadow-sm cursor-pointer"
+                >
+                  <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.517 2.266 2.27 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.45 5.5.003 9.961-4.454 9.964-9.948.002-2.661-1.034-5.163-2.92-7.049C16.431 1.721 13.93 .687 11.27.687c-5.498 0-9.957 4.455-9.96 9.95-.001 1.905.481 3.766 1.398 5.393L1.622 20.8l4.9-1.286zM16.92 13.41c-.287-.144-1.7-.838-1.962-.933-.263-.096-.454-.144-.645.144-.19.287-.739.933-.907 1.124-.167.19-.335.215-.622.072-.287-.144-1.21-.446-2.305-1.424-.853-.76-1.429-1.698-1.597-1.985-.168-.287-.018-.441.125-.584.13-.13.287-.335.43-.502.144-.167.191-.287.287-.478.096-.19.047-.358-.024-.502-.072-.143-.645-1.554-.884-2.128-.233-.56-.472-.482-.645-.491-.167-.008-.358-.01-.55-.01-.19 0-.501.072-.763.358-.263.287-1.004.98-1.004 2.39 0 1.41 1.027 2.772 1.171 2.964.143.19 2.021 3.086 4.896 4.328.684.296 1.218.473 1.634.605.688.219 1.314.188 1.81.114.553-.082 1.7-.694 1.939-1.365.239-.67.239-1.243.167-1.365-.072-.122-.263-.19-.55-.335z"/>
+                  </svg>
+                  <span>WhatsApp</span>
+                </a>
+                
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                    typeof window !== "undefined" && product
+                      ? window.location.origin + "/product/" + product.id + (resellerCode ? "?ref=" + encodeURIComponent(resellerCode) : "")
+                      : ""
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-blue-600 py-3 text-[11px] font-bold text-white transition hover:bg-blue-700 hover:scale-[1.02] shadow-sm cursor-pointer"
+                >
+                  <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <span>Facebook</span>
+                </a>
+
+                <button
+                  onClick={handleCopyLink}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-2xl bg-pink-600 py-3 text-[11px] font-bold text-white transition hover:bg-pink-700 hover:scale-[1.02] shadow-sm cursor-pointer focus:outline-none"
+                >
+                  <svg className="h-5 w-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span>Copy Link</span>
+                </button>
+              </div>
+
+              {copied && (
+                <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-[11.5px] font-semibold text-green-700 border border-green-200">
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Referral link copied! Share it on Instagram, bio, or stories.</span>
+                </div>
+              )}
+            </div>
 
             {/* Trust badges */}
             <div className="mt-10 grid grid-cols-2 gap-4 rounded-[24px] border border-border bg-surface p-6 sm:grid-cols-4 shadow-sm">
