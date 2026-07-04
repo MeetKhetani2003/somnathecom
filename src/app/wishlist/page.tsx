@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from "framer-motion";
 import { Heart, Star, ShoppingBag } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
+import { fireToast } from "@/context/ToastContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -22,11 +23,11 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
     e.stopPropagation();
 
     if (p.colors && p.colors.length > 0 && !selectedColor) {
-      alert("Please select a color first");
+      fireToast("Please select a color first", "warning");
       return;
     }
     if (availableSizes.length > 0 && !selectedSize) {
-      alert("Please select a size first");
+      fireToast("Please select a size first", "warning");
       return;
     }
 

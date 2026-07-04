@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { Star, ShieldCheck, Truck, RotateCcw, Heart, ShoppingBag, ChevronRight, ChevronDown, X, Trash2, Sparkles, Check } from "lucide-react";
 import { useShop } from "@/context/ShopContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/context/ToastContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -153,7 +154,7 @@ export default function ProductSlug() {
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user) {
-      alert("Please sign in first to write a review.");
+      warnToast("Please sign in first to write a review.");
       return;
     }
     if (!reviewComment.trim()) {
@@ -179,7 +180,7 @@ export default function ProductSlug() {
         setProduct(data.product);
         setReviewComment("");
         setReviewRating(5);
-        alert("Review submitted successfully!");
+        successToast("Review submitted successfully!");
       } else {
         setReviewError(data.message || "Failed to submit review.");
       }
@@ -199,9 +200,9 @@ export default function ProductSlug() {
       const data = await res.json();
       if (data.success) {
         setProduct(data.product);
-        alert("Review deleted successfully!");
+        successToast("Review deleted successfully!");
       } else {
-        alert(data.message || "Failed to delete review.");
+        errorToast(data.message || "Failed to delete review.");
       }
     } catch (err) {
       console.error(err);
@@ -315,7 +316,7 @@ export default function ProductSlug() {
           setSelectedColor(anotherAvailableColor.name);
           setSelectedSize(fallbackSize.size);
           setActiveImage(0);
-          alert(`All sizes in color ${colorName} are out of stock. Switched to available color ${anotherAvailableColor.name}.`);
+          warnToast(`All sizes in color ${colorName} are out of stock. Switched to available color ${anotherAvailableColor.name}.`);
         } else {
           // If everything is completely out of stock, just set the color and reset size
           setSelectedColor(colorName);
@@ -328,15 +329,15 @@ export default function ProductSlug() {
 
   const handleAddToCart = () => {
     if (isCurrentSelectionOutOfStock) {
-      alert('This combination is out of stock.');
+      errorToast("This combination is out of stock.");
       return;
     }
     if (hasColors && !selectedColor) {
-      alert('Please select a color first');
+      warnToast("Please select a color first");
       return;
     }
     if (availableSizes.length > 0 && !selectedSize) {
-      alert('Please select a size first');
+      warnToast("Please select a size first");
       return;
     }
     addToCart(product, selectedColor || undefined, selectedSize || undefined);
@@ -344,15 +345,15 @@ export default function ProductSlug() {
 
   const handleBuyNow = () => {
     if (isCurrentSelectionOutOfStock) {
-      alert('This combination is out of stock.');
+      errorToast("This combination is out of stock.");
       return;
     }
     if (hasColors && !selectedColor) {
-      alert('Please select a color first');
+      warnToast("Please select a color first");
       return;
     }
     if (availableSizes.length > 0 && !selectedSize) {
-      alert('Please select a size first');
+      warnToast("Please select a size first");
       return;
     }
     addToCart(product, selectedColor || undefined, selectedSize || undefined);

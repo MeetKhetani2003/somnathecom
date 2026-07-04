@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Star, Download, Plus, Minus } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Star, Download, Plus, Minus, ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
+import { useToast } from "@/context/ToastContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -18,16 +19,18 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
     ? (selectedColorObj?.sizes || [])
     : (p.sizes || []);
 
+  const { warning: warnToast } = useToast();
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (p.colors && p.colors.length > 0 && !selectedColor) {
-      alert("Please select a color first");
+      warnToast("Please select a color first");
       return;
     }
     if (availableSizes.length > 0 && !selectedSize) {
-      alert("Please select a size first");
+      warnToast("Please select a size first");
       return;
     }
 
@@ -137,6 +140,7 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
 export default function Profile() {
   const { data: session, update } = useSession();
   const { wishlist, toggleWishlist, addToCart, cartItems, removeFromCart, updateQuantity } = useShop();
+  const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
   const [productsList, setProductsList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -334,14 +338,14 @@ export default function Profile() {
       });
       const data = await res.json();
       if (!data.success) {
-        alert("Failed to request exchange: " + data.message);
+        toastError("Failed to request exchange: " + data.message);
         setSubmittingExchange(false);
         return;
       }
 
       // If COD, process immediately
       if (data.isCod) {
-        alert("Exchange request submitted successfully! A flat fee of ₹120 will be charged on delivery.");
+        toastSuccess("Exchange request submitted! ₹120 will be charged on delivery.");
         setIsExchangeModalOpen(false);
         fetchOrders();
         return;
@@ -350,7 +354,7 @@ export default function Profile() {
       // Online Payment Flow (Razorpay)
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
-        alert("Razorpay SDK failed to load. Check your internet connection.");
+        toastError("Razorpay SDK failed to load. Check your internet connection.");
         setSubmittingExchange(false);
         return;
       }
@@ -381,15 +385,15 @@ export default function Profile() {
             });
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
-              alert("Payment Success! [SIMULATED] Exchange request registered successfully.");
+              toastSuccess("Payment Success! [SIMULATED] Exchange request registered.");
               setIsExchangeModalOpen(false);
               fetchOrders();
             } else {
-              alert("Verification failed: " + verifyData.message);
+              toastError("Verification failed: " + verifyData.message);
             }
           } catch (verifyErr) {
             console.error(verifyErr);
-            alert("Error verifying simulated payment.");
+            toastError("Error verifying simulated payment.");
           }
         }
         setSubmittingExchange(false);
@@ -424,15 +428,15 @@ export default function Profile() {
             });
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
-              alert("Payment Success! Exchange request registered successfully.");
+              toastSuccess("Payment Success! Exchange request registered.");
               setIsExchangeModalOpen(false);
               fetchOrders();
             } else {
-              alert("Verification failed: " + verifyData.message);
+              toastError("Verification failed: " + verifyData.message);
             }
           } catch (verifyErr) {
             console.error(verifyErr);
-            alert("Error verifying payment.");
+            toastError("Error verifying payment.");
           }
         },
         prefill: {
@@ -449,7 +453,7 @@ export default function Profile() {
 
     } catch (err) {
       console.error(err);
-      alert("An error occurred during submission.");
+      toastError("An error occurred during submission.");
     } finally {
       setSubmittingExchange(false);
     }
@@ -476,13 +480,13 @@ export default function Profile() {
       const data = await res.json();
       if (data.success) {
         await update();
-        alert("Phone number updated successfully.");
+        toastSuccess("Phone number updated successfully.");
       } else {
-        alert("Failed to save phone number.");
+        toastError("Failed to save phone number.");
       }
     } catch (err) {
       console.error(err);
-      alert("Error saving phone number.");
+      toastError("Error saving phone number.");
     } finally {
       setSavingPhone(false);
     }
@@ -1030,96 +1034,155 @@ export default function Profile() {
             {/* C. MY CART */}
             {activeSection === "cart" && (
               <div>
-                <h2 className="font-display text-[24px] font-bold text-dark">My Cart</h2>
-                <p className="mt-2 text-[15px] text-dark/60">Items currently in your shopping cart.</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-display text-[24px] font-bold text-dark">My Cart</h2>
+                  {cartItems.length > 0 && (
+                    <span className="rounded-full bg-primary/10 text-primary text-[12px] font-bold px-3 py-1">
+                      {cartItems.length} item{cartItems.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[14px] text-dark/50">Review and manage items before checkout.</p>
 
-                <div className="mt-10">
+                <div className="mt-8">
                   {cartItems.length === 0 ? (
-                    <div className="text-center py-16">
-                      <ShoppingCart className="h-12 w-12 text-dark/20 mx-auto mb-4" />
-                      <p className="text-[15px] text-dark/50 font-medium">Your cart is empty.</p>
-                      <Link href="/products" className="inline-block mt-6 font-bold text-primary hover:underline">Browse Collection</Link>
+                    <div className="text-center py-20 rounded-[28px] border-2 border-dashed border-border">
+                      <ShoppingCart className="h-14 w-14 text-dark/15 mx-auto mb-4" />
+                      <p className="text-[16px] font-bold text-dark/40">Your cart is empty</p>
+                      <p className="text-[13px] text-dark/30 mt-1 mb-6">Add some products to get started</p>
+                      <Link
+                        href="/products"
+                        className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-[13px] font-bold text-white hover:bg-primary/90 transition shadow-lg shadow-primary/20"
+                      >
+                        <Sparkles className="h-4 w-4" /> Browse Collection
+                      </Link>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {/* Cart Summary */}
-                      <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/20">
-                        <div>
-                          <span className="text-[13px] font-bold uppercase tracking-wider text-primary">{cartItems.length} Item{cartItems.length !== 1 ? "s" : ""}</span>
-                          <div className="text-[22px] font-bold text-dark mt-0.5">
-                            ₹{cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString("en-IN")}
+                    <div className="space-y-3">
+                      {/* Premium Cart Items */}
+                      {cartItems.map((item) => {
+                        const saving = item.mrp > item.price ? Math.round(((item.mrp - item.price) / item.mrp) * 100) : 0;
+                        return (
+                          <motion.div
+                            key={item.cartItemId}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="group relative flex gap-4 rounded-[20px] border border-border bg-white p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
+                          >
+                            {/* Image */}
+                            <Link href={`/product/${item.id}`} className="shrink-0">
+                              <div className="relative h-[90px] w-[72px] overflow-hidden rounded-2xl bg-bg-base border border-border">
+                                <img
+                                  src={item.image}
+                                  alt={item.title}
+                                  className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                                />
+                                {saving > 0 && (
+                                  <span className="absolute top-1 left-1 rounded-full bg-green-500 px-1.5 py-0.5 text-[9px] font-black text-white leading-none">
+                                    -{saving}%
+                                  </span>
+                                )}
+                              </div>
+                            </Link>
+
+                            {/* Content */}
+                            <div className="flex flex-1 flex-col justify-between min-w-0">
+                              <div>
+                                <Link href={`/product/${item.id}`}>
+                                  <p className="font-display font-bold text-dark text-[14px] leading-tight line-clamp-2 hover:text-primary transition">
+                                    {item.title}
+                                  </p>
+                                </Link>
+
+                                {/* Variant Pills */}
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {item.selectedColor && (
+                                    <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                                      ● {item.selectedColor}
+                                    </span>
+                                  )}
+                                  {item.selectedSize && (
+                                    <span className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+                                      {item.selectedSize}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price & Qty row */}
+                              <div className="flex items-center justify-between mt-3">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="font-display font-bold text-dark text-[16px]">₹{item.price.toLocaleString("en-IN")}</span>
+                                  {item.mrp > item.price && (
+                                    <span className="text-[11px] text-dark/35 line-through font-medium">₹{item.mrp.toLocaleString("en-IN")}</span>
+                                  )}
+                                </div>
+
+                                {/* Qty stepper */}
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center rounded-full border border-border bg-bg-base overflow-hidden">
+                                    <button
+                                      onClick={() => updateQuantity(item.cartItemId, -1)}
+                                      className="grid h-7 w-7 place-items-center text-dark/50 hover:bg-white hover:text-dark transition text-[13px]"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </button>
+                                    <span className="w-7 text-center text-[12px] font-bold text-dark">{item.quantity}</span>
+                                    <button
+                                      onClick={() => updateQuantity(item.cartItemId, 1)}
+                                      className="grid h-7 w-7 place-items-center text-dark/50 hover:bg-white hover:text-dark transition"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <button
+                                    onClick={() => removeFromCart(item.cartItemId)}
+                                    className="grid h-7 w-7 place-items-center rounded-full text-dark/30 hover:bg-red-50 hover:text-red-500 border border-border transition active:scale-[0.92]"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Line subtotal */}
+                              <div className="mt-1.5 text-right">
+                                <span className="text-[11px] text-dark/40 font-medium">Subtotal: </span>
+                                <span className="text-[13px] font-bold text-dark">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Order Summary Footer */}
+                      <div className="mt-2 rounded-[20px] border border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 p-5">
+                        <div className="space-y-2 text-[13px]">
+                          <div className="flex justify-between text-dark/60 font-medium">
+                            <span>Items ({cartItems.reduce((s, i) => s + i.quantity, 0)})</span>
+                            <span>₹{cartItems.reduce((s, i) => s + i.mrp * i.quantity, 0).toLocaleString("en-IN")}</span>
+                          </div>
+                          {cartItems.some(i => i.mrp > i.price) && (
+                            <div className="flex justify-between text-green-600 font-semibold">
+                              <span>You Save</span>
+                              <span>-₹{cartItems.reduce((s, i) => s + (i.mrp - i.price) * i.quantity, 0).toLocaleString("en-IN")}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between font-bold text-dark text-[15px] border-t border-primary/15 pt-2 mt-1">
+                            <span>Total</span>
+                            <span className="text-primary">₹{cartItems.reduce((s, i) => s + i.price * i.quantity, 0).toLocaleString("en-IN")}</span>
                           </div>
                         </div>
                         <Link
                           href="/cart"
-                          className="inline-flex items-center gap-2 rounded-2xl bg-dark px-6 py-3 text-[14px] font-bold text-white hover:bg-primary transition-colors shadow-lg active:scale-[0.98]"
+                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-dark py-3.5 text-[14px] font-bold text-white hover:bg-primary transition-colors shadow-lg active:scale-[0.98]"
                         >
                           <ShoppingBag className="h-4 w-4" />
-                          Go to Checkout
+                          Proceed to Checkout
+                          <ArrowRight className="h-4 w-4" />
                         </Link>
                       </div>
-
-                      {/* Cart Items */}
-                      {cartItems.map((item) => (
-                        <div
-                          key={item.cartItemId}
-                          className="flex items-center gap-4 rounded-[24px] border-[2px] border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-sm"
-                        >
-                          {/* Product Image */}
-                          <Link href={`/product/${item.id}`} className="shrink-0">
-                            <div className="h-20 w-16 overflow-hidden rounded-xl border border-border bg-bg-base">
-                              <img src={item.image} alt={item.title} className="h-full w-full object-cover object-top transition hover:scale-105" />
-                            </div>
-                          </Link>
-
-                          {/* Details */}
-                          <div className="min-w-0 flex-1">
-                            <Link href={`/product/${item.id}`}>
-                              <p className="font-display font-semibold text-dark hover:text-primary transition truncate text-[15px]">{item.title}</p>
-                            </Link>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                              {item.selectedSize && (
-                                <span className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700">
-                                  Size: {item.selectedSize}
-                                </span>
-                              )}
-                              {item.selectedColor && (
-                                <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-[11px] font-bold text-purple-700">
-                                  Color: {item.selectedColor}
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-2 flex items-center gap-3">
-                              {/* Quantity */}
-                              <div className="flex items-center rounded-full border border-border overflow-hidden">
-                                <button
-                                  onClick={() => updateQuantity(item.cartItemId, -1)}
-                                  className="grid h-8 w-8 place-items-center text-dark/60 hover:bg-bg-base hover:text-dark transition"
-                                >
-                                  <Minus className="h-3.5 w-3.5" />
-                                </button>
-                                <span className="w-8 text-center text-[13px] font-bold text-dark">{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(item.cartItemId, 1)}
-                                  className="grid h-8 w-8 place-items-center text-dark/60 hover:bg-bg-base hover:text-dark transition"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                              <span className="text-[14px] font-bold text-dark">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
-                            </div>
-                          </div>
-
-                          {/* Remove */}
-                          <button
-                            onClick={() => removeFromCart(item.cartItemId)}
-                            className="shrink-0 grid h-10 w-10 place-items-center rounded-full border border-border text-dark/40 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition active:scale-[0.95]"
-                            title="Remove from cart"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
                     </div>
                   )}
                 </div>
