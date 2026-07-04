@@ -96,7 +96,7 @@ export async function POST(req: Request) {
     // 3. Create the Offline Order
     const offlineOrder = await Order.create({
       userId: customerDetails.email || "offline_walkin",
-      email: customerDetails.email || "offline@saheli.com",
+      email: customerDetails.email || "offline@somnathnx.com",
       items: itemsToOrder.map(item => ({
         productId: item.productId,
         title: item.title,

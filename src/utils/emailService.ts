@@ -469,19 +469,19 @@ export async function sendBulkInquiryEmails(details: BulkInquiryDetails) {
 
   // 2. Customer Confirmation HTML
   const customerHtml = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #F0E6F2; border-radius: 16px; overflow: hidden;">
-      <div style="background-color: #8B1D8F; padding: 20px; text-align: center; color: white;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E7EB; border-radius: 16px; overflow: hidden;">
+      <div style="background-color: #3D2FB3; padding: 20px; text-align: center; color: white;">
         <h2 style="margin: 0; font-size: 20px;">Bulk Inquiry Submitted</h2>
       </div>
-      <div style="padding: 25px; color: #1A0F1C; line-height: 1.6;">
+      <div style="padding: 25px; color: #111827; line-height: 1.6;">
         <p>Dear ${name},</p>
-        <p>Thank you for reaching out to **Saheli Shrungar Costumes**. We have received your wholesale bulk inquiry for <strong>${productTitle}</strong>.</p>
+        <p>Thank you for reaching out to **Somnath NX Costumes**. We have received your wholesale bulk inquiry for <strong>${productTitle}</strong>.</p>
         <p>Our sales representative will review your requirement (Quantity: ${quantity} units, Required Date: ${eventDate}) and get back to you with custom discounted wholesale pricing details within 24 hours.</p>
         
-        <p style="margin-top: 30px; font-size: 13px; color: #8B7A8F;">
+        <p style="margin-top: 30px; font-size: 13px; color: #6B7280;">
           Best Regards,<br/>
-          <strong>Saheli Shrungar Customer Support Team</strong><br/>
-          Contact: support@sahelishrungar.com
+          <strong>Somnath NX Customer Support Team</strong><br/>
+          Contact: zenvibe.011@gmail.com
         </p>
       </div>
     </div>
@@ -508,7 +508,7 @@ export async function sendBulkInquiryEmails(details: BulkInquiryDetails) {
 
       // Send to Admin
       await transporter.sendMail({
-        from: `"Saheli Bulk Orders" <${user}>`,
+        from: `"Somnath Bulk Orders" <${user}>`,
         to: user,
         subject: `NEW Wholesale Bulk Inquiry: ${productTitle} (${quantity} units)`,
         html: adminHtml,
@@ -516,7 +516,7 @@ export async function sendBulkInquiryEmails(details: BulkInquiryDetails) {
 
       // Send to Customer
       await transporter.sendMail({
-        from: `"Saheli Shrungar Costumes" <${user}>`,
+        from: `"Somnath NX Costumes" <${user}>`,
         to: email,
         subject: `Bulk Inquiry Submitted: ${productTitle}`,
         html: customerHtml,

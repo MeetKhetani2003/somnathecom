@@ -11,7 +11,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, message: "Missing email parameter" }, { status: 400 });
     }
 
-    if (email === "admin@saheli.internal") {
+    if (email === "admin@somnathnx.internal") {
       return NextResponse.json({
         success: true,
         cart: [],
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "Missing email" }, { status: 400 });
     }
 
-    if (email === "admin@saheli.internal") {
+    if (email === "admin@somnathnx.internal") {
       return NextResponse.json({
         success: true,
         message: "Sync successful",

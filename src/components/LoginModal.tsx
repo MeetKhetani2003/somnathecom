@@ -30,18 +30,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
-              className="pointer-events-auto w-full max-w-[440px] overflow-hidden rounded-[28px] border border-[#F0E6F2] bg-white p-7 shadow-2xl shadow-[#8B1D8F]/10"
+              className="pointer-events-auto w-full max-w-[440px] overflow-hidden rounded-[28px] border border-[#E0E4FC] bg-white p-7 shadow-2xl shadow-[#3D2FB3]/10"
               style={{ fontFamily: "Plus Jakarta Sans, Outfit, Inter, sans-serif" }}
             >
               {/* Header */}
               <div className="flex justify-between items-start mb-6">
-                <div className="flex items-center gap-2 rounded-full bg-[#FCF7FD] px-3 py-1 text-[12px] font-medium text-[#8B1D8F] border border-[#F5E6F7]">
+                <div className="flex items-center gap-2 rounded-full bg-[#F0EEFD] px-3 py-1 text-[12px] font-medium text-[#3D2FB3] border border-[#DDE3FC]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span>Welcome to Saheli Shrungar</span>
+                  <span>Welcome to Somnath NX</span>
                 </div>
                 <button
                   onClick={onClose}
-                  className="grid h-8 w-8 place-items-center rounded-full border border-[#F0E6F2] text-[#8B7A8F] hover:bg-[#F8F0F9] hover:text-[#8B1D8F] transition-colors"
+                  className="grid h-8 w-8 place-items-center rounded-full border border-[#E0E4FC] text-[#6B7280] hover:bg-[#F0EEFD] hover:text-[#3D2FB3] transition-colors"
                 >
                   <X className="h-4.5 w-4.5" />
                 </button>
@@ -49,11 +49,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
               {/* Title / Description */}
               <div className="text-center mb-8">
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[#8B1D8F] to-[#E91E7A] text-white shadow-lg shadow-[#8B1D8F]/15">
+                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-[#3D2FB3] to-[#16A8E8] text-white shadow-lg shadow-[#3D2FB3]/15">
                   <User className="h-6 w-6" />
                 </div>
-                <h3 className="text-[22px] font-bold text-[#1A0F1C] tracking-tight">Sign In / Register</h3>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-[#6B5A6F]">
+                <h3 className="text-[22px] font-bold text-[#111827] tracking-tight">Sign In / Register</h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-[#4B5563]">
                   Access your profile to sync your wishlist, view order history, and track deliveries.
                 </p>
               </div>
@@ -62,7 +62,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <div className="space-y-4">
                 <button
                   onClick={() => signIn("google")}
-                  className="flex w-full items-center justify-center gap-3 rounded-full border border-[#EEDDF0] bg-white py-3.5 text-[14.5px] font-semibold text-[#3A2A3D] transition hover:bg-[#FCF7FD] hover:border-[#E1BFE6] active:scale-[0.98]"
+                  className="flex w-full items-center justify-center gap-3 rounded-full border border-[#DDE3FC] bg-white py-3.5 text-[14.5px] font-semibold text-[#1F2937] transition hover:bg-[#F5F6FF] hover:border-[#C7D2FE] active:scale-[0.98]"
                 >
                   {/* Google Colorful Icon */}
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </div>
 
               {/* Secure note */}
-              <p className="mt-6 text-center text-[11px] text-[#A38AA6]">
+              <p className="mt-6 text-center text-[11px] text-[#9CA3AF]">
                 Secure login powered by NextAuth.
               </p>
             </motion.div>

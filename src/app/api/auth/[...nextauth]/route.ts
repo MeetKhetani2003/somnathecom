@@ -33,7 +33,7 @@ const handler = NextAuth({
           return {
             id: "env-admin",
             name: "Admin",
-            email: "admin@saheli.internal",
+            email: "admin@somnathnx.internal",
             isEnvAdmin: true,
           } as any;
         }
