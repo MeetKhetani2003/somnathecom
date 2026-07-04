@@ -11,7 +11,7 @@ import { useToast } from "@/context/ToastContext";
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
 function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishlist: number[]; toggleWishlist: (id: number) => void; addToCart: (product: any, color?: string, size?: string) => void }) {
-  const [selectedColor, setSelectedColor] = useState("");
+  const selectedColor = p.variantColor || (p.colors && p.colors.length > 0 ? p.colors[0].name : "");
   const [selectedSize, setSelectedSize] = useState("");
 
   const selectedColorObj = p.colors?.find((c: any) => c.name === selectedColor);
@@ -81,37 +81,15 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
               )}
             </div>
 
-            {/* Colors & Sizes Selectors */}
+            {/* Sizes Selector */}
             {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
-              <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
-                {p.colors && p.colors.length > 0 ? (
-                  <select 
-                    value={selectedColor}
-                    onChange={(e) => {
-                      setSelectedColor(e.target.value);
-                      setSelectedSize(""); // Reset size when color changes
-                    }}
-                    className="rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary"
-                  >
-                    <option value="">Color</option>
-                    {p.colors.map((c: any) => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="hidden" />
-                )}
-                
+              <div className="mt-4 text-[13px]">
                 <select 
                   value={selectedSize}
                   onChange={(e) => setSelectedSize(e.target.value)}
-                  className={cn(
-                    "rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary",
-                    !(p.colors && p.colors.length > 0) && "col-span-2"
-                  )}
-                  disabled={p.colors && p.colors.length > 0 && !selectedColor}
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2 font-semibold text-dark/80 outline-none focus:border-primary"
                 >
-                  <option value="">Size</option>
+                  <option value="">Select Size</option>
                   {availableSizes.map((s: any) => {
                     const sizeLabel = typeof s === "object" ? s.size : s;
                     const sizeStock = typeof s === "object" ? s.stock : 10;
