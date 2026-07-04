@@ -198,6 +198,131 @@ function HeroCarousel() {
   );
 }
 
+function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishlist: number[]; toggleWishlist: (id: number) => void; addToCart: (product: any, color?: string, size?: string) => void }) {
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+
+  const selectedColorObj = p.colors?.find((c: any) => c.name === selectedColor);
+  const availableSizes = p.colors && p.colors.length > 0
+    ? (selectedColorObj?.sizes || [])
+    : (p.sizes || []);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (p.colors && p.colors.length > 0 && !selectedColor) {
+      alert("Please select a color first");
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      alert("Please select a size first");
+      return;
+    }
+
+    addToCart(p, selectedColor || undefined, selectedSize || undefined);
+  };
+
+  return (
+    <motion.div whileHover={{ y: -6 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
+      <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
+          <Link href={`/product/${p.id}`}>
+            <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
+          </Link>
+          <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+              </span>
+              {p.tag && (
+                <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                  {p.tag}
+                </span>
+              )}
+            </div>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+              <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+            </button>
+          </div>
+        </div>
+        <div className="p-5 flex flex-col justify-between flex-1">
+          <div>
+            <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                ))}
+              </div>
+              <span className="text-[12.5px] text-dark/60 ml-1">{p.rating} Reviews</span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+              {p.mrp > p.price && (
+                <>
+                  <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                  <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                </>
+              )}
+            </div>
+
+            {/* Colors & Sizes Selectors */}
+            {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
+                {p.colors && p.colors.length > 0 ? (
+                  <select 
+                    value={selectedColor}
+                    onChange={(e) => {
+                      setSelectedColor(e.target.value);
+                      setSelectedSize(""); // Reset size when color changes
+                    }}
+                    className="rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary"
+                  >
+                    <option value="">Color</option>
+                    {p.colors.map((c: any) => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="hidden" />
+                )}
+                
+                <select 
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                  className={cn(
+                    "rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary",
+                    !(p.colors && p.colors.length > 0) && "col-span-2"
+                  )}
+                  disabled={p.colors && p.colors.length > 0 && !selectedColor}
+                >
+                  <option value="">Size</option>
+                  {availableSizes.map((s: any) => {
+                    const sizeLabel = typeof s === "object" ? s.size : s;
+                    const sizeStock = typeof s === "object" ? s.stock : 10;
+                    return (
+                      <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
+                        {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleAddToCart}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+          >
+            <ShoppingBag className="h-4 w-4" /> Add to cart
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const { wishlist, toggleWishlist, addToCart } = useShop();
   const testimonialCarouselRef = useRef<HTMLDivElement>(null);
@@ -285,58 +410,7 @@ export default function Home() {
         ) : (
           <div ref={featuredCarouselRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-8 pt-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {productsList.map((p) => (
-              <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
-                <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-                    <Link href={`/product/${p.id}`}>
-                      <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
-                    </Link>
-                    <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                        <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
-                          {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
-                        </span>
-                        {p.tag && (
-                          <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
-                            {p.tag}
-                          </span>
-                        )}
-                      </div>
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
-                        <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-5 flex flex-col justify-between flex-1">
-                    <div>
-                      <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <div className="flex items-center gap-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
-                          ))}
-                        </div>
-                        <span className="text-[12.5px] text-dark/60 ml-1">{p.rating} Reviews</span>
-                      </div>
-                      <div className="mt-3 flex items-baseline gap-2">
-                        <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
-                        {p.mrp > p.price && (
-                          <>
-                            <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
-                            <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }}
-                      className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
-                    >
-                      <ShoppingBag className="h-4 w-4" /> Add to cart
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
+              <ProductCard key={p.id} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
             ))}
           </div>
         )}

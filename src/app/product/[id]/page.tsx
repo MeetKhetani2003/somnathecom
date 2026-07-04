@@ -112,9 +112,23 @@ export default function ProductSlug() {
       const data = await res.json();
       if (data.success) {
         setProduct(data.product);
-        // Auto-select first color if colors exist
+        // Auto-select first available color and size combination that is in stock
         if (data.product.colors && data.product.colors.length > 0) {
-          setSelectedColor(data.product.colors[0].name);
+          const firstInStockColor = data.product.colors.find((c: any) => {
+            return c.sizes && c.sizes.some((s: any) => Number(s.stock) > 0);
+          }) || data.product.colors[0];
+
+          setSelectedColor(firstInStockColor.name);
+
+          const firstInStockSize = firstInStockColor.sizes?.find((s: any) => Number(s.stock) > 0);
+          if (firstInStockSize) {
+            setSelectedSize(firstInStockSize.size);
+          } else if (firstInStockColor.sizes && firstInStockColor.sizes.length > 0) {
+            setSelectedSize(firstInStockColor.sizes[0].size);
+          }
+        } else if (data.product.sizes && data.product.sizes.length > 0) {
+          const firstInStockSize = data.product.sizes.find((s: any) => Number(s.stock) > 0) || data.product.sizes[0];
+          setSelectedSize(firstInStockSize.size);
         }
       }
     } catch (err) {
@@ -249,14 +263,74 @@ export default function ProductSlug() {
   
   const reviewsList = product.reviews || [];
 
+  // Check if current combination is out of stock
+  let isCurrentSelectionOutOfStock = false;
+  if (product) {
+    if (product.stock === 0) {
+      isCurrentSelectionOutOfStock = true;
+    } else if (hasColors && selectedColor) {
+      const colorObj = product.colors.find((c: any) => c.name === selectedColor);
+      if (colorObj) {
+        if (selectedSize) {
+          const sizeObj = colorObj.sizes.find((s: any) => s.size === selectedSize);
+          if (sizeObj && Number(sizeObj.stock) === 0) {
+            isCurrentSelectionOutOfStock = true;
+          }
+        }
+      }
+    } else if (!hasColors && selectedSize && product.sizes) {
+      const sizeObj = product.sizes.find((s: any) => s.size === selectedSize);
+      if (sizeObj && Number(sizeObj.stock) === 0) {
+        isCurrentSelectionOutOfStock = true;
+      }
+    }
+  }
+
   // Reset activeImage when color changes (handled via effect)
   const handleColorChange = (colorName: string) => {
-    setSelectedColor(colorName);
-    setSelectedSize(null); // Reset size when color changes
-    setActiveImage(0);     // Reset to first image of new color
+    const colorObj = product.colors.find((c: any) => c.name === colorName);
+    if (!colorObj) return;
+
+    // Check if the current selected size is in stock in the new color
+    const currentSizeObj = colorObj.sizes?.find((s: any) => s.size === selectedSize);
+    const isCurrentSizeInStock = currentSizeObj && Number(currentSizeObj.stock) > 0;
+
+    if (isCurrentSizeInStock) {
+      setSelectedColor(colorName);
+      setActiveImage(0);
+    } else {
+      // Find the first size in this new color that is in stock
+      const firstAvailableSize = colorObj.sizes?.find((s: any) => Number(s.stock) > 0);
+      if (firstAvailableSize) {
+        setSelectedColor(colorName);
+        setSelectedSize(firstAvailableSize.size);
+        setActiveImage(0);
+      } else {
+        // If ALL sizes in this color are out of stock, find another color that has stock!
+        const anotherAvailableColor = product.colors.find((c: any) => {
+          return c.sizes && c.sizes.some((s: any) => Number(s.stock) > 0);
+        });
+        if (anotherAvailableColor) {
+          const fallbackSize = anotherAvailableColor.sizes.find((s: any) => Number(s.stock) > 0);
+          setSelectedColor(anotherAvailableColor.name);
+          setSelectedSize(fallbackSize.size);
+          setActiveImage(0);
+          alert(`All sizes in color ${colorName} are out of stock. Switched to available color ${anotherAvailableColor.name}.`);
+        } else {
+          // If everything is completely out of stock, just set the color and reset size
+          setSelectedColor(colorName);
+          setSelectedSize(null);
+          setActiveImage(0);
+        }
+      }
+    }
   };
 
   const handleAddToCart = () => {
+    if (isCurrentSelectionOutOfStock) {
+      alert('This combination is out of stock.');
+      return;
+    }
     if (hasColors && !selectedColor) {
       alert('Please select a color first');
       return;
@@ -269,6 +343,10 @@ export default function ProductSlug() {
   };
 
   const handleBuyNow = () => {
+    if (isCurrentSelectionOutOfStock) {
+      alert('This combination is out of stock.');
+      return;
+    }
     if (hasColors && !selectedColor) {
       alert('Please select a color first');
       return;
@@ -437,13 +515,14 @@ export default function ProductSlug() {
                     return (
                       <button
                         key={idx}
-                        onClick={() => !isOutOfStock && setSelectedSize(sizeLabel)}
-                        disabled={isOutOfStock}
+                        onClick={() => setSelectedSize(sizeLabel)}
                         title={isOutOfStock ? "Out of Stock" : `${sizeStock} in stock`}
                         className={cn(
                           "relative rounded-xl border-2 px-6 py-3 font-display text-[15px] font-bold transition-all focus:outline-none",
                           isOutOfStock
-                            ? "cursor-not-allowed border-border bg-bg-base text-dark/30 line-through"
+                            ? selectedSize === sizeLabel
+                              ? "border-red-500 bg-red-50 text-red-500 font-bold scale-105 shadow-md"
+                              : "border-border bg-bg-base text-dark/40 line-through"
                             : selectedSize === sizeLabel
                               ? "border-primary bg-primary text-white shadow-lg shadow-primary/30 scale-105"
                               : "border-border bg-surface text-dark hover:border-primary/50"
@@ -509,15 +588,17 @@ export default function ProductSlug() {
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               <button
                 onClick={handleAddToCart}
-                className="flex items-center justify-center gap-2 rounded-full border-2 border-border bg-surface py-4 text-[15px] font-bold text-dark transition hover:border-primary hover:text-primary active:scale-[0.98]"
+                disabled={isCurrentSelectionOutOfStock}
+                className="flex items-center justify-center gap-2 rounded-full border-2 border-border bg-surface py-4 text-[15px] font-bold text-dark transition hover:border-primary hover:text-primary active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ShoppingBag className="h-5 w-5" /> Add to Cart
+                <ShoppingBag className="h-5 w-5" /> {isCurrentSelectionOutOfStock ? "Out of Stock" : "Add to Cart"}
               </button>
               <button
                 onClick={handleBuyNow}
-                className="flex items-center justify-center gap-2 rounded-full bg-primary py-4 text-[15px] font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-[#2E2387] active:scale-[0.98]"
+                disabled={isCurrentSelectionOutOfStock}
+                className="flex items-center justify-center gap-2 rounded-full bg-primary py-4 text-[15px] font-bold text-white shadow-xl shadow-primary/20 transition hover:bg-[#2E2387] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Buy It Now
+                {isCurrentSelectionOutOfStock ? "Out of Stock" : "Buy It Now"}
               </button>
             </div>
 

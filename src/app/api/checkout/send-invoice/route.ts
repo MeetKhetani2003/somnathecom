@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       items: order.items,
       subtotal: order.subtotal,
       discount: order.discount,
+      shippingCost: order.shippingCost || 0,
       total: order.total,
       address: order.shippingDetails.address,
       phone: order.shippingDetails.phone,

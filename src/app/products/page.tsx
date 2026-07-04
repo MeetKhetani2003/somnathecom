@@ -70,6 +70,123 @@ export default function Products() {
   );
 }
 
+function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishlist: number[]; toggleWishlist: (id: number) => void; addToCart: (product: any, color?: string, size?: string) => void }) {
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+
+  const selectedColorObj = p.colors?.find((c: any) => c.name === selectedColor);
+  const availableSizes = p.colors && p.colors.length > 0
+    ? (selectedColorObj?.sizes || [])
+    : (p.sizes || []);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (p.colors && p.colors.length > 0 && !selectedColor) {
+      alert("Please select a color first");
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      alert("Please select a size first");
+      return;
+    }
+
+    addToCart(p, selectedColor || undefined, selectedSize || undefined);
+  };
+
+  return (
+    <div className="group relative w-full shrink-0">
+      <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
+          <Link href={`/product/${p.id}`}>
+            <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
+          </Link>
+          <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
+              {p.category.includes("Tencel") && <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-md">Tencel</span>}
+            </div>
+            <button 
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
+              className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-md backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
+            >
+              <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
+            </button>
+          </div>
+        </div>
+        <div className="p-5 flex flex-col justify-between flex-1">
+          <div>
+            <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+            <div className="mt-1 flex items-center justify-between">
+              <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category.split(" > ").pop()}</div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
+              {p.mrp > p.price && (
+                <>
+                  <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
+                  <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                </>
+              )}
+            </div>
+
+            {/* Colors & Sizes Selectors */}
+            {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
+                {p.colors && p.colors.length > 0 ? (
+                  <select 
+                    value={selectedColor}
+                    onChange={(e) => {
+                      setSelectedColor(e.target.value);
+                      setSelectedSize(""); // Reset size when color changes
+                    }}
+                    className="rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary"
+                  >
+                    <option value="">Color</option>
+                    {p.colors.map((c: any) => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="hidden" />
+                )}
+                
+                <select 
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                  className={cn(
+                    "rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary",
+                    !(p.colors && p.colors.length > 0) && "col-span-2"
+                  )}
+                  disabled={p.colors && p.colors.length > 0 && !selectedColor}
+                >
+                  <option value="">Size</option>
+                  {availableSizes.map((s: any) => {
+                    const sizeLabel = typeof s === "object" ? s.size : s;
+                    const sizeStock = typeof s === "object" ? s.stock : 10;
+                    return (
+                      <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
+                        {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={handleAddToCart} 
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+          >
+            <ShoppingBag className="h-4 w-4" /> Add to cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -319,54 +436,7 @@ function ProductsContent() {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
               {filteredProducts.map((p) => (
-                <div key={p.id} className="group relative w-full shrink-0">
-                  <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-                      <Link href={`/product/${p.id}`}>
-                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
-                      </Link>
-                      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                          {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
-                          {p.category.includes("Tencel") && <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-md">Tencel</span>}
-                        </div>
-                        <button 
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
-                          className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-md backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
-                        >
-                          <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
-                        </button>
-                      </div>
-                      
-                      {/* Removed hover overlay */}
-                    </div>
-                    <div className="p-5 flex flex-col justify-between flex-1">
-                      <div>
-                        <Link href={`/product/${p.id}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                        <div className="mt-1 flex items-center justify-between">
-                          <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category.split(" > ").pop()}</div>
-                        </div>
-                        <div className="mt-4 flex items-baseline gap-2">
-                          <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
-                          {p.mrp > p.price && (
-                            <>
-                              <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                              <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Add to Cart */}
-                      <button 
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
-                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
-                      >
-                        <ShoppingBag className="h-4 w-4" /> Add to cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductCard key={p.id} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
               ))}
             </div>
           )}

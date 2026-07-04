@@ -21,6 +21,7 @@ const OrderSchema = new Schema({
   },
   subtotal: { type: Number, required: true },
   discount: { type: Number, default: 0 },
+  shippingCost: { type: Number, default: 0 },
   total: { type: Number, required: true },
   couponUsed: { type: String },
   referralCode: { type: String },
@@ -35,12 +36,13 @@ const OrderSchema = new Schema({
   exchangeRequested: { type: Boolean, default: false },
   exchangeFee: { type: Number, default: 0 },
   exchangeDetails: {
-    originalSizes: [{ productId: Number, size: String }],
-    newSizes: [{ productId: Number, size: String }],
+    originalSizes: [{ productId: Number, size: String, color: String }],
+    newSizes: [{ productId: Number, size: String, color: String }],
     previousAddress: String,
     newAddress: String,
     requestedAt: { type: Date },
   },
+  deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

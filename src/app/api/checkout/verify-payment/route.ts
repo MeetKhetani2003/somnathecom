@@ -3,6 +3,8 @@ import dbConnect from "@/utils/dbConnect";
 import { Order } from "@/models/Order";
 import { Reservation } from "@/models/Reservation";
 import crypto from "crypto";
+import { createShiprocketOrder } from "@/utils/shiprocket";
+import { sendInvoiceEmail } from "@/utils/emailService";
 
 export async function POST(req: Request) {
   try {
@@ -45,9 +47,42 @@ export async function POST(req: Request) {
     }
 
     // Update order status
-    order.paymentStatus = "paid";
+    if (order.paymentMethod === "cod") {
+      order.paymentStatus = "pending";
+    } else {
+      order.paymentStatus = "paid";
+    }
     order.paymentId = razorpay_payment_id;
     await order.save();
+
+    // PUSH PREPAID ORDER TO SHIPROCKET
+    try {
+      const shiprocketRes = await createShiprocketOrder(order);
+      if (shiprocketRes && shiprocketRes.shipment_id) {
+        order.trackingNumber = shiprocketRes.shipment_id.toString();
+        await order.save();
+      }
+    } catch (shiprocketErr) {
+      console.error("Failed to create order in Shiprocket for Prepaid order:", shiprocketErr);
+    }
+
+    // Send confirmation email
+    try {
+      await sendInvoiceEmail({
+        orderId: order._id.toString(),
+        customerName: order.shippingDetails?.name || "Customer",
+        email: order.email,
+        items: order.items,
+        subtotal: order.subtotal,
+        discount: order.discount,
+        shippingCost: order.shippingCost,
+        total: order.total,
+        address: order.shippingDetails?.address || "",
+        phone: order.shippingDetails?.phone || "",
+      });
+    } catch (mailErr) {
+      console.error("Failed to send order confirmation email:", mailErr);
+    }
 
     // Mark inventory reservation as completed (inactive)
     const reservation = await Reservation.findOne({ orderId: order._id });

@@ -5,10 +5,12 @@ import { Order } from "@/models/Order";
 import { Reservation } from "@/models/Reservation";
 import { Coupon } from "@/models/Coupon";
 import Razorpay from "razorpay";
+import { createShiprocketOrder } from "@/utils/shiprocket";
+import { sendOutOfStockEmail } from "@/utils/emailService";
 
 export async function POST(req: Request) {
   try {
-    const { cartItems, shippingDetails, email, couponCode, referralCode, username, userId, paymentMethod } = await req.json();
+    const { cartItems, shippingDetails, email, couponCode, referralCode, username, userId, paymentMethod, shippingCost } = await req.json();
 
     if (!cartItems || cartItems.length === 0 || !shippingDetails || !email) {
       return NextResponse.json({ success: false, message: "Missing required details" }, { status: 400 });
@@ -98,17 +100,26 @@ export async function POST(req: Request) {
       }
     }
 
-    const total = subtotal - discount;
+    const finalShippingCost = paymentMethod === "cod" ? (shippingCost || 0) : 0;
+    const total = subtotal - discount + finalShippingCost;
 
     // 3. Deduct Stock Temporarily (Reservation)
     for (const item of itemsToOrder) {
       const hasColors = item.productDocument.colors && item.productDocument.colors.length > 0;
+      let variantOut = "";
+      let isOut = false;
+
       if (hasColors && item.selectedColor) {
         const colorObj = item.productDocument.colors.find((c: any) => c.name === item.selectedColor);
         if (colorObj && item.selectedSize) {
           const sizeObj = colorObj.sizes.find((s: any) => s.size === item.selectedSize);
           if (sizeObj) {
             sizeObj.stock -= item.quantity;
+            if (sizeObj.stock <= 0) {
+              sizeObj.stock = 0;
+              isOut = true;
+              variantOut = `Color: ${item.selectedColor}, Size: ${item.selectedSize}`;
+            }
           }
         }
         // Synchronize flat sizes array with color-specific sizes for backward compatibility
@@ -117,10 +128,36 @@ export async function POST(req: Request) {
         const sizeObj = item.productDocument.sizes.find((s: any) => s.size === item.selectedSize);
         if (sizeObj) {
           sizeObj.stock -= item.quantity;
+          if (sizeObj.stock <= 0) {
+            sizeObj.stock = 0;
+            isOut = true;
+            variantOut = `Size: ${item.selectedSize}`;
+          }
         }
       }
       item.productDocument.stock -= item.quantity;
-      await item.productDocument.save();
+      if (item.productDocument.stock <= 0) {
+        item.productDocument.stock = 0;
+        isOut = true;
+      }
+      await Product.updateOne(
+        { _id: item.productDocument._id },
+        { 
+          $set: { 
+            colors: item.productDocument.colors,
+            sizes: item.productDocument.sizes,
+            stock: item.productDocument.stock 
+          }
+        }
+      );
+
+      if (isOut) {
+        try {
+          await sendOutOfStockEmail(item.title, variantOut);
+        } catch (mailErr) {
+          console.error("Failed to send out of stock email notification:", mailErr);
+        }
+      }
     }
 
     // 4. Create local pending Order
@@ -139,6 +176,7 @@ export async function POST(req: Request) {
       shippingDetails,
       subtotal,
       discount,
+      shippingCost: finalShippingCost,
       total,
       couponUsed: couponCode || null,
       referralCode: referralCode || null,
@@ -148,8 +186,8 @@ export async function POST(req: Request) {
       shippingStatus: "Processing"
     });
 
-    // If Cash on Delivery, we don't need an active Reservation or Razorpay Order
-    if (paymentMethod === "cod") {
+    // If Cash on Delivery and there is NO shipping cost, bypass Razorpay flow
+    if (paymentMethod === "cod" && finalShippingCost === 0) {
       await Reservation.create({
         orderId: localOrder._id,
         items: itemsToOrder.map(item => ({
@@ -160,6 +198,17 @@ export async function POST(req: Request) {
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         active: false // Inactive since it's COD
       });
+
+      // PUSH COD ORDER TO SHIPROCKET IMMEDIATELY
+      try {
+        const shiprocketRes = await createShiprocketOrder(localOrder);
+        if (shiprocketRes && shiprocketRes.shipment_id) {
+          localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
+          await localOrder.save();
+        }
+      } catch (shiprocketErr) {
+        console.error("Failed to create order in Shiprocket for COD order:", shiprocketErr);
+      }
 
       return NextResponse.json({
         success: true,
@@ -186,7 +235,7 @@ export async function POST(req: Request) {
     const isPlaceholder = key_id === "rzp_test_placeholder" || key_secret === "placeholder_secret";
 
     let rzpOrderId = "";
-    let rzpAmount = total * 100;
+    let rzpAmount = (paymentMethod === "cod" ? finalShippingCost : total) * 100;
 
     if (isPlaceholder) {
       rzpOrderId = "mock_rzp_" + Math.random().toString(36).substring(2, 11);
@@ -197,7 +246,7 @@ export async function POST(req: Request) {
       });
 
       const rzpOrder = await razorpay.orders.create({
-        amount: total * 100, // Razorpay works in paise
+        amount: rzpAmount, // Razorpay works in paise
         currency: "INR",
         receipt: localOrder._id.toString()
       });

@@ -60,24 +60,6 @@ export default function UserDetailPage() {
     }
   };
 
-  const handleToggleUserRole = async () => {
-    if (!userData) return;
-    const targetRole = userData.role === "admin" ? "user" : "admin";
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userData.email, role: targetRole }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(`User role updated to ${targetRole}`);
-        setUserData((prev: any) => ({ ...prev, role: targetRole }));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const handleOrderStatusUpdate = async (orderId: string, status: string) => {
     try {
@@ -189,9 +171,6 @@ export default function UserDetailPage() {
                   </div>
                 )}
                 <h2 className="text-[20px] font-bold text-dark">{userData.name}</h2>
-                <span className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${userData.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}>
-                  {userData.role}
-                </span>
 
                 <div className="mt-6 w-full space-y-4 border-t border-border pt-4 text-left text-[13.5px] text-dark/80">
                   <div className="flex items-center gap-3">
@@ -207,13 +186,6 @@ export default function UserDetailPage() {
                     <span>User ID: <span className="font-mono text-[12px]">{userData._id}</span></span>
                   </div>
                 </div>
-
-                <button
-                  onClick={handleToggleUserRole}
-                  className="mt-6 w-full rounded-full border border-border py-2 text-[13px] font-semibold text-primary hover:bg-surface transition"
-                >
-                  Toggle to {userData.role === "admin" ? "User" : "Admin"} Role
-                </button>
               </div>
             </div>
 

@@ -162,7 +162,14 @@ function SuccessContent() {
               </div>
               <div className="flex items-center gap-3 text-dark">
                 <CheckCircle className="h-5 w-5 text-dark/40" />
-                <span><strong className="text-dark/70">Payment Status:</strong> <span className="text-green-600 font-bold ml-1">Paid (Secured)</span></span>
+                <span>
+                  <strong className="text-dark/70">Payment Status:</strong>
+                  {order.paymentMethod === "cod" ? (
+                    <span className="text-purple-600 font-bold ml-1">Pending (Pay on Delivery)</span>
+                  ) : (
+                    <span className="text-green-600 font-bold ml-1">Paid (Secured)</span>
+                  )}
+                </span>
               </div>
             </div>
             
@@ -216,7 +223,9 @@ function SuccessContent() {
             )}
             <div className="flex justify-between">
               <span>Shipping:</span>
-              <span className="font-bold text-green-600 uppercase text-[13px] tracking-wider mt-0.5">Free</span>
+              <span className={order.shippingCost > 0 ? "font-bold text-dark" : "font-bold text-green-600 uppercase text-[13px] tracking-wider mt-0.5"}>
+                {order.shippingCost > 0 ? `₹${order.shippingCost}` : "Free"}
+              </span>
             </div>
             <div className="flex justify-between border-t border-border pt-6 mt-2 text-[20px] font-display">
               <span className="font-bold text-dark">Grand Total:</span>

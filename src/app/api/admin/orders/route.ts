@@ -67,6 +67,9 @@ export async function POST(req: Request) {
           }
         }
       }
+      if (shippingStatus === "Delivered" && order.shippingStatus !== "Delivered") {
+        order.deliveredAt = new Date();
+      }
       order.shippingStatus = shippingStatus;
     }
 

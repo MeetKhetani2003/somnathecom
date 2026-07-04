@@ -60,10 +60,9 @@ const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" 
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { wishlist, cartCount, showCart, setShowCart } = useShop();
+  const { wishlist, cartCount, showCart, setShowCart, isLoginOpen, setIsLoginOpen } = useShop();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);

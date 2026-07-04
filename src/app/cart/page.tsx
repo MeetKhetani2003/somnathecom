@@ -24,16 +24,32 @@ export default function Cart() {
   // Shipping form states
   const [shippingName, setShippingName] = useState(session?.user?.name || "");
   const [shippingAddress, setShippingAddress] = useState("");
-  const [shippingPhone, setShippingPhone] = useState("");
+  const [shippingPhone, setShippingPhone] = useState((session?.user as any)?.phone || "");
   const [checkoutError, setCheckoutError] = useState("");
   const [processing, setProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
+  const [shippingCost, setShippingCost] = useState(0);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
   // Saved address dropdown/saving states
   const [selectedAddressIndex, setSelectedAddressIndex] = useState<string>("");
   const [newAddressText, setNewAddressText] = useState("");
   const [saveNewAddress, setSaveNewAddress] = useState(true);
   const [newAddressAsDefault, setNewAddressAsDefault] = useState(false);
+
+  const [addrL1, setAddrL1] = useState("");
+  const [addrL2, setAddrL2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+
+  useEffect(() => {
+    if (selectedAddressIndex === "new") {
+      const fullAddr = `${addrL1.trim()}${addrL2.trim() ? `, ${addrL2.trim()}` : ""}, ${city.trim()}, ${state.trim()} - ${pincode.trim()}`;
+      setNewAddressText(fullAddr);
+      setShippingAddress(fullAddr);
+    }
+  }, [addrL1, addrL2, city, state, pincode, selectedAddressIndex]);
 
   useEffect(() => {
     const savedAddresses = (session?.user as any)?.addresses || [];
@@ -42,6 +58,10 @@ export default function Cart() {
     if (session) {
       if (session.user?.name && !shippingName) {
         setShippingName(session.user.name);
+      }
+      const userPhone = (session?.user as any)?.phone || "";
+      if (userPhone && !shippingPhone) {
+        setShippingPhone(userPhone);
       }
       if (savedAddresses.length > 0) {
         let initialIndex = 0;
@@ -80,7 +100,53 @@ export default function Cart() {
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const discountAmount = Math.round((subtotal * discountPercent) / 100);
-  const total = subtotal - discountAmount;
+
+  useEffect(() => {
+    const fetchShippingCost = async () => {
+      if (paymentMethod !== "cod") {
+        setShippingCost(0);
+        return;
+      }
+
+      // Try to extract pincode
+      const pincodeMatch = shippingAddress.match(/\b\d{6}\b/);
+      if (!pincodeMatch) {
+        setShippingCost(0);
+        return;
+      }
+
+      const pincode = pincodeMatch[0];
+      setIsCalculatingShipping(true);
+      try {
+        const res = await fetch("/api/shipping/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            delivery_postcode: pincode,
+            weight: cartItems.reduce((acc, item) => acc + item.quantity * 0.5, 0),
+            declared_value: subtotal - discountAmount,
+            cod: true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setShippingCost(data.shippingCost);
+        } else {
+          console.error("Failed to calculate shipping:", data.message);
+          setShippingCost(80); // fallback
+        }
+      } catch (err) {
+        console.error("Shipping calculate error:", err);
+        setShippingCost(80); // fallback
+      } finally {
+        setIsCalculatingShipping(false);
+      }
+    };
+
+    fetchShippingCost();
+  }, [paymentMethod, shippingAddress, cartItems, subtotal, discountAmount]);
+
+  const total = subtotal - discountAmount + (paymentMethod === "cod" ? shippingCost : 0);
 
   // Load Razorpay Script Helper
   const loadRazorpayScript = () => {
@@ -133,6 +199,12 @@ export default function Cart() {
       return;
     }
 
+    const pincodeMatch = shippingAddress.match(/\b\d{6}\b/);
+    if (!pincodeMatch) {
+      setCheckoutError("A valid 6-digit postal pincode is required in the shipping address to calculate courier rates and deliver your order.");
+      return;
+    }
+
     setProcessing(true);
 
     try {
@@ -152,6 +224,7 @@ export default function Cart() {
               email: session.user.email,
               addresses: updatedAddresses,
               defaultAddress: updatedDefault,
+              phone: shippingPhone
             }),
           });
           const saveData = await saveRes.json();
@@ -162,6 +235,28 @@ export default function Cart() {
           }
         } catch (saveErr) {
           console.error("Failed to save address during checkout:", saveErr);
+        }
+      } else if (session?.user?.email && shippingPhone && shippingPhone !== ((session.user as any).phone || "")) {
+        // Automatically save updated phone number even for saved addresses
+        try {
+          const currentAddresses = (session.user as any).addresses || [];
+          const currentDefault = (session.user as any).defaultAddress || "";
+          const saveRes = await fetch("/api/user/addresses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: session.user.email,
+              addresses: currentAddresses,
+              defaultAddress: currentDefault,
+              phone: shippingPhone
+            }),
+          });
+          const saveData = await saveRes.json();
+          if (saveData.success) {
+            await update();
+          }
+        } catch (phoneErr) {
+          console.error("Failed to auto-update phone in DB:", phoneErr);
         }
       }
       // 1. Call backend to create Order & reserve stock
@@ -187,6 +282,7 @@ export default function Cart() {
           couponCode: appliedCoupon,
           referralCode,
           paymentMethod,
+          shippingCost: paymentMethod === "cod" ? shippingCost : 0,
         }),
       });
 
@@ -438,15 +534,55 @@ export default function Cart() {
                 {(!session || selectedAddressIndex === "new" || ((session.user as any).addresses || []).length === 0) && (
                   <div className="space-y-4 pt-2">
                     <div>
-                      <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Shipping Address</label>
+                      <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Address Line 1</label>
                       <input
                         type="text"
-                        value={newAddressText}
-                        onChange={(e) => {
-                          setNewAddressText(e.target.value);
-                          setShippingAddress(e.target.value);
-                        }}
-                        placeholder="Street Address, City, Pincode"
+                        value={addrL1}
+                        onChange={(e) => setAddrL1(e.target.value)}
+                        placeholder="House/Flat No., Building Name, Street"
+                        className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Address Line 2 (Optional)</label>
+                      <input
+                        type="text"
+                        value={addrL2}
+                        onChange={(e) => setAddrL2(e.target.value)}
+                        placeholder="Landmark, Area, Colony"
+                        className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">City</label>
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="e.g. Ahmedabad"
+                          className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">State</label>
+                        <input
+                          type="text"
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          placeholder="e.g. Gujarat"
+                          className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Postal Pincode</label>
+                      <input
+                        type="text"
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        placeholder="e.g. 380001"
+                        maxLength={6}
                         className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
                       />
                     </div>
@@ -563,9 +699,22 @@ export default function Cart() {
                 )}
 
                 <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span className="font-bold text-green-600 uppercase text-[13px] tracking-wider mt-1">Free</span>
+                  <span>Shipping {paymentMethod === "cod" && " (COD & Delivery)"}</span>
+                  <span className={cn(
+                    "font-bold",
+                    paymentMethod === "cod" ? (shippingCost > 0 ? "text-dark" : "text-dark/40 text-[13px]") : "text-green-600 uppercase text-[13px] tracking-wider mt-1"
+                  )}>
+                    {paymentMethod === "cod" 
+                      ? (shippingCost > 0 ? `₹${shippingCost}` : "Enter address with pincode")
+                      : "Free"
+                    }
+                  </span>
                 </div>
+                {paymentMethod === "cod" && isCalculatingShipping && (
+                  <div className="text-[12px] text-dark/50 text-right mt-[-8px] animate-pulse">
+                    Calculating delivery charges...
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-border pt-6 mt-6">
                   <span className="font-display text-[20px] font-bold text-dark">Total</span>
                   <span className="font-display text-[24px] font-bold text-dark">₹{total}</span>

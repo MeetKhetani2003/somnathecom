@@ -16,6 +16,7 @@ interface InvoiceDetails {
   items: InvoiceItem[];
   subtotal: number;
   discount: number;
+  shippingCost?: number;
   total: number;
   address: string;
   phone: string;
@@ -64,19 +65,19 @@ export async function generateInvoicePDF(details: InvoiceDetails): Promise<Buffe
     });
   } else {
     // Fallback text header
-    page.drawText("SAHELI SHRUNGAR", {
+    page.drawText("SOMNATH NX", {
       x: 50,
       y: 775,
       size: 20,
       font: boldFont,
-      color: rgb(139/255, 29/255, 143/255),
+      color: rgb(61/255, 47/255, 179/255),
     });
   }
 
   // Company details below logo
-  page.drawText("Saheli Shrungar Costumes", { x: 50, y: 738, size: 9, font: boldFont, color: rgb(26/255, 15/255, 28/255) });
-  page.drawText("Mumbai, Maharashtra, India", { x: 50, y: 726, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
-  page.drawText("Email: support@sahelishrungar.com", { x: 50, y: 714, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
+  page.drawText("Somnath NX Costumes", { x: 50, y: 738, size: 9, font: boldFont, color: rgb(26/255, 15/255, 28/255) });
+  page.drawText("Anand Nagar Main Road, Rajkot, Gujarat, India", { x: 50, y: 726, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
+  page.drawText("Email: zenvibe.011@gmail.com", { x: 50, y: 714, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
 
   // Invoice Title and Metadata on Right
   page.drawText("TAX INVOICE / BILL", {
@@ -189,7 +190,11 @@ export async function generateInvoicePDF(details: InvoiceDetails): Promise<Buffe
 
   totalsY -= 18;
   page.drawText("Shipping / Delivery:", { x: 330, y: totalsY, size: 9.5, font: font, color: rgb(74/255, 53/255, 77/255) });
-  page.drawText("FREE", { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(15/255, 138/255, 75/255) });
+  if (details.shippingCost && details.shippingCost > 0) {
+    page.drawText(`Rs. ${details.shippingCost.toFixed(2)}`, { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(26/255, 15/255, 28/255) });
+  } else {
+    page.drawText("FREE", { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(15/255, 138/255, 75/255) });
+  }
 
   totalsY -= 12;
   page.drawLine({
@@ -208,19 +213,19 @@ export async function generateInvoicePDF(details: InvoiceDetails): Promise<Buffe
   page.drawText("• This is a computer-generated tax invoice bill and does not require a physical signature.", { x: 50, y: 116, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
   page.drawText("• For size exchange or returns, contact support team with Invoice Number.", { x: 50, y: 104, size: 8, font: font, color: rgb(107/255, 90/255, 111/255) });
 
-  page.drawText("Thank you for shopping with Saheli Shrungar! We hope your little star shines in their event.", {
+  page.drawText("Thank you for shopping with Somnath NX! We hope you love your purchase.", {
     x: 50,
     y: 65,
     size: 8.5,
     font: font,
-    color: rgb(139/255, 122/255, 143/255)
+    color: rgb(61/255, 47/255, 179/255)
   });
-  page.drawText("For help or support, contact us at support@sahelishrungar.com", {
+  page.drawText("For help or support, contact us at zenvibe.011@gmail.com", {
     x: 135,
     y: 50,
     size: 8.5,
     font: font,
-    color: rgb(139/255, 122/255, 143/255)
+    color: rgb(61/255, 47/255, 179/255)
   });
 
   const pdfBytes = await pdfDoc.save();
@@ -235,6 +240,7 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
     items,
     subtotal,
     discount,
+    shippingCost,
     total,
     address,
     phone,
@@ -262,38 +268,38 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
     .join("");
 
   const emailHtml = `
-    <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #FFFCFE; padding: 30px 15px; text-align: center;">
-      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #F0E6F2; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(139, 29, 143, 0.05); text-align: left;">
+    <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #F8FAFC; padding: 30px 15px; text-align: center;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E5E7EB; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(61, 47, 179, 0.05); text-align: left;">
         
         <!-- Header Banner -->
-        <div style="background: linear-gradient(135deg, #8B1D8F 0%, #C2187B 100%); padding: 30px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Saheli Shrungar</h1>
+        <div style="background: linear-gradient(135deg, #3D2FB3 0%, #16A8E8 100%); padding: 30px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Somnath NX</h1>
           <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Order Invoice & Confirmation</p>
         </div>
 
         <div style="padding: 30px;">
           <!-- Greeting -->
-          <h2 style="margin-top: 0; font-size: 18px; color: #1A0F1C; font-weight: 600;">Thank you for your order, ${customerName}!</h2>
-          <p style="font-size: 14px; color: #6B5A6F; line-height: 1.6; margin-bottom: 25px;">
-            We've received your payment and are preparing your costumes for delivery. Below is your detailed invoice bill.
+          <h2 style="margin-top: 0; font-size: 18px; color: #111827; font-weight: 600;">Thank you for your order, ${customerName}!</h2>
+          <p style="font-size: 14px; color: #4B5563; line-height: 1.6; margin-bottom: 25px;">
+            We've received your payment and are preparing your order items for delivery. Below is your detailed invoice bill.
           </p>
 
           <!-- Meta Info -->
-          <div style="background-color: #FCF7FD; border-radius: 16px; padding: 15px 20px; margin-bottom: 25px; border: 1px dashed #EEDDF0; font-size: 13.5px; color: #4A354D; display: flex; flex-direction: column; gap: 6px;">
-            <div><strong>Order ID:</strong> <span style="font-family: monospace; color: #8B1D8F;">${orderId}</span></div>
+          <div style="background-color: #F0EEFD; border-radius: 16px; padding: 15px 20px; margin-bottom: 25px; border: 1px dashed #C7D2FE; font-size: 13.5px; color: #3730A3; display: flex; flex-direction: column; gap: 6px;">
+            <div><strong>Order ID:</strong> <span style="font-family: monospace; color: #3D2FB3;">${orderId}</span></div>
             <div><strong>Date:</strong> ${new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}</div>
-            <div><strong>Payment Status:</strong> <span style="color: #0F8A4B; font-weight: 600;">Paid (Razorpay)</span></div>
+            <div><strong>Payment Status:</strong> <span style="color: #0F8A4B; font-weight: 600;">Paid (Verified)</span></div>
           </div>
 
           <!-- Items Table -->
-          <h3 style="font-size: 15px; color: #1A0F1C; border-bottom: 2px solid #F0E6F2; padding-bottom: 8px; margin-bottom: 12px; font-weight: 600;">Order Items</h3>
+          <h3 style="font-size: 15px; color: #111827; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 12px; font-weight: 600;">Order Items</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
             <thead>
-              <tr style="background-color: #FCF7FD;">
-                <th style="padding: 10px 12px; text-align: left; font-size: 12.5px; text-transform: uppercase; color: #8B7A8F; font-weight: 600;">Costume</th>
-                <th style="padding: 10px 12px; text-align: center; font-size: 12.5px; text-transform: uppercase; color: #8B7A8F; font-weight: 600;">Qty</th>
-                <th style="padding: 10px 12px; text-align: right; font-size: 12.5px; text-transform: uppercase; color: #8B7A8F; font-weight: 600;">Price</th>
-                <th style="padding: 10px 12px; text-align: right; font-size: 12.5px; text-transform: uppercase; color: #8B7A8F; font-weight: 600;">Total</th>
+              <tr style="background-color: #F0EEFD;">
+                <th style="padding: 10px 12px; text-align: left; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Costume</th>
+                <th style="padding: 10px 12px; text-align: center; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Qty</th>
+                <th style="padding: 10px 12px; text-align: right; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Price</th>
+                <th style="padding: 10px 12px; text-align: right; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -302,37 +308,37 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
           </table>
 
           <!-- Totals block -->
-          <div style="width: 250px; margin-left: auto; margin-bottom: 30px; font-size: 14px; color: #4A354D; line-height: 2;">
+          <div style="width: 250px; margin-left: auto; margin-bottom: 30px; font-size: 14px; color: #4B5563; line-height: 2;">
             <div style="display: flex; justify-content: space-between;">
               <span>Subtotal:</span>
-              <span style="font-weight: 600; color: #1A0F1C;">₹${subtotal}</span>
+              <span style="font-weight: 600; color: #111827;">₹${subtotal}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #C2187B;">
+            <div style="display: flex; justify-content: space-between; color: #3D2FB3;">
               <span>Discount:</span>
               <span style="font-weight: 600;">-₹${discount}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #0F8A4B;">
+            <div style="display: flex; justify-content: space-between; color: ${shippingCost && shippingCost > 0 ? '#111827' : '#0F8A4B'};">
               <span>Shipping:</span>
-              <span style="font-weight: 600;">Free</span>
+              <span style="font-weight: 600;">${shippingCost && shippingCost > 0 ? `₹${shippingCost}` : 'Free'}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; border-top: 1px solid #F0E6F2; padding-top: 8px; margin-top: 8px; color: #1A0F1C;">
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; border-top: 1px solid #E5E7EB; padding-top: 8px; margin-top: 8px; color: #3D2FB3;">
               <span>Grand Total:</span>
               <span>₹${total}</span>
             </div>
           </div>
 
           <!-- Shipping Details -->
-          <h3 style="font-size: 15px; color: #1A0F1C; border-bottom: 2px solid #F0E6F2; padding-bottom: 8px; margin-bottom: 12px; font-weight: 600;">Delivery Address</h3>
-          <div style="font-size: 14px; color: #6B5A6F; line-height: 1.6; background-color: #FFFCFE; border: 1px solid #F0E6F2; border-radius: 16px; padding: 15px 20px;">
+          <h3 style="font-size: 15px; color: #111827; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 12px; font-weight: 600;">Delivery Address</h3>
+          <div style="font-size: 14px; color: #4B5563; line-height: 1.6; background-color: #F8FAFC; border: 1px solid #E5E7EB; border-radius: 16px; padding: 15px 20px;">
             <strong>${customerName}</strong><br/>
             ${address}<br/>
             <strong>Phone:</strong> ${phone}
           </div>
 
           <!-- Footer -->
-          <div style="margin-top: 40px; border-top: 1px solid #F0E6F2; padding-top: 20px; text-align: center; font-size: 12px; color: #8B7A8F; line-height: 1.5;">
-            Thank you for shopping with Saheli Shrungar! We hope your little star shines in their event.<br/>
-            For help or inquiries, contact us at support@sahelishrungar.com
+          <div style="margin-top: 40px; border-top: 1px solid #E5E7EB; padding-top: 20px; text-align: center; font-size: 12px; color: #6B7280; line-height: 1.5;">
+            Thank you for shopping with Somnath NX! We hope you love your purchase.<br/>
+            For help or inquiries, contact us at zenvibe.011@gmail.com
           </div>
 
         </div>
@@ -372,9 +378,9 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
       });
 
       await transporter.sendMail({
-        from: `"Saheli Shrungar Costumes" <${user}>`,
+        from: `"Somnath NX Costumes" <${user}>`,
         to: email,
-        subject: `Invoice for Order #${orderId} - Saheli Shrungar`,
+        subject: `Invoice for Order #${orderId} - Somnath NX`,
         html: emailHtml,
         attachments: pdfBuffer
           ? [
@@ -528,5 +534,84 @@ export async function sendBulkInquiryEmails(details: BulkInquiryDetails) {
   console.log(`Product: ${productTitle} (ID: ${productId}), Qty: ${quantity}`);
   console.log(`Customer: ${name} (${email}), Phone: ${phone}`);
   console.log("Both admin notification and customer confirmation emails logged.");
+  console.log("==================================================================");
+}
+
+export async function sendOutOfStockEmail(productTitle: string, variantDetails?: string) {
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || "zenvibe.011@gmail.com";
+  
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #FFE4E6; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(225,29,72,0.05);">
+      <div style="background-color: #E11D48; padding: 20px; text-align: center; color: white;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: bold;">⚠️ Alert: Product Out Of Stock</h2>
+      </div>
+      <div style="padding: 25px; color: #1A0F1C; line-height: 1.6;">
+        <p>Hello Admin,</p>
+        <p>This is an automated notification that the following product has run out of stock in your store:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: #FFF1F2; border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4E6; font-weight: bold; width: 35%;">Product Name:</td>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4E6;">${productTitle}</td>
+          </tr>
+          ${variantDetails ? `
+          <tr>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4E6; font-weight: bold;">Variant Info:</td>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4E6; color: #E11D48; font-weight: bold;">${variantDetails}</td>
+          </tr>
+          ` : ""}
+          <tr>
+            <td style="padding: 12px 15px; font-weight: bold;">Status:</td>
+            <td style="padding: 12px 15px; color: #E11D48; font-weight: bold;">OUT OF STOCK (0 units left)</td>
+          </tr>
+        </table>
+        
+        <p>Please update the inventory as soon as possible to keep orders flowing.</p>
+        
+        <p style="margin-top: 30px; font-size: 13px; color: #8B7A8F;">
+          Best Regards,<br/>
+          <strong>Somnath NX Inventory System</strong>
+        </p>
+      </div>
+    </div>
+  `;
+
+  let host = process.env.SMTP_HOST;
+  let port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+  if (!host && process.env.EMAIL_USER) {
+    host = "smtp.gmail.com";
+    port = 465;
+  }
+
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+
+      await transporter.sendMail({
+        from: `"Inventory Alert" <${user}>`,
+        to: adminEmail,
+        subject: `⚠️ Out of Stock Alert: ${productTitle}`,
+        html: emailHtml,
+      });
+
+      console.log(`[Email Service] Out-of-stock notification sent to admin: ${adminEmail}`);
+      return;
+    } catch (error) {
+      console.error("[Email Service] Failed to send out-of-stock notification via SMTP:", error);
+    }
+  }
+
+  console.log("==================================================================");
+  console.log(`[MOCK EMAIL FALLBACK] Out-of-Stock Notification Logged.`);
+  console.log(`Product: ${productTitle}, Variant: ${variantDetails || "None"}`);
+  console.log(`Recipient Admin: ${adminEmail}`);
   console.log("==================================================================");
 }

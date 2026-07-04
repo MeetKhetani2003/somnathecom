@@ -3,11 +3,136 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag, Star } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag, Star, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
+
+function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishlist: number[]; toggleWishlist: (id: number) => void; addToCart: (product: any, color?: string, size?: string) => void }) {
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+
+  const selectedColorObj = p.colors?.find((c: any) => c.name === selectedColor);
+  const availableSizes = p.colors && p.colors.length > 0
+    ? (selectedColorObj?.sizes || [])
+    : (p.sizes || []);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (p.colors && p.colors.length > 0 && !selectedColor) {
+      alert("Please select a color first");
+      return;
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      alert("Please select a size first");
+      return;
+    }
+
+    addToCart(p, selectedColor || undefined, selectedSize || undefined);
+  };
+
+  return (
+    <motion.div whileHover={{ y: -6 }} className="group relative w-full">
+      <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
+        <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
+          <Link href={`/product/${p.id}`}>
+            <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
+          </Link>
+          <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
+                {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
+              </span>
+              {p.tag && (
+                <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
+                  {p.tag}
+                </span>
+              )}
+            </div>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
+              <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
+            </button>
+          </div>
+        </div>
+        <div className="p-5 flex flex-col justify-between flex-1">
+          <div>
+            <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
+                ))}
+              </div>
+              <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
+              {p.mrp > p.price && (
+                <>
+                  <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
+                  <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                </>
+              )}
+            </div>
+
+            {/* Colors & Sizes Selectors */}
+            {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-[13px]">
+                {p.colors && p.colors.length > 0 ? (
+                  <select 
+                    value={selectedColor}
+                    onChange={(e) => {
+                      setSelectedColor(e.target.value);
+                      setSelectedSize(""); // Reset size when color changes
+                    }}
+                    className="rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary"
+                  >
+                    <option value="">Color</option>
+                    {p.colors.map((c: any) => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="hidden" />
+                )}
+                
+                <select 
+                  value={selectedSize}
+                  onChange={(e) => setSelectedSize(e.target.value)}
+                  className={cn(
+                    "rounded-lg border border-border bg-white px-2 py-1.5 font-semibold text-dark/80 outline-none focus:border-primary",
+                    !(p.colors && p.colors.length > 0) && "col-span-2"
+                  )}
+                  disabled={p.colors && p.colors.length > 0 && !selectedColor}
+                >
+                  <option value="">Size</option>
+                  {availableSizes.map((s: any) => {
+                    const sizeLabel = typeof s === "object" ? s.size : s;
+                    const sizeStock = typeof s === "object" ? s.stock : 10;
+                    return (
+                      <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
+                        {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
+          </div>
+          <button 
+            onClick={handleAddToCart} 
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
+          >
+            <ShoppingBag className="h-4 w-4" /> Add to cart
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Profile() {
   const { data: session, update } = useSession();
@@ -33,11 +158,23 @@ export default function Profile() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
+  // Tracking states
+  const [activeTrackingId, setActiveTrackingId] = useState<string | null>(null);
+  const [trackingData, setTrackingData] = useState<any>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+
   // Address fields
   const [addresses, setAddresses] = useState<string[]>([]);
   const [defaultAddress, setDefaultAddress] = useState<string>("");
-  const [newAddress, setNewAddress] = useState("");
   
+  // Address form fields (Shiprocket aligned)
+  const [streetInput, setStreetInput] = useState("");
+  const [cityInput, setCityInput] = useState("");
+  const [stateInput, setStateInput] = useState("");
+  const [pincodeInput, setPincodeInput] = useState("");
+  const [editingAddressIndex, setEditingAddressIndex] = useState<number | null>(null);
+  const [addressError, setAddressError] = useState("");
+
   const [phone, setPhone] = useState("");
   const [savingPhone, setSavingPhone] = useState(false);
 
@@ -49,6 +186,42 @@ export default function Profile() {
   const [submittingExchange, setSubmittingExchange] = useState(false);
   const [allProductsForExchange, setAllProductsForExchange] = useState<any[]>([]);
   const [exchangePaymentMethod, setExchangePaymentMethod] = useState<"online" | "cod">("online");
+
+  const [selectedProductIdForExchange, setSelectedProductIdForExchange] = useState<string>("");
+  const [selectedColorForExchange, setSelectedColorForExchange] = useState<string>("");
+  const [selectedSizeForExchange, setSelectedSizeForExchange] = useState<string>("");
+
+  const handleSelectProductToExchange = (productId: string) => {
+    setSelectedProductIdForExchange(productId);
+    if (!productId) {
+      setExchangeItems([]);
+      setSelectedColorForExchange("");
+      setSelectedSizeForExchange("");
+      return;
+    }
+    const orderItem = selectedOrderForExchange.items.find((item: any) => String(item.productId) === String(productId));
+    if (orderItem) {
+      setSelectedColorForExchange(orderItem.color || "");
+      setSelectedSizeForExchange(orderItem.size || "");
+      
+      setExchangeItems([{
+        productId: orderItem.productId,
+        title: orderItem.title,
+        oldColor: orderItem.color || "",
+        oldSize: orderItem.size,
+        newColor: orderItem.color || "",
+        newSize: orderItem.size,
+        quantity: orderItem.quantity,
+        image: orderItem.image
+      }]);
+    }
+  };
+
+  const isExchangeFormInvalid = !selectedProductIdForExchange || 
+    !selectedSizeForExchange || 
+    (exchangeItems[0] && 
+     exchangeItems[0].newColor === exchangeItems[0].oldColor && 
+     exchangeItems[0].newSize === exchangeItems[0].oldSize);
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -73,6 +246,66 @@ export default function Profile() {
     }
   };
 
+  // Client-side address parser helper to avoid server libraries inside browser
+  const parseClientAddress = (addressStr: string) => {
+    const pincodeMatch = addressStr.match(/\b\d{6}\b/);
+    const pincode = pincodeMatch ? pincodeMatch[0] : "";
+    
+    let cleanAddress = addressStr.replace(/\b\d{6}\b/, "").trim();
+    cleanAddress = cleanAddress.replace(/[-\s,]+$/, "").trim();
+    
+    const parts = cleanAddress.split(",").map(p => p.trim()).filter(Boolean);
+    
+    let city = "";
+    let state = "";
+    let street = cleanAddress;
+    
+    if (parts.length >= 2) {
+      state = parts[parts.length - 1];
+      city = parts[parts.length - 2];
+      street = parts.slice(0, parts.length - 2).join(", ") || city;
+    } else if (parts.length === 1) {
+      const words = parts[0].split(/\s+/).map(w => w.trim()).filter(Boolean);
+      if (words.length >= 3) {
+        city = words[words.length - 1];
+        street = words.slice(0, words.length - 1).join(" ");
+      } else if (words.length === 2) {
+        city = words[1];
+        street = words[0];
+      } else {
+        city = words[0] || "";
+        street = words[0] || "";
+      }
+    }
+    
+    return {
+      street: street.replace(" - Detailed Address Info", ""),
+      city,
+      state,
+      pincode
+    };
+  };
+
+  const handleTrackShipment = async (trackingNum: string) => {
+    setActiveTrackingId(trackingNum);
+    setTrackingLoading(true);
+    setTrackingData(null);
+    try {
+      const res = await fetch(`/api/shipping/track?trackingNumber=${trackingNum}`);
+      const data = await res.json();
+      if (data.success) {
+        setTrackingData(data);
+      } else {
+        setTrackingData({ error: data.message || "Failed to load tracking details." });
+      }
+    } catch (err) {
+      console.error(err);
+      setTrackingData({ error: "Failed to connect to tracking service." });
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
   const handleExchangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrderForExchange) return;
@@ -87,7 +320,9 @@ export default function Profile() {
           newSizes: exchangeItems.map(item => ({
             productId: item.productId,
             oldSize: item.oldSize,
-            newSize: item.newSize
+            oldColor: item.oldColor,
+            newSize: item.newSize,
+            newColor: item.newColor
           })),
           paymentMethod: exchangePaymentMethod
         })
@@ -270,16 +505,101 @@ export default function Profile() {
   };
 
   const handleAddAddress = async () => {
-    if (!newAddress.trim()) return;
-    const trimmed = newAddress.trim();
-    const updatedAddresses = [...addresses, trimmed];
-    const updatedDefault = defaultAddress ? defaultAddress : trimmed;
+    setAddressError("");
+    if (!streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
+      setAddressError("All fields (Street, City, State, Pincode) are required.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincodeInput.trim())) {
+      setAddressError("Please enter a valid 6-digit postal pincode.");
+      return;
+    }
+
+    const trimmedStreet = streetInput.trim();
+    const trimmedCity = cityInput.trim();
+    const trimmedState = stateInput.trim();
+    const trimmedPincode = pincodeInput.trim();
+
+    const combinedAddress = `${trimmedStreet}, ${trimmedCity}, ${trimmedState} - ${trimmedPincode}`;
+    const updatedAddresses = [...addresses, combinedAddress];
+    const updatedDefault = defaultAddress ? defaultAddress : combinedAddress;
 
     setAddresses(updatedAddresses);
     if (!defaultAddress) {
       setDefaultAddress(updatedDefault);
     }
-    setNewAddress("");
+    
+    // Clear inputs
+    setStreetInput("");
+    setCityInput("");
+    setStateInput("");
+    setPincodeInput("");
+
+    await saveAddressesToDb(updatedAddresses, updatedDefault);
+  };
+
+  const handleStartEditAddress = (idx: number) => {
+    const addr = addresses[idx];
+    if (!addr) return;
+    
+    const parsed = parseClientAddress(addr);
+    setStreetInput(parsed.street);
+    setCityInput(parsed.city);
+    setStateInput(parsed.state);
+    setPincodeInput(parsed.pincode);
+    setEditingAddressIndex(idx);
+    setAddressError("");
+  };
+
+  const handleCancelEdit = () => {
+    setStreetInput("");
+    setCityInput("");
+    setStateInput("");
+    setPincodeInput("");
+    setEditingAddressIndex(null);
+    setAddressError("");
+  };
+
+  const handleSaveEditAddress = async () => {
+    setAddressError("");
+    if (editingAddressIndex === null) return;
+    
+    if (!streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
+      setAddressError("All fields (Street, City, State, Pincode) are required.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincodeInput.trim())) {
+      setAddressError("Please enter a valid 6-digit postal pincode.");
+      return;
+    }
+
+    const trimmedStreet = streetInput.trim();
+    const trimmedCity = cityInput.trim();
+    const trimmedState = stateInput.trim();
+    const trimmedPincode = pincodeInput.trim();
+
+    const combinedAddress = `${trimmedStreet}, ${trimmedCity}, ${trimmedState} - ${trimmedPincode}`;
+    
+    const updatedAddresses = [...addresses];
+    const oldAddress = updatedAddresses[editingAddressIndex];
+    updatedAddresses[editingAddressIndex] = combinedAddress;
+    
+    let updatedDefault = defaultAddress;
+    if (defaultAddress === oldAddress) {
+      updatedDefault = combinedAddress;
+    }
+
+    setAddresses(updatedAddresses);
+    setDefaultAddress(updatedDefault);
+    
+    // Clear inputs & close edit mode
+    setStreetInput("");
+    setCityInput("");
+    setStateInput("");
+    setPincodeInput("");
+    setEditingAddressIndex(null);
 
     await saveAddressesToDb(updatedAddresses, updatedDefault);
   };
@@ -547,8 +867,69 @@ export default function Profile() {
                             </div>
 
                             {order.trackingNumber && (
-                              <div className="mt-8 text-[13px] font-medium text-dark/70 bg-bg-base p-4 rounded-xl border border-border">
-                                <strong className="text-dark">AWB Tracking:</strong> <span className="font-mono text-primary font-bold ml-1">{order.trackingNumber}</span> (Speed Post / Express Delivery)
+                              <div className="mt-6 text-[13.5px] font-medium text-dark/70 bg-bg-base p-5 rounded-2xl border border-border/80 shadow-sm">
+                                <div className="flex items-center justify-between gap-4 flex-wrap">
+                                  <div>
+                                    <strong className="text-dark">AWB Tracking:</strong>
+                                    <span className="font-mono text-primary font-bold ml-1.5 bg-primary/5 px-2 py-0.5 rounded border border-primary/25 text-[12.5px]">{order.trackingNumber}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleTrackShipment(order.trackingNumber)}
+                                    className="rounded-full bg-primary hover:bg-[#2E2387] text-white px-4 py-1.5 text-[12px] font-bold transition shadow shadow-primary/10"
+                                  >
+                                    {activeTrackingId === order.trackingNumber && trackingLoading ? "Fetching..." : "Track Package Live"}
+                                  </button>
+                                </div>
+
+                                {/* Tracking Scans Detail Timeline */}
+                                {activeTrackingId === order.trackingNumber && (
+                                  <div className="mt-5 border-t border-border/70 pt-4">
+                                    <h4 className="font-bold text-dark text-[13px] uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                      <span className="h-2 w-2 rounded-full bg-green-500 animate-ping" /> Shipment Journey
+                                    </h4>
+                                    {trackingLoading && (
+                                      <div className="flex items-center gap-2 py-4 justify-center text-dark/40 text-[12px]">
+                                        <div className="h-4 w-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                        <span>Loading live status from Shiprocket...</span>
+                                      </div>
+                                    )}
+                                    
+                                    {trackingData && trackingData.error && (
+                                      <div className="text-red-500 text-[12.5px] bg-red-50 border border-red-100 p-3 rounded-lg">
+                                        {trackingData.error}
+                                      </div>
+                                    )}
+
+                                    {trackingData && !trackingData.error && (
+                                      <div className="space-y-4">
+                                        <div className="flex items-center justify-between text-[12.5px] text-dark/60 border-b border-border/50 pb-2 mb-2 font-semibold">
+                                          <span>Partner: {trackingData.courier}</span>
+                                          <span className="text-primary uppercase text-[11px] bg-primary/10 px-2.5 py-0.5 rounded-full font-bold">
+                                            Status: {trackingData.currentStatus}
+                                          </span>
+                                        </div>
+                                        {trackingData.scans && trackingData.scans.length > 0 ? (
+                                          <div className="relative pl-4 border-l-2 border-primary/20 space-y-4 py-1.5">
+                                            {trackingData.scans.map((scan: any, sIdx: number) => (
+                                              <div key={sIdx} className="relative">
+                                                {/* Bullet dot */}
+                                                <div className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-white" />
+                                                <div className="text-[12.5px] font-bold text-dark leading-tight">{scan.activity}</div>
+                                                <div className="text-[11.5px] text-dark/50 mt-0.5">
+                                                  {scan.date} {scan.location && `• ${scan.location}`}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div className="text-dark/50 text-[12px] italic text-center py-2">
+                                            No detailed tracking scans recorded yet.
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -572,26 +953,35 @@ export default function Profile() {
                             )}
                           </div>
 
-                          {/* Exchange button */}
-                          {((Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24) <= 7) && order.shippingStatus !== "Cancelled" && !order.exchangeRequested && (
-                            <button
-                              onClick={() => {
-                                setSelectedOrderForExchange(order);
-                                setNewExchangeAddress(order.shippingDetails.address);
-                                const initialExchangeSizes = order.items.map((item: any) => ({
-                                  productId: item.productId, title: item.title,
-                                  oldSize: item.size, newSize: item.size,
-                                  quantity: item.quantity, image: item.image,
-                                }));
-                                setExchangeItems(initialExchangeSizes);
-                                fetchProductsForExchange();
-                                setIsExchangeModalOpen(true);
-                              }}
-                              className="rounded-full border-2 border-dark bg-transparent px-5 py-2.5 text-[14px] font-bold text-dark hover:bg-dark hover:text-white transition-all active:scale-[0.98]"
+                          <div className="flex flex-wrap gap-3">
+                            <a
+                              href={`/api/checkout/download-invoice?orderId=${order._id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-full border-2 border-primary bg-primary/5 px-5 py-2.5 text-[14px] font-bold text-primary hover:bg-primary hover:text-white transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
                             >
-                              Exchange Size / Address
-                            </button>
-                          )}
+                              <Download className="h-4 w-4" /> Download Invoice
+                            </a>
+                            {order.shippingStatus === "Delivered" && (() => {
+                              const deliveryTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.createdAt).getTime();
+                              const canExchange = ((Date.now() - deliveryTime) / (1000 * 60 * 60 * 24) <= 7) && !order.exchangeRequested;
+                              return canExchange && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedOrderForExchange(order);
+                                    setNewExchangeAddress(order.shippingDetails.address);
+                                    setExchangeItems([]);
+                                    setSelectedProductIdForExchange("");
+                                    fetchProductsForExchange();
+                                    setIsExchangeModalOpen(true);
+                                  }}
+                                  className="rounded-full border-2 border-dark bg-transparent px-5 py-2.5 text-[14px] font-bold text-dark hover:bg-dark hover:text-white transition-all active:scale-[0.98]"
+                                >
+                                  Exchange Size / Color / Address
+                                </button>
+                              );
+                            })()}
+                          </div>
                           {order.exchangeRequested && (
                             <span className="rounded-full bg-orange-50 border border-orange-200 px-4 py-2 text-[13px] font-bold text-orange-700 shadow-sm">
                               Exchange Processing
@@ -623,58 +1013,7 @@ export default function Profile() {
                       {productsList
                         .filter((p) => wishlist.includes(p.id))
                         .map((p) => (
-                          <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-full">
-                            <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
-                              <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-                                <Link href={`/product/${p.id}`}>
-                                  <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
-                                </Link>
-                                <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-                                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                    <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
-                                      {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
-                                    </span>
-                                    {p.tag && (
-                                      <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                        {p.tag}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
-                                    <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="p-5 flex flex-col justify-between flex-1">
-                                <div>
-                                  <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                                  <div className="mt-2 flex items-center gap-1.5">
-                                    <div className="flex items-center gap-0.5">
-                                      {Array.from({ length: 5 }).map((_, i) => (
-                                        <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
-                                      ))}
-                                    </div>
-                                    <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
-                                  </div>
-                                  <div className="mt-3 flex items-baseline gap-2">
-                                    <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
-                                    {p.mrp > p.price && (
-                                      <>
-                                        <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
-                                        <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                <button 
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
-                                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
-                                >
-                                  <ShoppingBag className="h-4 w-4" /> Add to cart
-                                </button>
-                              </div>
-                            </div>
-                          </motion.div>
+                          <ProductCard key={p.id} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
                         ))}
                     </div>
                   )}
@@ -719,6 +1058,12 @@ export default function Profile() {
                             </button>
                           )}
                           <button
+                            onClick={() => handleStartEditAddress(idx)}
+                            className="rounded-full border border-border px-4 py-2 text-[13px] font-bold text-dark/70 hover:bg-bg-base hover:text-dark transition-all active:scale-[0.97]"
+                          >
+                            Edit
+                          </button>
+                          <button
                             onClick={() => handleDeleteAddress(addr)}
                             className="grid h-10 w-10 place-items-center rounded-full text-dark/40 hover:bg-red-50 hover:text-red-500 border border-border transition-all active:scale-[0.95]"
                             title="Delete Address"
@@ -731,21 +1076,88 @@ export default function Profile() {
                   )}
 
                   <div className="mt-10 border-t border-border pt-8">
-                    <h3 className="font-display text-[18px] font-bold text-dark mb-4">Add New Address</h3>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <input
-                        type="text"
-                        value={newAddress}
-                        onChange={(e) => setNewAddress(e.target.value)}
-                        placeholder="Enter complete shipping address"
-                        className="h-12 flex-1 rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-                      />
-                      <button
-                        onClick={handleAddAddress}
-                        className="rounded-xl bg-dark px-8 py-3 text-[14px] font-bold text-white hover:bg-primary transition-colors shadow-lg active:scale-[0.98]"
-                      >
-                        Save Address
-                      </button>
+                    <h3 className="font-display text-[18px] font-bold text-dark mb-4">
+                      {editingAddressIndex !== null ? "Edit Address" : "Add New Address"}
+                    </h3>
+                    
+                    <div className="space-y-4 max-w-[600px]">
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Street Address</label>
+                        <input
+                          type="text"
+                          value={streetInput}
+                          onChange={(e) => setStreetInput(e.target.value)}
+                          placeholder="e.g. Flat 101, building name, street name"
+                          className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">City</label>
+                          <input
+                            type="text"
+                            value={cityInput}
+                            onChange={(e) => setCityInput(e.target.value)}
+                            placeholder="e.g. Junagadh"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">State</label>
+                          <input
+                            type="text"
+                            value={stateInput}
+                            onChange={(e) => setStateInput(e.target.value)}
+                            placeholder="e.g. Gujarat"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Pincode (Required for Shiprocket)</label>
+                        <input
+                          type="text"
+                          value={pincodeInput}
+                          onChange={(e) => setPincodeInput(e.target.value)}
+                          placeholder="e.g. 362001"
+                          maxLength={6}
+                          className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+
+                      {addressError && (
+                        <div className="text-red-500 text-[13px] font-medium bg-red-50 border border-red-100 p-2.5 rounded-lg">
+                          {addressError}
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 pt-2">
+                        {editingAddressIndex !== null ? (
+                          <>
+                            <button
+                              onClick={handleSaveEditAddress}
+                              className="rounded-xl bg-primary px-8 py-3 text-[14px] font-bold text-white hover:bg-opacity-90 transition shadow-lg active:scale-[0.98]"
+                            >
+                              Save Changes
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="rounded-xl bg-gray-200 px-8 py-3 text-[14px] font-bold text-dark hover:bg-gray-300 transition active:scale-[0.98]"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={handleAddAddress}
+                            className="rounded-xl bg-dark px-8 py-3 text-[14px] font-bold text-white hover:bg-primary transition-colors shadow-lg active:scale-[0.98]"
+                          >
+                            Save Address
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -778,42 +1190,113 @@ export default function Profile() {
                   A flat redelivery and processing fee of <span className="font-bold text-primary">₹120</span> applies to all exchanges.
                 </div>
 
-                {/* Items Section */}
-                <div className="space-y-4">
-                  <label className="block text-[13px] font-bold uppercase tracking-wider text-dark/70">Select New Sizes</label>
-                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border">
-                    {exchangeItems.map((item, idx) => {
-                      const product = allProductsForExchange.find(p => p.id === item.productId);
-                      const sizeOptions = product?.sizes || [];
-                      return (
-                        <div key={idx} className="flex gap-4 items-center border border-border p-3.5 rounded-2xl bg-bg-base">
-                          {item.image && <img src={item.image} className="h-14 w-12 rounded-lg object-cover border border-border/50 shrink-0" />}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-[14px] font-bold text-dark truncate">{item.title}</h4>
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="text-[12px] font-bold text-dark/50">Size:</span>
-                              <select
-                                value={item.newSize}
-                                onChange={(e) => {
-                                  const updated = exchangeItems.map((x, i) => i === idx ? { ...x, newSize: e.target.value } : x);
-                                  setExchangeItems(updated);
-                                }}
-                                className="h-8 rounded-lg border border-border bg-surface px-2 text-[13px] outline-none font-bold text-primary focus:border-primary/50"
-                              >
-                                <option value={item.oldSize}>{item.oldSize} (Current)</option>
-                                {sizeOptions.filter((s: any) => s.size !== item.oldSize).map((s: any) => (
-                                  <option key={s.size} value={s.size} disabled={s.stock === 0}>
-                                    {s.size} {s.stock === 0 ? "(Out of stock)" : `(${s.stock} left)`}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                {/* Product Selection */}
+                <div>
+                  <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Select Product to Exchange</label>
+                  <select
+                    value={selectedProductIdForExchange}
+                    onChange={(e) => handleSelectProductToExchange(e.target.value)}
+                    className="h-12 w-full appearance-none rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium text-dark outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10 cursor-pointer"
+                    required
+                  >
+                    <option value="">-- Choose Product --</option>
+                    {selectedOrderForExchange.items.map((item: any) => (
+                      <option key={item.productId} value={item.productId.toString()}>
+                        {item.title} (Size: {item.size}, Color: {item.color || "N/A"})
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* Variant Selection */}
+                {selectedProductIdForExchange && (() => {
+                  const orderItem = selectedOrderForExchange.items.find((item: any) => String(item.productId) === String(selectedProductIdForExchange));
+                  const dbProduct = allProductsForExchange.find(p => String(p.id) === String(selectedProductIdForExchange));
+                  if (!orderItem) return null;
+
+                  const colorOptions = dbProduct?.colors || [];
+                  const colorObj = colorOptions.find((c: any) => c.name === selectedColorForExchange);
+                  const sizeOptions = colorOptions.length > 0 
+                    ? (colorObj?.sizes || [])
+                    : (dbProduct?.sizes || []);
+
+                  const isIdentical = selectedColorForExchange === (orderItem.color || "") && selectedSizeForExchange === orderItem.size;
+
+                  return (
+                    <div className="space-y-4 border border-border/80 p-4 rounded-2xl bg-bg-base/40">
+                      <div className="flex gap-4 items-center">
+                        {orderItem.image && <img src={orderItem.image} className="h-14 w-12 rounded-lg object-cover border border-border/50 shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[14px] font-bold text-dark truncate">{orderItem.title}</h4>
+                          <p className="text-[12px] text-dark/50 mt-0.5">Purchased: Size {orderItem.size} / Color {orderItem.color || "N/A"}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        {colorOptions.length > 0 ? (
+                          <div>
+                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Color</label>
+                            <select
+                              value={selectedColorForExchange}
+                              onChange={(e) => {
+                                const newColor = e.target.value;
+                                setSelectedColorForExchange(newColor);
+                                setSelectedSizeForExchange("");
+                                setExchangeItems([{
+                                  ...exchangeItems[0],
+                                  newColor: newColor,
+                                  newSize: ""
+                                }]);
+                              }}
+                              className="h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] outline-none font-semibold text-dark focus:border-primary/50"
+                            >
+                              <option value="">Color</option>
+                              {colorOptions.map((c: any) => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <div className="hidden" />
+                        )}
+
+                        <div className={cn(colorOptions.length === 0 && "col-span-2")}>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Size</label>
+                          <select
+                            value={selectedSizeForExchange}
+                            onChange={(e) => {
+                              const newSize = e.target.value;
+                              setSelectedSizeForExchange(newSize);
+                              setExchangeItems([{
+                                ...exchangeItems[0],
+                                newSize: newSize
+                              }]);
+                            }}
+                            className="h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] outline-none font-semibold text-dark focus:border-primary/50"
+                            disabled={colorOptions.length > 0 && !selectedColorForExchange}
+                          >
+                            <option value="">Size</option>
+                            {sizeOptions.map((s: any) => {
+                              const sizeLabel = typeof s === "object" ? s.size : s;
+                              const sizeStock = typeof s === "object" ? s.stock : 10;
+                              return (
+                                <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
+                                  {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      </div>
+
+                      {isIdentical && (
+                        <div className="text-[12px] font-semibold text-red-500 bg-red-50 p-2 rounded-lg border border-red-100 mt-2">
+                          Please select a different color or size to exchange.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Address Section */}
                 <div>
@@ -865,7 +1348,7 @@ export default function Profile() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={submittingExchange}
+                    disabled={submittingExchange || isExchangeFormInvalid}
                     className="w-full rounded-full bg-primary py-4 text-[15px] font-bold text-white transition hover:bg-[#2E2387] shadow-lg shadow-primary/20 disabled:opacity-50"
                   >
                     {submittingExchange ? "Processing Request..." : "Confirm Exchange & Pay"}

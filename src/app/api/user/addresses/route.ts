@@ -4,7 +4,7 @@ import { User } from "@/models/User";
 
 export async function POST(req: Request) {
   try {
-    const { email, addresses, defaultAddress } = await req.json();
+    const { email, addresses, defaultAddress, phone } = await req.json();
 
     if (!email || !Array.isArray(addresses)) {
       return NextResponse.json(
@@ -14,27 +14,34 @@ export async function POST(req: Request) {
     }
 
     await dbConnect();
-    const user = await User.findOne({ email });
 
-    if (!user) {
+    const updateFields: any = {
+      addresses: addresses
+    };
+    if (phone) {
+      updateFields.phone = phone;
+    }
+    if (typeof defaultAddress === "string") {
+      updateFields.defaultAddress = defaultAddress;
+    } else if (addresses.length > 0) {
+      updateFields.defaultAddress = addresses[0];
+    } else {
+      updateFields.defaultAddress = "";
+    }
+
+    const result = await User.updateOne(
+      { email },
+      { $set: updateFields }
+    );
+
+    if (result.matchedCount === 0) {
       return NextResponse.json({ success: false, message: "User not found." }, { status: 404 });
     }
 
-    user.addresses = addresses;
-    if (typeof defaultAddress === "string") {
-      user.defaultAddress = defaultAddress;
-    } else if (addresses.length > 0 && !user.defaultAddress) {
-      user.defaultAddress = addresses[0];
-    } else if (addresses.length === 0) {
-      user.defaultAddress = "";
-    }
-
-    await user.save();
-
     return NextResponse.json({
       success: true,
-      addresses: user.addresses,
-      defaultAddress: user.defaultAddress,
+      addresses: addresses,
+      defaultAddress: updateFields.defaultAddress,
     });
   } catch (error: any) {
     console.error("Error updating user addresses:", error);

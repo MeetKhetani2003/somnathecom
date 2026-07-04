@@ -46,15 +46,31 @@ export async function POST(req: Request) {
           }, { status: 400 });
         }
 
-        // If size is actually changing
-        if (reqItem.newSize && reqItem.newSize !== orderItem.size) {
+        // If variant (size or color) is changing
+        if ((reqItem.newSize && reqItem.newSize !== orderItem.size) || (reqItem.newColor && reqItem.newColor !== orderItem.color)) {
           const product = await Product.findOne({ id: reqItem.productId });
           if (!product) {
             return NextResponse.json({ success: false, message: `Product not found: ${orderItem.title}` }, { status: 400 });
           }
 
-          // Check if product supports sizes
-          if (product.sizes && product.sizes.length > 0) {
+          const hasColors = product.colors && product.colors.length > 0;
+          if (hasColors) {
+            const newColorName = reqItem.newColor || orderItem.color;
+            const newColorObj = product.colors.find((c: any) => c.name === newColorName);
+            if (!newColorObj) {
+              return NextResponse.json({ success: false, message: `Color ${newColorName} is not available for ${product.title}` }, { status: 400 });
+            }
+            const newSizeObj = newColorObj.sizes.find((s: any) => s.size === reqItem.newSize);
+            if (!newSizeObj) {
+              return NextResponse.json({ success: false, message: `Size ${reqItem.newSize} in color ${newColorName} is not available for ${product.title}` }, { status: 400 });
+            }
+            if (newSizeObj.stock < orderItem.quantity) {
+              return NextResponse.json({ 
+                success: false, 
+                message: `Insufficient stock for size ${reqItem.newSize} in color ${newColorName} of ${product.title} (Available: ${newSizeObj.stock})` 
+              }, { status: 400 });
+            }
+          } else if (product.sizes && product.sizes.length > 0) {
             const newSizeObj = product.sizes.find((s: any) => s.size === reqItem.newSize);
             if (!newSizeObj) {
               return NextResponse.json({ success: false, message: `Size ${reqItem.newSize} is not available for ${product.title}` }, { status: 400 });
@@ -77,44 +93,59 @@ export async function POST(req: Request) {
       if (newSizes && newSizes.length > 0) {
         for (const reqItem of newSizes) {
           const orderItem = order.items.find((item: any) => item.productId === reqItem.productId && item.size === reqItem.oldSize);
-          if (orderItem && reqItem.newSize && reqItem.newSize !== orderItem.size) {
-            originalSizes.push({ productId: reqItem.productId, size: orderItem.size });
-            recordedNewSizes.push({ productId: reqItem.productId, size: reqItem.newSize });
+          if (orderItem && ((reqItem.newSize && reqItem.newSize !== orderItem.size) || (reqItem.newColor && reqItem.newColor !== orderItem.color))) {
+            originalSizes.push({ productId: reqItem.productId, size: orderItem.size, color: orderItem.color || "" });
+            recordedNewSizes.push({ productId: reqItem.productId, size: reqItem.newSize, color: reqItem.newColor || orderItem.color || "" });
 
             const product = await Product.findOne({ id: reqItem.productId });
             if (product) {
               const hasColors = product.colors && product.colors.length > 0;
-              if (hasColors && orderItem.color) {
-                const colorObj = product.colors.find((c: any) => c.name === orderItem.color);
-                if (colorObj) {
-                  // Restore stock of old size
-                  const oldSizeObj = colorObj.sizes.find((s: any) => s.size === orderItem.size);
+              if (hasColors) {
+                // Restore old variant stock
+                const oldColorObj = product.colors.find((c: any) => c.name === orderItem.color);
+                if (oldColorObj) {
+                  const oldSizeObj = oldColorObj.sizes.find((s: any) => s.size === orderItem.size);
                   if (oldSizeObj) {
                     oldSizeObj.stock += orderItem.quantity;
                   }
-                  // Deduct stock of new size
-                  const newSizeObj = colorObj.sizes.find((s: any) => s.size === reqItem.newSize);
+                }
+                // Deduct new variant stock
+                const newColorName = reqItem.newColor || orderItem.color;
+                const newColorObj = product.colors.find((c: any) => c.name === newColorName);
+                if (newColorObj) {
+                  const newSizeObj = newColorObj.sizes.find((s: any) => s.size === reqItem.newSize);
                   if (newSizeObj) {
                     newSizeObj.stock -= orderItem.quantity;
                   }
                 }
-                // Synchronize flat sizes array with color-specific sizes for backward compatibility
                 product.set("sizes", product.colors.flatMap((c: any) => c.sizes));
               } else if (product.sizes && product.sizes.length > 0) {
-                // Restore stock of old size
+                // Restore old size stock
                 const oldSizeObj = product.sizes.find((s: any) => s.size === orderItem.size);
                 if (oldSizeObj) {
                   oldSizeObj.stock += orderItem.quantity;
                 }
-                // Deduct stock of new size
+                // Deduct new size stock
                 const newSizeObj = product.sizes.find((s: any) => s.size === reqItem.newSize);
                 if (newSizeObj) {
                   newSizeObj.stock -= orderItem.quantity;
                 }
               }
-              await product.save();
+              await Product.updateOne(
+                { _id: product._id },
+                { 
+                  $set: { 
+                    colors: product.colors,
+                    sizes: product.sizes,
+                    stock: product.stock 
+                  }
+                }
+              );
             }
             orderItem.size = reqItem.newSize;
+            if (reqItem.newColor) {
+              orderItem.color = reqItem.newColor;
+            }
           }
         }
       }

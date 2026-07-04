@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 export type Product = {
   id: number;
@@ -39,6 +39,8 @@ type ShopContextType = {
   setShowCart: (v: boolean) => void;
   referralCode: string | null;
   setReferralCode: (code: string | null) => void;
+  isLoginOpen: boolean;
+  setIsLoginOpen: (v: boolean) => void;
 };
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -54,6 +56,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [showCart, setShowCart] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [referralCode, setReferralCodeState] = useState<string | null>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const setReferralCode = (code: string | null) => {
     if (typeof window !== "undefined") {
@@ -138,13 +141,17 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   const toggleWishlist = (id: number) => {
     if (!session?.user) {
-      signIn("google");
+      setIsLoginOpen(true);
       return;
     }
     setWishlist((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
   };
 
   const addToCart = (product: Product, color?: string, size?: string) => {
+    if (!session?.user) {
+      setIsLoginOpen(true);
+      return;
+    }
     const cartItemId = makeCartItemId(product.id, color, size);
     
     // Find stock limit of the selected variant
@@ -268,7 +275,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
   return (
     <ShopContext.Provider
-      value={{ wishlist, toggleWishlist, cartCount, cartItems, addToCart, removeFromCart, updateQuantity, updateCartItemVariant, clearCart, showCart, setShowCart, referralCode, setReferralCode }}
+      value={{ wishlist, toggleWishlist, cartCount, cartItems, addToCart, removeFromCart, updateQuantity, updateCartItemVariant, clearCart, showCart, setShowCart, referralCode, setReferralCode, isLoginOpen, setIsLoginOpen }}
     >
       {children}
     </ShopContext.Provider>

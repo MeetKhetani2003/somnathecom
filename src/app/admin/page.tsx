@@ -8,6 +8,7 @@ import {
   Package, ShoppingBag, Users, HelpCircle, Plus, Edit, Trash2, 
   RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck, X, Download
 } from "lucide-react";
+import Barcode from "react-barcode";
 
 function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -25,6 +26,9 @@ function AdminDashboard() {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
 
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [exchangeSearchQuery, setExchangeSearchQuery] = useState("");
+
   // Coupon Form Modal States
   const [couponModalOpen, setCouponModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<any | null>(null);
@@ -35,6 +39,7 @@ function AdminDashboard() {
 
   // Loading & Action states
   const [loading, setLoading] = useState(true);
+  const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -308,24 +313,30 @@ function AdminDashboard() {
     }
   };
 
-  // Toggle user admin role
-  const handleToggleUserRole = async (email: string, currentRole: string) => {
-    const targetRole = currentRole === "admin" ? "user" : "admin";
+  const handleSyncShiprocketAwb = async (orderId: string) => {
+    setSyncingOrderId(orderId);
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/orders/sync-shiprocket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role: targetRole }),
+        body: JSON.stringify({ orderId }),
       });
       const data = await res.json();
       if (data.success) {
-        alert(`User role updated to ${targetRole}`);
+        alert(data.message || `AWB synced successfully!`);
         fetchData();
+      } else {
+        alert(data.message || "Failed to sync AWB from Shiprocket.");
       }
     } catch (error) {
       console.error(error);
+      alert("Error syncing AWB from Shiprocket.");
+    } finally {
+      setSyncingOrderId(null);
     }
   };
+
+
 
   // Show loading while auth status resolves
   if (status === "loading") {
@@ -650,11 +661,37 @@ function AdminDashboard() {
                       <Plus className="h-4 w-4" /> Create Offline Order
                     </Link>
                   </div>
+                  {/* Search Bar */}
+                  <div className="relative mb-6">
+                    <input
+                      type="text"
+                      placeholder="Scan barcode / Enter Order ID, name, or phone number to search..."
+                      value={orderSearchQuery}
+                      onChange={(e) => setOrderSearchQuery(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-border bg-white pl-10 pr-4 text-[13.5px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10 text-dark"
+                    />
+                    <div className="absolute left-3.5 top-3.5">
+                      <svg className="h-4 w-4 text-dark/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                  </div>
+
                   <div className="space-y-4">
-                    {orders.length === 0 ? (
-                      <p className="text-[14px] text-center text-dark/50 py-8">No orders placed yet.</p>
-                    ) : (
-                      orders.map((order) => (
+                    {(() => {
+                      const filtered = orders.filter(o => {
+                        const q = orderSearchQuery.toLowerCase().trim();
+                        if (!q) return true;
+                        return (
+                          o._id.toLowerCase().includes(q) ||
+                          (o.trackingNumber && o.trackingNumber.toLowerCase().includes(q)) ||
+                          (o.shippingDetails?.name && o.shippingDetails.name.toLowerCase().includes(q)) ||
+                          (o.shippingDetails?.phone && o.shippingDetails.phone.includes(q))
+                        );
+                      });
+
+                      return filtered.length === 0 ? (
+                        <p className="text-[14px] text-center text-dark/50 py-8">No matching orders found.</p>
+                      ) : (
+                        filtered.map((order) => (
                         <div key={order._id} className="rounded-2xl border border-border p-5 hover:border-primary/50 transition">
                           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
                             <div>
@@ -721,13 +758,19 @@ function AdminDashboard() {
                                 <span>Grand Total:</span>
                                 <span>₹{order.total}</span>
                               </div>
+                              <div className="mt-4 border-t border-border pt-3 flex flex-col items-center">
+                                <div className="text-[11px] font-bold text-dark/40 mb-1 uppercase tracking-wider">Order Barcode</div>
+                                <div className="bg-white p-1 rounded-lg border border-border">
+                                  <Barcode value={order._id} width={0.8} height={30} fontSize={9} margin={2} />
+                                </div>
+                              </div>
                             </div>
                           </div>
 
                           {/* Tracking number section */}
-                          <div className="mt-4 border-t border-border pt-3 flex items-center justify-between gap-4">
+                          <div className="mt-4 border-t border-border pt-3 flex flex-wrap items-center justify-between gap-4">
                             <div className="flex items-center gap-2 text-[12.5px] text-dark/70 w-full max-w-[320px]">
-                              <span>Tracking #:</span>
+                              <span>Tracking / AWB #:</span>
                               <input 
                                 type="text" 
                                 placeholder="Enter tracking ID..." 
@@ -738,15 +781,42 @@ function AdminDashboard() {
                                     handleUpdateTracking(order._id, (e.target as HTMLInputElement).value);
                                   }
                                 }}
-                                className="flex-1 rounded-lg border border-border px-2.5 py-1 text-[12.5px] focus:outline-primary bg-white text-dark"
+                                className="flex-1 rounded-lg border border-border px-2.5 py-1 text-[12.5px] focus:outline-primary bg-white text-dark font-mono"
                               />
+                            </div>
+                            <button
+                              disabled={syncingOrderId === order._id}
+                              onClick={() => handleSyncShiprocketAwb(order._id)}
+                              className="rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white text-primary font-bold text-[12px] py-1.5 px-3.5 inline-flex items-center gap-1.5 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${syncingOrderId === order._id ? "animate-spin" : ""}`} />
+                              {syncingOrderId === order._id ? "Syncing..." : "Sync Shiprocket AWB"}
+                            </button>
+                            {order.trackingNumber && (
+                              <div className="text-[12.5px] font-medium text-dark/80 flex items-center gap-1">
+                                <span>Shiprocket AWB:</span>
+                                <span className="font-mono bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded text-[11.5px] font-bold">
+                                  {order.trackingNumber}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`/api/admin/orders/download-label?orderId=${order._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-xl bg-dark hover:bg-primary text-white font-bold text-[12px] py-1.5 px-4.5 inline-flex items-center gap-1.5 shadow-sm transition active:scale-[0.98] cursor-pointer"
+                              >
+                                <Download className="h-3.5 w-3.5" /> Download Label PDF
+                              </a>
                             </div>
                             <div className="text-[11.5px] text-dark/50 italic">Press Enter / Click away to save tracking #</div>
                           </div>
 
                         </div>
                       ))
-                    )}
+                    );
+                    })()}
                   </div>
                 </div>
               )}
@@ -769,17 +839,42 @@ function AdminDashboard() {
                     </div>
                   </div>
 
-                  {exchanges.length === 0 ? (
-                    <div className="py-16 text-center">
-                      <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-orange-400">
-                        <ArrowLeftRight className="h-7 w-7" />
-                      </div>
-                      <div className="text-[16px] font-semibold text-dark">No exchange requests</div>
-                      <p className="text-[13.5px] text-dark/70 mt-1">When customers submit exchange requests, they will appear here.</p>
+                  {/* Search Bar for Exchanges */}
+                  <div className="relative mb-6">
+                    <input
+                      type="text"
+                      placeholder="Scan barcode / Enter Order ID, name, or phone to search exchanges..."
+                      value={exchangeSearchQuery}
+                      onChange={(e) => setExchangeSearchQuery(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-orange-200 bg-white pl-10 pr-4 text-[13.5px] font-medium outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 text-dark"
+                    />
+                    <div className="absolute left-3.5 top-3.5">
+                      <svg className="h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                  ) : (
-                    <div className="space-y-5">
-                      {exchanges.map((order) => (
+                  </div>
+
+                  {(() => {
+                    const filtered = exchanges.filter(o => {
+                      const q = exchangeSearchQuery.toLowerCase().trim();
+                      if (!q) return true;
+                      return (
+                        o._id.toLowerCase().includes(q) ||
+                        (o.trackingNumber && o.trackingNumber.toLowerCase().includes(q)) ||
+                        (o.shippingDetails?.name && o.shippingDetails.name.toLowerCase().includes(q)) ||
+                        (o.shippingDetails?.phone && o.shippingDetails.phone.includes(q))
+                      );
+                    });
+
+                    return filtered.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-orange-50 text-orange-400">
+                          <ArrowLeftRight className="h-7 w-7" />
+                        </div>
+                        <div className="text-[16px] font-semibold text-dark">No matching exchange requests</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        {filtered.map((order) => (
                         <div key={order._id} className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/40 to-amber-50/20 p-5 hover:border-orange-200 transition">
                           
                           {/* Header */}
@@ -807,26 +902,41 @@ function AdminDashboard() {
 
                           <div className="grid gap-4 md:grid-cols-3">
 
-                            {/* Items & Size Changes */}
+                            {/* Items & Size/Color Changes */}
                             <div className="md:col-span-1">
-                              <div className="text-[12px] font-bold text-dark/80 uppercase tracking-wide mb-2">Size Changes</div>
+                              <div className="text-[12px] font-bold text-dark/80 uppercase tracking-wide mb-2">Variant Changes</div>
                               <div className="space-y-2">
                                 {order.items?.map((item: any, i: number) => {
                                   const origSize = order.exchangeDetails?.originalSizes?.find((s: any) => s.productId === item.productId)?.size;
                                   const newSize = order.exchangeDetails?.newSizes?.find((s: any) => s.productId === item.productId)?.size;
+                                  const origColor = order.exchangeDetails?.originalSizes?.find((s: any) => s.productId === item.productId)?.color;
+                                  const newColor = order.exchangeDetails?.newSizes?.find((s: any) => s.productId === item.productId)?.color;
                                   return (
                                     <Link href={`/product/${item.productId || item.id}`} key={i} className="flex items-center gap-2 text-[13px] bg-white rounded-xl p-2.5 border border-orange-100 hover:border-orange-300 transition group">
                                       <img src={item.image} className="h-10 w-8 rounded object-cover border border-gray-100 shrink-0" />
                                       <div className="min-w-0 flex-1">
                                         <div className="font-medium text-dark truncate text-[12px] group-hover:text-primary transition">{item.title}</div>
-                                        {origSize && newSize && origSize !== newSize ? (
-                                          <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="text-[10.5px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md border border-red-100 line-through">{origSize}</span>
-                                            <span className="text-[10px] text-gray-400">→</span>
-                                            <span className="text-[10.5px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded-md border border-green-100 font-bold">{newSize}</span>
+                                        {((origSize && newSize && origSize !== newSize) || (origColor && newColor && origColor !== newColor)) ? (
+                                          <div className="space-y-0.5 mt-0.5">
+                                            {origSize && newSize && origSize !== newSize && (
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[9px] text-dark/50 font-bold uppercase">Size:</span>
+                                                <span className="text-[10px] bg-red-50 text-red-600 px-1 py-0.5 rounded border border-red-100 line-through">{origSize}</span>
+                                                <span className="text-[9px] text-gray-400">→</span>
+                                                <span className="text-[10px] bg-green-50 text-green-700 px-1 py-0.5 rounded border border-green-100 font-bold">{newSize}</span>
+                                              </div>
+                                            )}
+                                            {origColor && newColor && origColor !== newColor && (
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[9px] text-dark/50 font-bold uppercase">Color:</span>
+                                                <span className="text-[10px] bg-red-50 text-red-600 px-1 py-0.5 rounded border border-red-100 line-through">{origColor}</span>
+                                                <span className="text-[9px] text-gray-400">→</span>
+                                                <span className="text-[10px] bg-green-50 text-green-700 px-1 py-0.5 rounded border border-green-100 font-bold">{newColor}</span>
+                                              </div>
+                                            )}
                                           </div>
                                         ) : (
-                                          <div className="text-[10.5px] text-gray-400 mt-0.5">Size unchanged — {item.size}</div>
+                                          <div className="text-[10.5px] text-gray-400 mt-0.5">Unchanged — {item.size} / {item.color || "N/A"}</div>
                                         )}
                                       </div>
                                     </Link>
@@ -885,6 +995,16 @@ function AdminDashboard() {
                                   <option value="Shipped">🚚 Shipped (New Size)</option>
                                   <option value="Delivered">✅ Exchange Completed</option>
                                 </select>
+                                <div className="mt-3">
+                                  <a
+                                    href={`/api/admin/orders/download-label?orderId=${order._id}&isExchange=true`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-[12.5px] py-2 px-4 inline-flex items-center justify-center gap-1.5 shadow transition text-center cursor-pointer"
+                                  >
+                                    <Download className="h-4 w-4" /> Download Exchange Label
+                                  </a>
+                                </div>
                               </div>
                             </div>
 
@@ -892,7 +1012,8 @@ function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  );
+                  })()}
                 </div>
               )}
 
@@ -907,7 +1028,6 @@ function AdminDashboard() {
                           <th className="pb-3 pr-4">User</th>
                           <th className="pb-3 pr-4">Email</th>
                           <th className="pb-3 pr-4">Registered</th>
-                          <th className="pb-3 pr-4">Role</th>
                           <th className="pb-3 text-center">Actions</th>
                         </tr>
                       </thead>
@@ -929,11 +1049,6 @@ function AdminDashboard() {
                               </td>
                               <td className="py-3.5 pr-4 text-dark/70">{u.email}</td>
                               <td className="py-3.5 pr-4 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
-                              <td className="py-3.5 pr-4">
-                                <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${u.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}>
-                                  {u.role}
-                                </span>
-                              </td>
                               <td className="py-3.5 text-center">
                                 <div className="flex items-center justify-center gap-2">
                                   <Link
@@ -942,15 +1057,6 @@ function AdminDashboard() {
                                   >
                                     View Profile
                                   </Link>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleToggleUserRole(u.email, u.role);
-                                    }}
-                                    className="rounded-full border border-border px-3.5 py-1 text-[12px] font-semibold text-primary hover:bg-surface"
-                                  >
-                                    Toggle {u.role === "admin" ? "User" : "Admin"}
-                                  </button>
                                 </div>
                               </td>
                             </tr>

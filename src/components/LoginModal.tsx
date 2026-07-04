@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, User, Shield, Compass } from "lucide-react";
+import { X, Sparkles, User } from "lucide-react";
 import { signIn } from "next-auth/react";
 
 interface LoginModalProps {
@@ -86,44 +86,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                   Continue with Google
                 </button>
 
-                {/* Developer Options Separator */}
-                <div className="relative flex py-3 items-center">
-                  <div className="flex-grow border-t border-[#F0E6F2]"></div>
-                  <span className="flex-shrink mx-4 text-[10px] font-bold text-[#A38AA6] uppercase tracking-wider">
-                    Developer Quick Sign-In
-                  </span>
-                  <div className="flex-grow border-t border-[#F0E6F2]"></div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() =>
-                      signIn("bypass-login", {
-                        email: "tester@example.com",
-                        name: "Tester User",
-                        role: "user",
-                      })
-                    }
-                    className="flex items-center justify-center gap-1.5 rounded-2xl bg-[#FCF7FD] hover:bg-[#F3E7F5] border border-[#F0E6F2] hover:border-[#E1BFE6] py-3 text-[13px] font-semibold text-[#8B1D8F] transition active:scale-[0.97]"
-                  >
-                    <Compass className="h-3.5 w-3.5" />
-                    <span>Tester Bypass</span>
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      signIn("bypass-login", {
-                        email: "admin@example.com",
-                        name: "Admin User",
-                        role: "admin",
-                      })
-                    }
-                    className="flex items-center justify-center gap-1.5 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-100 py-3 text-[13px] font-semibold text-purple-700 transition active:scale-[0.97]"
-                  >
-                    <Shield className="h-3.5 w-3.5" />
-                    <span>Admin Bypass</span>
-                  </button>
-                </div>
               </div>
 
               {/* Secure note */}
