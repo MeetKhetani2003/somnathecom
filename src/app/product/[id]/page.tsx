@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from "next-auth/react";
 
 import { Star, ShieldCheck, Truck, RotateCcw, Heart, ShoppingBag, ChevronRight, ChevronDown, X, Trash2, Sparkles, Check } from "lucide-react";
@@ -49,6 +49,7 @@ const ImageMagnifier = ({ src, alt }: { src: string, alt: string }) => {
 export default function ProductSlug() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { addToCart, wishlist, toggleWishlist } = useShop();
   const { success: successToast, warning: warnToast, error: errorToast } = useToast();
@@ -116,17 +117,23 @@ export default function ProductSlug() {
         setProduct(data.product);
         // Auto-select first available color and size combination that is in stock
         if (data.product.colors && data.product.colors.length > 0) {
-          const firstInStockColor = data.product.colors.find((c: any) => {
-            return c.sizes && c.sizes.some((s: any) => Number(s.stock) > 0);
-          }) || data.product.colors[0];
+          const queryColor = searchParams.get('color');
+          
+          let targetColor = queryColor ? data.product.colors.find((c: any) => c.name === queryColor) : null;
+          
+          if (!targetColor) {
+            targetColor = data.product.colors.find((c: any) => {
+              return c.sizes && c.sizes.some((s: any) => Number(s.stock) > 0);
+            }) || data.product.colors[0];
+          }
 
-          setSelectedColor(firstInStockColor.name);
+          setSelectedColor(targetColor.name);
 
-          const firstInStockSize = firstInStockColor.sizes?.find((s: any) => Number(s.stock) > 0);
+          const firstInStockSize = targetColor.sizes?.find((s: any) => Number(s.stock) > 0);
           if (firstInStockSize) {
             setSelectedSize(firstInStockSize.size);
-          } else if (firstInStockColor.sizes && firstInStockColor.sizes.length > 0) {
-            setSelectedSize(firstInStockColor.sizes[0].size);
+          } else if (targetColor.sizes && targetColor.sizes.length > 0) {
+            setSelectedSize(targetColor.sizes[0].size);
           }
         } else if (data.product.sizes && data.product.sizes.length > 0) {
           const firstInStockSize = data.product.sizes.find((s: any) => Number(s.stock) > 0) || data.product.sizes[0];
@@ -361,6 +368,10 @@ export default function ProductSlug() {
     router.push("/cart");
   };
 
+  const displayTitle = selectedColor && product.colors 
+    ? product.colors.find((c: any) => c.name === selectedColor)?.title || product.title 
+    : product.title;
+
   return (
     <div className="bg-bg-base py-6 md:py-12">
       <div className="mx-auto max-w-[1400px] px-4 md:px-8">
@@ -373,14 +384,14 @@ export default function ProductSlug() {
           <ChevronRight className="mx-2 h-3.5 w-3.5 shrink-0" />
           <Link href={`/products?category=${product.category}`} className="transition hover:text-primary shrink-0">{product.category}</Link>
           <ChevronRight className="mx-2 h-3.5 w-3.5 shrink-0" />
-          <span className="text-dark truncate max-w-[200px] sm:max-w-none">{product.title}</span>
+          <span className="text-dark font-semibold line-clamp-1 truncate">{displayTitle}</span>
         </nav>
 
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr] lg:gap-16">
           {/* Images Section */}
           <div className="flex flex-col gap-4 md:sticky md:top-28 h-fit">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[32px] bg-surface shadow-sm border border-border group">
-              <ImageMagnifier src={images[activeImage] || product.image} alt={product.title} />
+              <ImageMagnifier src={images[activeImage] || product.image} alt={displayTitle} />
               <button
                 onClick={() => toggleWishlist(product.id)}
                 className="absolute right-6 top-6 z-30 grid h-12 w-12 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-lg backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
@@ -405,7 +416,7 @@ export default function ProductSlug() {
                       activeImage === idx ? "border-primary" : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
                     )}
                   >
-                    <img src={img} alt={`${product.title} view ${idx + 1}`} className="h-full w-full object-cover object-top" />
+                    <img src={img} alt={`${displayTitle} view ${idx + 1}`} className="h-full w-full object-cover object-top" />
                   </button>
                 ))}
               </div>
@@ -418,7 +429,7 @@ export default function ProductSlug() {
               <span className="text-[12px] font-bold uppercase tracking-widest text-primary">{product.category}</span>
             </div>
 
-            <h1 className="font-display text-[32px] font-bold leading-[1.1] text-dark md:text-[42px] lg:text-[48px]">{product.title}</h1>
+            <h1 className="font-display text-[32px] font-bold leading-[1.1] text-dark md:text-[42px] lg:text-[48px]">{displayTitle}</h1>
 
             <div className="mt-4 flex items-center gap-3">
               <div className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm">

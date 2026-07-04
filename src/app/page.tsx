@@ -228,7 +228,7 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
     <motion.div whileHover={{ y: -6 }} className="group relative w-[280px] shrink-0 snap-start md:w-[320px]">
       <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
         <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-          <Link href={`/product/${p.id}`}>
+          <Link href={`/product/${p._originalId || p.id}${p.variantColor ? `?color=${encodeURIComponent(p.variantColor)}` : ''}`}>
             <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
           </Link>
           <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
@@ -249,7 +249,7 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
         </div>
         <div className="p-5 flex flex-col justify-between flex-1">
           <div>
-            <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
+            <Link href={`/product/${p._originalId || p.id}${p.variantColor ? `?color=${encodeURIComponent(p.variantColor)}` : ''}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
             <div className="mt-2 flex items-center gap-1.5">
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -338,7 +338,21 @@ export default function Home() {
         const res = await fetch("/api/products");
         const data = await res.json();
         if (data.success) {
-          setProductsList(data.products);
+          const explodedProducts = data.products.flatMap((p: any) => {
+            if (p.colors && p.colors.length > 0) {
+              return p.colors.map((c: any) => ({
+                ...p,
+                _originalId: p.id,
+                variantColor: c.name,
+                title: c.title || `${p.title} - ${c.name}`,
+                image: (c.images && c.images.length > 0) ? c.images[0] : p.image,
+                colors: [c], // keep only this color variant for sizes
+                sizes: c.sizes || []
+              }));
+            }
+            return [p];
+          });
+          setProductsList(explodedProducts);
         }
       } catch (err) {
         console.error("Error fetching products:", err);

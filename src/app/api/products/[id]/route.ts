@@ -62,10 +62,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
         
         let colorImageIdx = 0;
-        const colors: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+        const colors: { name: string; title?: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
         
         for (const meta of colorsMeta) {
           const colorImages: string[] = [...(meta.existingImages || [])];
@@ -83,6 +83,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           }
           colors.push({
             name: meta.name,
+            title: meta.title,
             images: colorImages,
             sizes: meta.sizes,
           });

@@ -24,6 +24,7 @@ interface SizeEntry {
 
 interface ColorVariant {
   name: string;
+  title: string;
   imageFiles: File[];
   imagePreviews: string[];
   sizes: SizeEntry[];
@@ -114,7 +115,7 @@ export default function CreateProductPage() {
 
   // ─── Color Variant Helpers ──────────────────────────────────────────────────
   const addColorVariant = () => {
-    setColorVariants(prev => [...prev, { name: "", imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
+    setColorVariants(prev => [...prev, { name: "", title: "", imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
     setActiveColorIdx(colorVariants.length);
   };
 
@@ -128,6 +129,10 @@ export default function CreateProductPage() {
 
   const updateColorName = (idx: number, name: string) => {
     setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, name } : cv));
+  };
+
+  const updateColorTitle = (idx: number, title: string) => {
+    setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, title } : cv));
   };
 
   const addColorImage = (idx: number, files: File[]) => {
@@ -275,6 +280,7 @@ export default function CreateProductPage() {
       // Build colors metadata (without files)
       const colorsMeta = colorVariants.map(cv => ({
         name: cv.name,
+        title: cv.title,
         sizes: cv.sizes.filter(s => s.size.trim()),
         imageCount: cv.imageFiles.length,
       }));
@@ -473,17 +479,30 @@ export default function CreateProductPage() {
                 {/* Active Color Panel */}
                 {activeColor && (
                   <div className="rounded-2xl border border-border bg-white p-5 space-y-5">
-                    {/* Color Name */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">Color Name</label>
-                        <input
-                          type="text"
-                          value={activeColor.name}
-                          onChange={(e) => updateColorName(activeColorIdx, e.target.value)}
-                          placeholder="e.g. Navy Blue, Red, Maroon"
-                          className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
-                        />
+                    {/* Color Name and Title */}
+                    <div className="flex items-start gap-3">
+                      <div className="grid flex-1 grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">Color Name *</label>
+                          <input
+                            type="text"
+                            value={activeColor.name}
+                            onChange={(e) => updateColorName(activeColorIdx, e.target.value)}
+                            placeholder="e.g. Navy Blue, Red, Maroon"
+                            className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">Variant Title (Optional)</label>
+                          <input
+                            type="text"
+                            value={activeColor.title || ""}
+                            onChange={(e) => updateColorTitle(activeColorIdx, e.target.value)}
+                            placeholder="e.g. Beautiful Navy Blue Nightgown"
+                            className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
+                          />
+                        </div>
                       </div>
                       <button
                         type="button"

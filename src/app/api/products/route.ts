@@ -56,11 +56,11 @@ export async function POST(req: Request) {
     }
 
     // ─── Process Color Variants ──────────────────────────────────────────────
-    let colors: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+    let colors: { name: string; title?: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
     
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; sizes: { size: string; stock: number }[]; imageCount: number }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
         
         // Upload color images in order
         let colorImageIdx = 0;
@@ -79,6 +79,7 @@ export async function POST(req: Request) {
           }
           colors.push({
             name: meta.name,
+            title: meta.title,
             images: colorImages,
             sizes: meta.sizes,
           });

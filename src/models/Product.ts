@@ -20,6 +20,7 @@ const ProductSchema = new Schema({
   }],
   colors: [{
     name: { type: String, required: true },
+    title: { type: String }, // Variant specific title
     images: [{ type: String }],
     sizes: [{
       size: { type: String, required: true },
