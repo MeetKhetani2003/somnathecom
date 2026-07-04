@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { fireToast } from "@/context/ToastContext";
 
 export type Product = {
   id: number;
@@ -182,13 +183,13 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       const existing = prev.find((p) => p.cartItemId === cartItemId);
       if (existing) {
         if (existing.quantity >= maxStock) {
-          alert(`Cannot add more items. Only ${maxStock} items available in this variant.`);
+          fireToast(`Only ${maxStock} items available in this variant.`, "warning");
           return prev;
         }
         return prev.map((p) => (p.cartItemId === cartItemId ? { ...p, quantity: p.quantity + 1 } : p));
       }
       if (maxStock <= 0) {
-        alert("Sorry, this variant is out of stock.");
+        fireToast("Sorry, this variant is out of stock.", "error");
         return prev;
       }
       return [...prev, { ...product, image: itemImage, quantity: 1, selectedColor: color, selectedSize: size, cartItemId }];
@@ -222,7 +223,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
         }
 
         if (delta > 0 && newQty > maxStock) {
-          alert(`Cannot add more items. Only ${maxStock} items available in this variant.`);
+          fireToast(`Only ${maxStock} items available in this variant.`, "warning");
           return p;
         }
 

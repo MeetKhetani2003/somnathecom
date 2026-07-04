@@ -736,10 +736,24 @@ function AdminDashboard() {
                               <ul className="space-y-2">
                                 {order.items.map((item: any, i: number) => (
                                   <Link href={`/product/${item.productId || item.id}`} key={i} className="flex items-center gap-3 text-[13.5px] text-dark/80 hover:bg-surface/50 p-1.5 rounded-lg transition group">
-                                    <div className="h-8 w-7 rounded bg-gray-50 border border-gray-100 overflow-hidden shrink-0"><img src={item.image} className="h-full w-full object-cover" /></div>
-                                    <span className="font-medium text-dark group-hover:text-primary transition">{item.title}</span>
-                                    <span className="text-dark/50">({item.quantity}x)</span>
-                                    <span className="ml-auto font-semibold">₹{item.price * item.quantity}</span>
+                                    <div className="h-10 w-8 rounded bg-gray-50 border border-gray-100 overflow-hidden shrink-0"><img src={item.image} className="h-full w-full object-cover" /></div>
+                                    <div className="min-w-0 flex-1">
+                                      <span className="font-medium text-dark group-hover:text-primary transition block truncate">{item.title}</span>
+                                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                        {(item.selectedSize || item.size) && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10.5px] font-bold text-indigo-700">
+                                            Size: {item.selectedSize || item.size}
+                                          </span>
+                                        )}
+                                        {(item.selectedColor || item.color) && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10.5px] font-bold text-purple-700">
+                                            Color: {item.selectedColor || item.color}
+                                          </span>
+                                        )}
+                                        <span className="text-dark/40 text-[11px]">×{item.quantity}</span>
+                                      </div>
+                                    </div>
+                                    <span className="ml-auto font-semibold shrink-0">₹{item.price * item.quantity}</span>
                                   </Link>
                                 ))}
                               </ul>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, Trash2, X, Tag, Star, Download } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Star, Download, Plus, Minus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
 
@@ -136,7 +136,7 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
 
 export default function Profile() {
   const { data: session, update } = useSession();
-  const { wishlist, toggleWishlist, addToCart } = useShop();
+  const { wishlist, toggleWishlist, addToCart, cartItems, removeFromCart, updateQuantity } = useShop();
   const [productsList, setProductsList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export default function Profile() {
     fetchProducts();
   }, []);
 
-  const [activeSection, setActiveSection] = useState<"info" | "orders" | "wishlist" | "addresses">("info");
+  const [activeSection, setActiveSection] = useState<"info" | "orders" | "wishlist" | "addresses" | "cart">("info");
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
@@ -182,10 +182,15 @@ export default function Profile() {
   const [isExchangeModalOpen, setIsExchangeModalOpen] = useState(false);
   const [selectedOrderForExchange, setSelectedOrderForExchange] = useState<any>(null);
   const [newExchangeAddress, setNewExchangeAddress] = useState("");
+  const [exchangeAddressMode, setExchangeAddressMode] = useState<"saved" | "new">("saved");
+  const [exchangeNewStreet, setExchangeNewStreet] = useState("");
+  const [exchangeNewCity, setExchangeNewCity] = useState("");
+  const [exchangeNewState, setExchangeNewState] = useState("");
+  const [exchangeNewPincode, setExchangeNewPincode] = useState("");
   const [exchangeItems, setExchangeItems] = useState<any[]>([]);
   const [submittingExchange, setSubmittingExchange] = useState(false);
   const [allProductsForExchange, setAllProductsForExchange] = useState<any[]>([]);
-  const [exchangePaymentMethod, setExchangePaymentMethod] = useState<"online" | "cod">("online");
+  const exchangePaymentMethod: "online" | "cod" = "online";
 
   const [selectedProductIdForExchange, setSelectedProductIdForExchange] = useState<string>("");
   const [selectedColorForExchange, setSelectedColorForExchange] = useState<string>("");
@@ -703,6 +708,7 @@ export default function Profile() {
             {[
               { id: "info", icon: User, label: "Personal Information" },
               { id: "orders", icon: Package, label: "My Orders", badge: orders.length > 0 ? orders.length : undefined },
+              { id: "cart", icon: ShoppingCart, label: "My Cart", badge: cartItems.length > 0 ? cartItems.length : undefined },
               { id: "wishlist", icon: Heart, label: "Wishlist", badge: wishlist.length > 0 ? wishlist.length : undefined },
               { id: "addresses", icon: MapPin, label: "Saved Addresses" },
             ].map((item) => {
@@ -1021,6 +1027,105 @@ export default function Profile() {
               </div>
             )}
 
+            {/* C. MY CART */}
+            {activeSection === "cart" && (
+              <div>
+                <h2 className="font-display text-[24px] font-bold text-dark">My Cart</h2>
+                <p className="mt-2 text-[15px] text-dark/60">Items currently in your shopping cart.</p>
+
+                <div className="mt-10">
+                  {cartItems.length === 0 ? (
+                    <div className="text-center py-16">
+                      <ShoppingCart className="h-12 w-12 text-dark/20 mx-auto mb-4" />
+                      <p className="text-[15px] text-dark/50 font-medium">Your cart is empty.</p>
+                      <Link href="/products" className="inline-block mt-6 font-bold text-primary hover:underline">Browse Collection</Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Cart Summary */}
+                      <div className="flex items-center justify-between p-4 rounded-2xl bg-primary/5 border border-primary/20">
+                        <div>
+                          <span className="text-[13px] font-bold uppercase tracking-wider text-primary">{cartItems.length} Item{cartItems.length !== 1 ? "s" : ""}</span>
+                          <div className="text-[22px] font-bold text-dark mt-0.5">
+                            ₹{cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString("en-IN")}
+                          </div>
+                        </div>
+                        <Link
+                          href="/cart"
+                          className="inline-flex items-center gap-2 rounded-2xl bg-dark px-6 py-3 text-[14px] font-bold text-white hover:bg-primary transition-colors shadow-lg active:scale-[0.98]"
+                        >
+                          <ShoppingBag className="h-4 w-4" />
+                          Go to Checkout
+                        </Link>
+                      </div>
+
+                      {/* Cart Items */}
+                      {cartItems.map((item) => (
+                        <div
+                          key={item.cartItemId}
+                          className="flex items-center gap-4 rounded-[24px] border-[2px] border-border bg-surface p-4 transition-all hover:border-primary/30 hover:shadow-sm"
+                        >
+                          {/* Product Image */}
+                          <Link href={`/product/${item.id}`} className="shrink-0">
+                            <div className="h-20 w-16 overflow-hidden rounded-xl border border-border bg-bg-base">
+                              <img src={item.image} alt={item.title} className="h-full w-full object-cover object-top transition hover:scale-105" />
+                            </div>
+                          </Link>
+
+                          {/* Details */}
+                          <div className="min-w-0 flex-1">
+                            <Link href={`/product/${item.id}`}>
+                              <p className="font-display font-semibold text-dark hover:text-primary transition truncate text-[15px]">{item.title}</p>
+                            </Link>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {item.selectedSize && (
+                                <span className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700">
+                                  Size: {item.selectedSize}
+                                </span>
+                              )}
+                              {item.selectedColor && (
+                                <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-[11px] font-bold text-purple-700">
+                                  Color: {item.selectedColor}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 flex items-center gap-3">
+                              {/* Quantity */}
+                              <div className="flex items-center rounded-full border border-border overflow-hidden">
+                                <button
+                                  onClick={() => updateQuantity(item.cartItemId, -1)}
+                                  className="grid h-8 w-8 place-items-center text-dark/60 hover:bg-bg-base hover:text-dark transition"
+                                >
+                                  <Minus className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="w-8 text-center text-[13px] font-bold text-dark">{item.quantity}</span>
+                                <button
+                                  onClick={() => updateQuantity(item.cartItemId, 1)}
+                                  className="grid h-8 w-8 place-items-center text-dark/60 hover:bg-bg-base hover:text-dark transition"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                              <span className="text-[14px] font-bold text-dark">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                            </div>
+                          </div>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => removeFromCart(item.cartItemId)}
+                            className="shrink-0 grid h-10 w-10 place-items-center rounded-full border border-border text-dark/40 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition active:scale-[0.95]"
+                            title="Remove from cart"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* D. SAVED ADDRESSES */}
             {activeSection === "addresses" && (
               <div>
@@ -1169,168 +1274,291 @@ export default function Profile() {
 
         {/* Exchange / Return Modal */}
         {isExchangeModalOpen && selectedOrderForExchange && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setIsExchangeModalOpen(false)}></div>
-            <div className="relative w-full max-w-[540px] overflow-hidden rounded-[32px] bg-surface shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border p-6 md:p-8">
+          <div className="fixed inset-0 z-[110] flex items-start justify-center p-4 pt-6 md:items-center">
+            <div className="absolute inset-0 bg-dark/60 backdrop-blur-sm" onClick={() => setIsExchangeModalOpen(false)} />
+
+            <div className="relative w-full max-w-[600px] rounded-[32px] bg-surface shadow-2xl flex flex-col" style={{ maxHeight: "calc(100dvh - 48px)" }}>
+
+              {/* ── Sticky Header ── */}
+              <div className="flex items-center justify-between border-b border-border px-6 py-5 shrink-0">
                 <h3 className="font-display text-[20px] font-bold text-dark flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" /> Exchange Form
+                  <Package className="h-5 w-5 text-primary" /> Exchange Request
                 </h3>
-                <button
-                  onClick={() => setIsExchangeModalOpen(false)}
-                  className="grid h-10 w-10 place-items-center rounded-full hover:bg-bg-base transition-colors"
-                >
+                <button onClick={() => setIsExchangeModalOpen(false)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-bg-base transition-colors">
                   <X className="h-5 w-5 text-dark" />
                 </button>
               </div>
 
-              <form onSubmit={handleExchangeSubmit} className="p-6 md:p-8 space-y-6">
-                <div className="text-[13.5px] text-dark/70 font-medium bg-primary/5 border border-primary/20 p-4 rounded-xl leading-relaxed">
-                  You can change the sizes of your items or edit the delivery address.
-                  A flat redelivery and processing fee of <span className="font-bold text-primary">₹120</span> applies to all exchanges.
+              {/* ── Scrollable Body ── */}
+              <div className="overflow-y-auto flex-1 px-6 py-6 space-y-6">
+
+                {/* Info banner */}
+                <div className="text-[13px] text-primary font-medium bg-primary/5 border border-primary/20 p-4 rounded-2xl leading-relaxed">
+                  Select the product &amp; variant you want to exchange, choose a delivery address, and confirm.
+                  A flat processing fee of <span className="font-bold">₹120</span> applies.
                 </div>
 
-                {/* Product Selection */}
+                {/* ── STEP 1: Product Cards ── */}
                 <div>
-                  <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">Select Product to Exchange</label>
-                  <select
-                    value={selectedProductIdForExchange}
-                    onChange={(e) => handleSelectProductToExchange(e.target.value)}
-                    className="h-12 w-full appearance-none rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium text-dark outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10 cursor-pointer"
-                    required
-                  >
-                    <option value="">-- Choose Product --</option>
-                    {selectedOrderForExchange.items.map((item: any) => (
-                      <option key={item.productId} value={item.productId.toString()}>
-                        {item.title} (Size: {item.size}, Color: {item.color || "N/A"})
-                      </option>
-                    ))}
-                  </select>
+                  <p className="text-[12px] font-bold uppercase tracking-wider text-dark/50 mb-3">Step 1 — Select Product to Exchange</p>
+                  <div className="space-y-3">
+                    {selectedOrderForExchange.items.map((item: any) => {
+                      const isSelected = String(selectedProductIdForExchange) === String(item.productId);
+                      return (
+                        <button
+                          key={item.productId}
+                          type="button"
+                          onClick={() => handleSelectProductToExchange(String(item.productId))}
+                          className={cn(
+                            "w-full flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
+                              : "border-border hover:border-primary/40 bg-bg-base"
+                          )}
+                        >
+                          <div className="h-14 w-11 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-white">
+                            <img src={item.image} alt={item.title} className="h-full w-full object-cover object-top" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-dark text-[14px] truncate">{item.title}</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {(item.selectedSize || item.size) && (
+                                <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10.5px] font-bold text-indigo-700">
+                                  Size: {item.selectedSize || item.size}
+                                </span>
+                              )}
+                              {(item.selectedColor || item.color) && (
+                                <span className="rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10.5px] font-bold text-purple-700">
+                                  Color: {item.selectedColor || item.color}
+                                </span>
+                              )}
+                              <span className="rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-[10.5px] font-bold text-gray-600">
+                                ×{item.quantity}
+                              </span>
+                            </div>
+                          </div>
+                          <div className={cn(
+                            "h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition",
+                            isSelected ? "border-primary bg-primary" : "border-border"
+                          )}>
+                            {isSelected && <CheckCircle className="h-3 w-3 text-white" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Variant Selection */}
+                {/* ── STEP 2: Variant Selection (appears after product pick) ── */}
                 {selectedProductIdForExchange && (() => {
                   const orderItem = selectedOrderForExchange.items.find((item: any) => String(item.productId) === String(selectedProductIdForExchange));
-                  const dbProduct = allProductsForExchange.find(p => String(p.id) === String(selectedProductIdForExchange));
+                  const dbProduct = allProductsForExchange.find((p: any) => String(p.id) === String(selectedProductIdForExchange));
                   if (!orderItem) return null;
 
                   const colorOptions = dbProduct?.colors || [];
                   const colorObj = colorOptions.find((c: any) => c.name === selectedColorForExchange);
-                  const sizeOptions = colorOptions.length > 0 
+                  const sizeOptions = colorOptions.length > 0
                     ? (colorObj?.sizes || [])
                     : (dbProduct?.sizes || []);
 
-                  const isIdentical = selectedColorForExchange === (orderItem.color || "") && selectedSizeForExchange === orderItem.size;
+                  const isIdentical = selectedColorForExchange === (orderItem.selectedColor || orderItem.color || "") &&
+                    selectedSizeForExchange === (orderItem.selectedSize || orderItem.size || "");
 
                   return (
-                    <div className="space-y-4 border border-border/80 p-4 rounded-2xl bg-bg-base/40">
-                      <div className="flex gap-4 items-center">
-                        {orderItem.image && <img src={orderItem.image} className="h-14 w-12 rounded-lg object-cover border border-border/50 shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-[14px] font-bold text-dark truncate">{orderItem.title}</h4>
-                          <p className="text-[12px] text-dark/50 mt-0.5">Purchased: Size {orderItem.size} / Color {orderItem.color || "N/A"}</p>
-                        </div>
-                      </div>
+                    <div className="space-y-4">
+                      <p className="text-[12px] font-bold uppercase tracking-wider text-dark/50">Step 2 — Choose New Variant</p>
+                      <div className="border border-border/80 p-4 rounded-2xl bg-bg-base/40 space-y-4">
 
-                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        {colorOptions.length > 0 ? (
+                        {colorOptions.length > 0 && (
                           <div>
-                            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Color</label>
-                            <select
-                              value={selectedColorForExchange}
-                              onChange={(e) => {
-                                const newColor = e.target.value;
-                                setSelectedColorForExchange(newColor);
-                                setSelectedSizeForExchange("");
-                                setExchangeItems([{
-                                  ...exchangeItems[0],
-                                  newColor: newColor,
-                                  newSize: ""
-                                }]);
-                              }}
-                              className="h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] outline-none font-semibold text-dark focus:border-primary/50"
-                            >
-                              <option value="">Color</option>
+                            <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Color</label>
+                            <div className="flex flex-wrap gap-2">
                               {colorOptions.map((c: any) => (
-                                <option key={c.name} value={c.name}>{c.name}</option>
+                                <button
+                                  key={c.name}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedColorForExchange(c.name);
+                                    setSelectedSizeForExchange("");
+                                    setExchangeItems([{ ...exchangeItems[0], newColor: c.name, newSize: "" }]);
+                                  }}
+                                  className={cn(
+                                    "rounded-full border-2 px-3.5 py-1.5 text-[12px] font-bold transition",
+                                    selectedColorForExchange === c.name
+                                      ? "border-primary bg-primary text-white"
+                                      : "border-border bg-surface text-dark hover:border-primary/50"
+                                  )}
+                                >
+                                  {c.name}
+                                </button>
                               ))}
-                            </select>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="hidden" />
                         )}
 
-                        <div className={cn(colorOptions.length === 0 && "col-span-2")}>
-                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Size</label>
-                          <select
-                            value={selectedSizeForExchange}
-                            onChange={(e) => {
-                              const newSize = e.target.value;
-                              setSelectedSizeForExchange(newSize);
-                              setExchangeItems([{
-                                ...exchangeItems[0],
-                                newSize: newSize
-                              }]);
-                            }}
-                            className="h-10 w-full rounded-lg border border-border bg-surface px-2.5 text-[13px] outline-none font-semibold text-dark focus:border-primary/50"
-                            disabled={colorOptions.length > 0 && !selectedColorForExchange}
-                          >
-                            <option value="">Size</option>
+                        <div>
+                          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-dark/50">New Size</label>
+                          <div className="flex flex-wrap gap-2">
+                            {sizeOptions.length === 0 && (
+                              <p className="text-[12px] text-dark/40">{colorOptions.length > 0 ? "Pick a color first" : "No sizes available"}</p>
+                            )}
                             {sizeOptions.map((s: any) => {
                               const sizeLabel = typeof s === "object" ? s.size : s;
                               const sizeStock = typeof s === "object" ? s.stock : 10;
                               return (
-                                <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
-                                  {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
-                                </option>
+                                <button
+                                  key={sizeLabel}
+                                  type="button"
+                                  disabled={sizeStock === 0}
+                                  onClick={() => {
+                                    setSelectedSizeForExchange(sizeLabel);
+                                    setExchangeItems([{ ...exchangeItems[0], newSize: sizeLabel }]);
+                                  }}
+                                  className={cn(
+                                    "rounded-full border-2 px-3.5 py-1.5 text-[12px] font-bold transition",
+                                    selectedSizeForExchange === sizeLabel
+                                      ? "border-primary bg-primary text-white"
+                                      : sizeStock === 0
+                                        ? "border-border bg-gray-50 text-dark/30 cursor-not-allowed line-through"
+                                        : "border-border bg-surface text-dark hover:border-primary/50"
+                                  )}
+                                >
+                                  {sizeLabel}
+                                </button>
                               );
                             })}
-                          </select>
+                          </div>
                         </div>
-                      </div>
 
-                      {isIdentical && (
-                        <div className="text-[12px] font-semibold text-red-500 bg-red-50 p-2 rounded-lg border border-red-100 mt-2">
-                          Please select a different color or size to exchange.
-                        </div>
-                      )}
+                        {isIdentical && selectedSizeForExchange && (
+                          <p className="text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
+                            ⚠ Please select a different color or size from the original.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
 
-                {/* Address Section */}
+                {/* ── STEP 3: Delivery Address ── */}
                 <div>
-                  <label className="mb-2 block text-[13px] font-bold uppercase tracking-wider text-dark/70">New Delivery Address</label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={newExchangeAddress}
-                    onChange={(e) => setNewExchangeAddress(e.target.value)}
-                    className="w-full rounded-xl border border-border p-4 text-[14px] font-medium transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10 bg-bg-base text-dark outline-none"
-                    placeholder="Enter the new shipping address..."
-                  />
+                  <p className="text-[12px] font-bold uppercase tracking-wider text-dark/50 mb-3">Step 3 — Delivery Address</p>
+
+                  {/* Toggle: saved vs new */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setExchangeAddressMode("saved")}
+                      className={cn(
+                        "flex-1 rounded-xl py-2.5 text-[13px] font-bold border-2 transition",
+                        exchangeAddressMode === "saved" ? "border-primary bg-primary text-white" : "border-border bg-bg-base text-dark hover:border-primary/50"
+                      )}
+                    >
+                      Use Saved Address
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExchangeAddressMode("new")}
+                      className={cn(
+                        "flex-1 rounded-xl py-2.5 text-[13px] font-bold border-2 transition",
+                        exchangeAddressMode === "new" ? "border-primary bg-primary text-white" : "border-border bg-bg-base text-dark hover:border-primary/50"
+                      )}
+                    >
+                      Enter New Address
+                    </button>
+                  </div>
+
+                  {exchangeAddressMode === "saved" ? (
+                    addresses.length === 0 ? (
+                      <p className="text-[13px] text-dark/50 italic text-center py-4">
+                        No saved addresses. Switch to &ldquo;Enter New Address&rdquo; above.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {addresses.map((addr) => (
+                          <button
+                            key={addr}
+                            type="button"
+                            onClick={() => setNewExchangeAddress(addr)}
+                            className={cn(
+                              "w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
+                              newExchangeAddress === addr
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/40 bg-bg-base"
+                            )}
+                          >
+                            <MapPin className={cn("h-4 w-4 mt-0.5 shrink-0", newExchangeAddress === addr ? "text-primary" : "text-dark/40")} />
+                            <span className="text-[13px] font-medium text-dark leading-relaxed">{addr}</span>
+                            {addr === defaultAddress && (
+                              <span className="ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Default</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">Street Address</label>
+                        <input
+                          type="text"
+                          value={exchangeNewStreet}
+                          onChange={(e) => {
+                            setExchangeNewStreet(e.target.value);
+                            setNewExchangeAddress(`${e.target.value}, ${exchangeNewCity}, ${exchangeNewState} - ${exchangeNewPincode}`);
+                          }}
+                          placeholder="Flat / Building / Street"
+                          className="h-11 w-full rounded-xl border border-border bg-bg-base px-4 text-[13.5px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">City</label>
+                          <input
+                            type="text"
+                            value={exchangeNewCity}
+                            onChange={(e) => {
+                              setExchangeNewCity(e.target.value);
+                              setNewExchangeAddress(`${exchangeNewStreet}, ${e.target.value}, ${exchangeNewState} - ${exchangeNewPincode}`);
+                            }}
+                            placeholder="City"
+                            className="h-11 w-full rounded-xl border border-border bg-bg-base px-4 text-[13.5px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">State</label>
+                          <input
+                            type="text"
+                            value={exchangeNewState}
+                            onChange={(e) => {
+                              setExchangeNewState(e.target.value);
+                              setNewExchangeAddress(`${exchangeNewStreet}, ${exchangeNewCity}, ${e.target.value} - ${exchangeNewPincode}`);
+                            }}
+                            placeholder="State"
+                            className="h-11 w-full rounded-xl border border-border bg-bg-base px-4 text-[13.5px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-dark/50">Pincode</label>
+                        <input
+                          type="text"
+                          value={exchangeNewPincode}
+                          maxLength={6}
+                          onChange={(e) => {
+                            setExchangeNewPincode(e.target.value);
+                            setNewExchangeAddress(`${exchangeNewStreet}, ${exchangeNewCity}, ${exchangeNewState} - ${e.target.value}`);
+                          }}
+                          placeholder="6-digit Pincode"
+                          className="h-11 w-full rounded-xl border border-border bg-bg-base px-4 text-[13.5px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Payment Method Selector */}
-                <div className="space-y-3">
-                  <label className="block text-[13px] font-bold uppercase tracking-wider text-dark/70">Payment Method (Fee: ₹120)</label>
-                  <button
-                    type="button"
-                    onClick={() => setExchangePaymentMethod("online")}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-4 rounded-2xl w-full border-2 transition-all",
-                      exchangePaymentMethod === "online"
-                        ? "border-primary bg-primary/5 text-primary shadow-sm"
-                        : "border-border hover:border-primary/50 bg-bg-base text-dark"
-                    )}
-                  >
-                    <span className="text-[14px] font-bold">Pay Online</span>
-                    <span className="text-[12px] text-dark/50 mt-1 font-medium">Razorpay / UPI / Cards</span>
-                  </button>
-                </div>
-
-                {/* Fees Summary */}
-                <div className="rounded-2xl bg-bg-base p-4 border border-border text-[14px] space-y-2 font-medium">
+                {/* ── Fee Summary ── */}
+                <div className="rounded-2xl bg-bg-base p-4 border border-border text-[13.5px] space-y-2 font-medium">
                   <div className="flex justify-between text-dark/60">
                     <span>Original Order Total:</span>
                     <span>₹{selectedOrderForExchange.total}</span>
@@ -1339,22 +1567,26 @@ export default function Profile() {
                     <span>Exchange Delivery Charge:</span>
                     <span>₹120</span>
                   </div>
-                  <div className="flex justify-between font-bold text-dark border-t border-border pt-2 mt-2">
-                    <span>New Grand Total:</span>
-                    <span className="text-[16px] text-primary">₹{selectedOrderForExchange.total + 120}</span>
+                  <div className="flex justify-between font-bold text-dark border-t border-border pt-2 mt-1">
+                    <span>To Pay Now:</span>
+                    <span className="text-[16px] text-primary">₹120</span>
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={submittingExchange || isExchangeFormInvalid}
-                    className="w-full rounded-full bg-primary py-4 text-[15px] font-bold text-white transition hover:bg-[#2E2387] shadow-lg shadow-primary/20 disabled:opacity-50"
-                  >
-                    {submittingExchange ? "Processing Request..." : "Confirm Exchange & Pay"}
-                  </button>
-                </div>
-              </form>
+              </div>{/* end scroll body */}
+
+              {/* ── Sticky Footer Submit ── */}
+              <div className="shrink-0 border-t border-border px-6 py-4">
+                <button
+                  type="button"
+                  onClick={handleExchangeSubmit as any}
+                  disabled={submittingExchange || isExchangeFormInvalid || !newExchangeAddress.trim()}
+                  className="w-full rounded-full bg-primary py-4 text-[15px] font-bold text-white transition hover:bg-[#2E2387] shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                >
+                  {submittingExchange ? "Processing..." : "Confirm Exchange & Pay ₹120"}
+                </button>
+              </div>
+
             </div>
           </div>
         )}

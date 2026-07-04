@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 import { useShop } from "@/context/ShopContext";
+import { useToast } from "@/context/ToastContext";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle, ShieldCheck } from "lucide-react";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
@@ -14,6 +15,7 @@ export default function Cart() {
   const { cartItems, updateQuantity, removeFromCart, clearCart, referralCode } = useShop();
   const { data: session, update } = useSession();
   const router = useRouter();
+  const toast = useToast();
 
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -294,7 +296,7 @@ export default function Cart() {
       // If COD, bypass Razorpay flow entirely
       if (orderData.isCod) {
         clearCart();
-        alert("Order placed successfully via Cash on Delivery!");
+        toast.success("Order placed successfully via Cash on Delivery!");
         router.push(`/success?orderId=${orderData.orderId}`);
         return;
       }
@@ -326,15 +328,15 @@ export default function Cart() {
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               clearCart();
-              alert("Payment Success! [SIMULATED] Order placed successfully. Check your email for invoice.");
+              toast.success("Payment Success! [SIMULATED] Order placed. Check your email for invoice.");
               router.push(`/success?orderId=${orderData.orderId}`);
             } else {
-              alert("Verification failed: " + verifyData.message);
+              toast.error("Verification failed: " + verifyData.message);
               setProcessing(false);
             }
           } catch (verifyErr) {
             console.error(verifyErr);
-            alert("Error verifying simulated payment.");
+            toast.error("Error verifying simulated payment.");
             setProcessing(false);
           }
         } else {
@@ -345,7 +347,7 @@ export default function Cart() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ orderId: orderData.orderId }),
             });
-            alert("Checkout cancelled [SIMULATED]. Stocks returned back to inventory.");
+            toast.info("Checkout cancelled. Stocks returned back to inventory.");
           } catch (cancelErr) {
             console.error(cancelErr);
           }
@@ -378,14 +380,14 @@ export default function Cart() {
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               clearCart();
-              alert("Payment Success! Order placed successfully. Check your email for invoice.");
+              toast.success("Payment Success! Order placed. Check your email for invoice.");
               router.push(`/success?orderId=${orderData.orderId}`);
             } else {
-              alert("Verification failed: " + verifyData.message);
+              toast.error("Verification failed: " + verifyData.message);
             }
           } catch (verifyErr) {
             console.error(verifyErr);
-            alert("Error verifying payment.");
+            toast.error("Error verifying payment.");
           }
         },
         modal: {
@@ -397,7 +399,7 @@ export default function Cart() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ orderId: orderData.orderId }),
               });
-              alert("Checkout cancelled. Stocks returned back to shop inventory.");
+              toast.info("Checkout cancelled. Stocks returned to shop inventory.");
             } catch (cancelErr) {
               console.error(cancelErr);
             }
