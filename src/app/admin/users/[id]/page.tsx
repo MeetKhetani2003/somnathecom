@@ -1,4 +1,5 @@
 "use client";
+import { fireToast } from "@/context/ToastContext";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -70,7 +71,7 @@ export default function UserDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Order status updated to ${status}`);
+        fireToast(`Order status updated to ${status}`);
         // Refresh orders
         fetchUserDetail();
       }
@@ -88,7 +89,7 @@ export default function UserDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Payment status updated to ${paymentStatus}`);
+        fireToast(`Payment status updated to ${paymentStatus}`);
         // Refresh orders
         fetchUserDetail();
       }
@@ -106,7 +107,7 @@ export default function UserDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Tracking number updated to: ${trackingNum}`);
+        fireToast(`Tracking number updated to: ${trackingNum}`);
         fetchUserDetail();
       }
     } catch (error) {

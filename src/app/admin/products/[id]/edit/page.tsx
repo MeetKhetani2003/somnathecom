@@ -1,4 +1,5 @@
 "use client";
+import { fireToast } from "@/context/ToastContext";
 
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -172,7 +173,7 @@ export default function EditProductPage() {
           setSizeEntries([{ size: "", stock: 0 }]);
         }
       } else {
-        alert("Product not found!");
+        fireToast("Product not found!");
         router.push("/admin");
       }
     } catch (err) {
@@ -190,14 +191,14 @@ export default function EditProductPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Review deleted successfully!");
+        fireToast("Review deleted successfully!");
         fetchProduct();
       } else {
-        alert("Error: " + data.message);
+        fireToast("Error: " + data.message);
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred while deleting the review.");
+      fireToast("An error occurred while deleting the review.");
     }
   };
 
@@ -302,7 +303,7 @@ export default function EditProductPage() {
     
     const MAX_SIZE = 500 * 1024;
     if (mainImageFile && mainImageFile.size > MAX_SIZE) {
-      alert("Main image exceeds 500KB limit.");
+      fireToast("Main image exceeds 500KB limit.");
       setSubmitting(false);
       return;
     }
@@ -310,19 +311,19 @@ export default function EditProductPage() {
     if (hasColors) {
       for (const cv of colorVariants) {
         if (!cv.name.trim()) {
-          alert("Each color variant must have a name.");
+          fireToast("Each color variant must have a name.");
           setSubmitting(false);
           return;
         }
         const validSizes = cv.sizes.filter(s => s.size.trim());
         if (validSizes.length === 0) {
-          alert(`Color "${cv.name}" needs at least one size.`);
+          fireToast(`Color "${cv.name}" needs at least one size.`);
           setSubmitting(false);
           return;
         }
         for (const file of cv.newImageFiles) {
           if (file.size > MAX_SIZE) {
-            alert(`Image ${file.name} in color "${cv.name}" exceeds 500KB limit.`);
+            fireToast(`Image ${file.name} in color "${cv.name}" exceeds 500KB limit.`);
             setSubmitting(false);
             return;
           }
@@ -331,14 +332,14 @@ export default function EditProductPage() {
     } else {
       for (const file of newDetailedFiles) {
         if (file.size > MAX_SIZE) {
-          alert(`Image ${file.name} exceeds 500KB limit.`);
+          fireToast(`Image ${file.name} exceeds 500KB limit.`);
           setSubmitting(false);
           return;
         }
       }
       const validSizes = sizeEntries.filter((e) => e.size.trim());
       if (validSizes.length === 0) {
-        alert("Please add at least one size with stock quantity.");
+        fireToast("Please add at least one size with stock quantity.");
         setSubmitting(false);
         return;
       }
@@ -395,14 +396,14 @@ export default function EditProductPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Product updated successfully!");
+        fireToast("Product updated successfully!");
         router.push("/admin");
       } else {
-        alert("Error: " + data.message);
+        fireToast("Error: " + data.message);
       }
     } catch (error) {
       console.error(error);
-      alert("An error occurred.");
+      fireToast("An error occurred.");
     } finally {
       setSubmitting(false);
     }

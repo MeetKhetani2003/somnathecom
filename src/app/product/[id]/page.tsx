@@ -51,6 +51,7 @@ export default function ProductSlug() {
   const router = useRouter();
   const { data: session } = useSession();
   const { addToCart, wishlist, toggleWishlist } = useShop();
+  const { success: successToast, warning: warnToast, error: errorToast } = useToast();
 
   const [product, setProduct] = useState<any>(null);
   const [allProducts, setAllProducts] = useState<any[]>([]);

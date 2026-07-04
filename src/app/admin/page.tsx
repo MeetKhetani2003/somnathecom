@@ -1,4 +1,5 @@
 "use client";
+import { fireToast } from "@/context/ToastContext";
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSession, signOut } from "next-auth/react";
@@ -62,7 +63,7 @@ function AdminDashboard() {
       const res = await fetch("/api/admin/orders");
       const data = await res.json();
       if (!data.success) {
-        alert("Failed to load orders for report: " + data.message);
+        fireToast("Failed to load orders for report: " + data.message);
         return;
       }
       
@@ -70,7 +71,7 @@ function AdminDashboard() {
       const couponOrders = allOrders.filter((o: any) => o.couponUsed || o.referralCode);
       
       if (couponOrders.length === 0) {
-        alert("No orders with coupons or referral links found.");
+        fireToast("No orders with coupons or referral links found.");
         return;
       }
       
@@ -155,7 +156,7 @@ function AdminDashboard() {
       link.click();
       document.body.removeChild(link);
     } catch (err: any) {
-      alert("Error generating report: " + err.message);
+      fireToast("Error generating report: " + err.message);
     }
   };
 
@@ -232,7 +233,7 @@ function AdminDashboard() {
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
-        alert("Product deleted successfully!");
+        fireToast("Product deleted successfully!");
         fetchData();
       }
     } catch (error) {
@@ -254,7 +255,7 @@ function AdminDashboard() {
         // Optimistically update the UI to feel instant
         setProducts(products.map(p => p.id === id ? { ...p, featured: !currentFeatured } : p));
       } else {
-        alert("Error updating featured status: " + data.message);
+        fireToast("Error updating featured status: " + data.message);
       }
     } catch (error) {
       console.error("Error toggling featured:", error);
@@ -271,7 +272,7 @@ function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Order status updated to ${status}`);
+        fireToast(`Order status updated to ${status}`);
         fetchData();
       }
     } catch (error) {
@@ -288,7 +289,7 @@ function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Payment status updated to ${paymentStatus}`);
+        fireToast(`Payment status updated to ${paymentStatus}`);
         fetchData();
       }
     } catch (error) {
@@ -305,7 +306,7 @@ function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Tracking number updated to: ${trackingNum}`);
+        fireToast(`Tracking number updated to: ${trackingNum}`);
         fetchData();
       }
     } catch (error) {
@@ -323,14 +324,14 @@ function AdminDashboard() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message || `AWB synced successfully!`);
+        fireToast(data.message || `AWB synced successfully!`);
         fetchData();
       } else {
-        alert(data.message || "Failed to sync AWB from Shiprocket.");
+        fireToast(data.message || "Failed to sync AWB from Shiprocket.");
       }
     } catch (error) {
       console.error(error);
-      alert("Error syncing AWB from Shiprocket.");
+      fireToast("Error syncing AWB from Shiprocket.");
     } finally {
       setSyncingOrderId(null);
     }
@@ -1322,7 +1323,7 @@ function AdminDashboard() {
                       <button
                         onClick={() => {
                           if (!newCouponCode.trim() || !newCouponDiscount) {
-                            alert("Code and Discount are required!");
+                            fireToast("Code and Discount are required!");
                             return;
                           }
                           
@@ -1343,11 +1344,11 @@ function AdminDashboard() {
                           .then(r => r.json())
                           .then(data => {
                             if (data.success) {
-                              alert(editingCoupon ? "Coupon Updated!" : "Coupon Created!");
+                              fireToast(editingCoupon ? "Coupon Updated!" : "Coupon Created!");
                               setCouponModalOpen(false);
                               fetchData();
                             } else {
-                              alert("Error: " + data.message);
+                              fireToast("Error: " + data.message);
                             }
                           });
                         }}
@@ -1381,7 +1382,7 @@ function AdminDashboard() {
                           })
                         }).then(r => r.json()).then(data => {
                           if (data.success) fetchData();
-                          else alert("Error: " + data.message);
+                          else fireToast("Error: " + data.message);
                         });
                       }}
                       className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"

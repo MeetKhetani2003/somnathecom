@@ -140,7 +140,7 @@ function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishl
 export default function Profile() {
   const { data: session, update } = useSession();
   const { wishlist, toggleWishlist, addToCart, cartItems, removeFromCart, updateQuantity } = useShop();
-  const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [productsList, setProductsList] = useState<any[]>([]);
 
   useEffect(() => {
