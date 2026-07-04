@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Edit, Trash2, Plus, X, ImageIcon, Palette } from "lucide-react";
 import Barcode from "react-barcode";
-import CreatableSelect from "react-select/creatable";
+
 
 
 

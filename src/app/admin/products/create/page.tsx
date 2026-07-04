@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Package, Plus, Trash2, X, ImageIcon, Palette } from "lucide-react";
-import CreatableSelect from "react-select/creatable";
+
 
 
 
