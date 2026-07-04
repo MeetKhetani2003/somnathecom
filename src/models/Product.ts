@@ -8,7 +8,7 @@ const ProductSchema = new Schema({
   mrp: { type: Number, required: true },
   rating: { type: Number, default: 4.5 },
   netPrice: { type: Number },
-  image: { type: String, required: true },
+  image: { type: String },
   tag: { type: String },
   description: { type: String },
   stock: { type: Number, default: 50 },
@@ -21,6 +21,7 @@ const ProductSchema = new Schema({
   colors: [{
     name: { type: String, required: true },
     title: { type: String }, // Variant specific title
+    featured: { type: Boolean, default: false }, // Feature this specific variant
     images: [{ type: String }],
     sizes: [{
       size: { type: String, required: true },

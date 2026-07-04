@@ -213,7 +213,8 @@ function ProductsContent() {
                 ...p,
                 _originalId: p.id,
                 variantColor: c.name,
-                title: c.title || `${p.title} - ${c.name}`,
+                title: c.title || `${c.name} ${p.title}`,
+                featured: c.featured || false,
                 image: (c.images && c.images.length > 0) ? c.images[0] : p.image,
                 colors: [c], // keep only this color variant for sizes
                 sizes: c.sizes || []

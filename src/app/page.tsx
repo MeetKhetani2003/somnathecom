@@ -344,7 +344,8 @@ export default function Home() {
                 ...p,
                 _originalId: p.id,
                 variantColor: c.name,
-                title: c.title || `${p.title} - ${c.name}`,
+                title: c.title || `${c.name} ${p.title}`,
+                featured: c.featured || false,
                 image: (c.images && c.images.length > 0) ? c.images[0] : p.image,
                 colors: [c], // keep only this color variant for sizes
                 sizes: c.sizes || []
@@ -424,8 +425,8 @@ export default function Home() {
           </div>
         ) : (
           <div ref={featuredCarouselRef} className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-8 pt-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {productsList.map((p) => (
-              <ProductCard key={p.id} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
+            {productsList.filter(p => p.featured).map((p) => (
+              <ProductCard key={p.id + (p.variantColor || '')} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
             ))}
           </div>
         )}

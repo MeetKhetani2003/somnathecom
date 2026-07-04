@@ -30,10 +30,7 @@ export async function POST(req: Request) {
     const sizesStr = formData.get("sizes") as string;
     const whatsIncludedStr = formData.get("whatsIncluded") as string;
     const careInstructions = formData.get("careInstructions") as string;
-    const featuredStr = formData.get("featured") as string;
     const colorsMetaStr = formData.get("colorsMeta") as string;
-    
-    const imageFile = formData.get("image") as File | null;
     const imagesFiles = formData.getAll("images") as File[];
     const colorImageFiles = formData.getAll("colorImages") as File[];
 
@@ -47,20 +44,14 @@ export async function POST(req: Request) {
     const MAX_SIZE = 500 * 1024;
     
     let mainImageUrl = "https://images.pexels.com/photos/8501698/pexels-photo-8501698.jpeg"; // Default
-    if (imageFile && imageFile.size > 0) {
-      if (imageFile.size > MAX_SIZE) {
-        return NextResponse.json({ success: false, message: "Main image exceeds 500KB limit" }, { status: 400 });
-      }
-      const fileId = await uploadToGridFS(imageFile);
-      mainImageUrl = `/api/image/${fileId}`;
-    }
+
 
     // ─── Process Color Variants ──────────────────────────────────────────────
-    let colors: { name: string; title?: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+    let colors: { name: string; title?: string; featured: boolean; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
     
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
         
         // Upload color images in order
         let colorImageIdx = 0;
@@ -80,6 +71,7 @@ export async function POST(req: Request) {
           colors.push({
             name: meta.name,
             title: meta.title,
+            featured: meta.featured || false,
             images: colorImages,
             sizes: meta.sizes,
           });
@@ -113,6 +105,13 @@ export async function POST(req: Request) {
     }
 
     // Auto-generate a unique numerical id
+    // Auto-assign global main image if colors exist
+    if (colors.length > 0 && colors[0].images.length > 0) {
+      mainImageUrl = colors[0].images[0];
+    } else if (!colorsMetaStr && detailedImageUrls.length > 0) {
+      mainImageUrl = detailedImageUrls[0];
+    }
+
     const lastProduct = await Product.findOne().sort({ id: -1 });
     const nextId = lastProduct ? lastProduct.id + 1 : 101;
 
@@ -148,11 +147,6 @@ export async function POST(req: Request) {
 
     const whatsIncluded = whatsIncludedStr ? whatsIncludedStr.split("\n").map(s => s.trim()).filter(Boolean) : [];
 
-    // If we have colors, use the first color's first image as the main image fallback
-    if (colors.length > 0 && mainImageUrl.includes("pexels") && colors[0].images.length > 0) {
-      mainImageUrl = colors[0].images[0];
-    }
-
     const product = await Product.create({
       id: nextId,
       sku,
@@ -171,8 +165,7 @@ export async function POST(req: Request) {
       sizes,
       colors,
       whatsIncluded,
-      careInstructions: careInstructions || "",
-      featured: featuredStr === "true"
+      careInstructions: careInstructions || ""
     });
 
     return NextResponse.json({ success: true, product });

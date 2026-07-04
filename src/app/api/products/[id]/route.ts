@@ -42,19 +42,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData.whatsIncluded = (whatsIncludedStr as string).split("\n").map(s => s.trim()).filter(Boolean);
     }
 
-    const featuredStr = formData.get("featured");
-    if (featuredStr !== null) {
-      updateData.featured = featuredStr === "true";
-    }
 
-    const imageFile = formData.get("image") as File | null;
-    if (imageFile && imageFile.size > 0) {
-      if (imageFile.size > MAX_SIZE) {
-        return NextResponse.json({ success: false, message: "Main image exceeds 500KB limit" }, { status: 400 });
-      }
-      const fileId = await uploadToGridFS(imageFile);
-      updateData.image = `/api/image/${fileId}`;
-    }
 
     // ─── Color Variants ──────────────────────────────────────────────────────
     const colorsMetaStr = formData.get("colorsMeta") as string;
@@ -62,10 +50,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
         
         let colorImageIdx = 0;
-        const colors: { name: string; title?: string; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+        const colors: { name: string; title?: string; featured: boolean; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
         
         for (const meta of colorsMeta) {
           const colorImages: string[] = [...(meta.existingImages || [])];
@@ -84,6 +72,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           colors.push({
             name: meta.name,
             title: meta.title,
+            featured: meta.featured || false,
             images: colorImages,
             sizes: meta.sizes,
           });
@@ -96,6 +85,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         
         // Also update the flat sizes array with the union for backward compat
         updateData.sizes = colors.flatMap(c => c.sizes);
+        
+        // Auto-update global main image
+        if (colors.length > 0 && colors[0].images.length > 0) {
+          updateData.image = colors[0].images[0];
+        }
       } catch (e) {
         console.error("Error parsing colorsMeta:", e);
       }
@@ -129,6 +123,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
       if (keepImagesStr !== null || newImageUrls.length > 0) {
         updateData.images = [...keepImages, ...newImageUrls];
+        if (updateData.images.length > 0) {
+          updateData.image = updateData.images[0];
+        }
       }
     }
 

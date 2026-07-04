@@ -369,7 +369,7 @@ export default function ProductSlug() {
   };
 
   const displayTitle = selectedColor && product.colors 
-    ? product.colors.find((c: any) => c.name === selectedColor)?.title || product.title 
+    ? product.colors.find((c: any) => c.name === selectedColor)?.title || `${selectedColor} ${product.title}`
     : product.title;
 
   return (

@@ -8,14 +8,7 @@ import Link from "next/link";
 import { ChevronLeft, Package, Plus, Trash2, X, ImageIcon, Palette } from "lucide-react";
 import CreatableSelect from "react-select/creatable";
 
-const DEFAULT_MATERIALS = [
-  { value: "100% Cotton", label: "100% Cotton" },
-  { value: "Polyester", label: "Polyester" },
-  { value: "Silk", label: "Silk" },
-  { value: "Velvet", label: "Velvet" },
-  { value: "Felt", label: "Felt" },
-  { value: "Satin", label: "Satin" },
-];
+
 
 interface SizeEntry {
   size: string;
@@ -25,6 +18,7 @@ interface SizeEntry {
 interface ColorVariant {
   name: string;
   title: string;
+  featured?: boolean;
   imageFiles: File[];
   imagePreviews: string[];
   sizes: SizeEntry[];
@@ -44,11 +38,7 @@ export default function CreateProductPage() {
   const [formMaterial, setFormMaterial] = useState("");
   const [formWhatsIncluded, setFormWhatsIncluded] = useState("");
   const [formCareInstructions, setFormCareInstructions] = useState("");
-  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
-  const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [formFeatured, setFormFeatured] = useState(false);
-  const mainInputRef = useRef<HTMLInputElement>(null);
 
   // Color Variants
   const [colorVariants, setColorVariants] = useState<ColorVariant[]>([]);
@@ -63,49 +53,11 @@ export default function CreateProductPage() {
   const [legacyDetailedPreviews, setLegacyDetailedPreviews] = useState<string[]>([]);
   const legacyDetailInputRef = useRef<HTMLInputElement>(null);
 
-  const [materials, setMaterials] = useState(DEFAULT_MATERIALS);
-  
-  useEffect(() => {
-    const saved = localStorage.getItem("customMaterials");
-    if (saved) {
-      try {
-        setMaterials([...DEFAULT_MATERIALS, ...JSON.parse(saved)]);
-      } catch (e) {}
-    }
-  }, []);
 
-  const selectedMaterials = formMaterial ? formMaterial.split(',').map(s => s.trim()).filter(Boolean) : [];
-
-  const handleCreateMaterial = (inputValue: string) => {
-    const newOption = { value: inputValue, label: inputValue };
-    setMaterials((prev) => [...prev, newOption]);
-    
-    if (!selectedMaterials.includes(inputValue)) {
-      setFormMaterial([...selectedMaterials, inputValue].join(', '));
-    }
-    
-    const saved = localStorage.getItem("customMaterials");
-    const parsed = saved ? JSON.parse(saved) : [];
-    localStorage.setItem("customMaterials", JSON.stringify([...parsed, newOption]));
-  };
-
-  const handleAddMaterial = (newValue: any) => {
-    if (!newValue) return;
-    const val = newValue.value;
-    if (!selectedMaterials.includes(val)) {
-      setFormMaterial([...selectedMaterials, val].join(', '));
-    }
-  };
-
-  const handleRemoveMaterial = (matToRemove: string) => {
-    const newMats = selectedMaterials.filter(m => m !== matToRemove);
-    setFormMaterial(newMats.join(', '));
-  };
 
   // Revoke object URLs on unmount
   useEffect(() => {
     return () => {
-      if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
       legacyDetailedPreviews.forEach(url => URL.revokeObjectURL(url));
       colorVariants.forEach(cv => cv.imagePreviews.forEach(url => URL.revokeObjectURL(url)));
     };
@@ -115,7 +67,7 @@ export default function CreateProductPage() {
 
   // ─── Color Variant Helpers ──────────────────────────────────────────────────
   const addColorVariant = () => {
-    setColorVariants(prev => [...prev, { name: "", title: "", imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
+    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
     setActiveColorIdx(colorVariants.length);
   };
 
@@ -133,6 +85,10 @@ export default function CreateProductPage() {
 
   const updateColorTitle = (idx: number, title: string) => {
     setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, title } : cv));
+  };
+
+  const updateColorFeatured = (idx: number, featured: boolean) => {
+    setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, featured } : cv));
   };
 
   const addColorImage = (idx: number, files: File[]) => {
@@ -214,11 +170,6 @@ export default function CreateProductPage() {
     setSubmitting(true);
 
     const MAX_SIZE = 500 * 1024; // 500KB
-    if (mainImageFile && mainImageFile.size > MAX_SIZE) {
-      fireToast("Main image exceeds 500KB limit.");
-      setSubmitting(false);
-      return;
-    }
 
     if (hasColors) {
       // Validate color variants
@@ -270,17 +221,13 @@ export default function CreateProductPage() {
     formData.append("material", formMaterial);
     formData.append("whatsIncluded", formWhatsIncluded);
     formData.append("careInstructions", formCareInstructions);
-    formData.append("featured", formFeatured ? "true" : "false");
-
-    if (mainImageFile) {
-      formData.append("image", mainImageFile);
-    }
 
     if (hasColors) {
       // Build colors metadata (without files)
       const colorsMeta = colorVariants.map(cv => ({
         name: cv.name,
         title: cv.title,
+        featured: cv.featured,
         sizes: cv.sizes.filter(s => s.size.trim()),
         imageCount: cv.imageFiles.length,
       }));
@@ -503,6 +450,20 @@ export default function CreateProductPage() {
                             className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
                           />
                         </div>
+                      </div>
+                      
+                      {/* Featured Checkbox */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          id={`featured-cv-${activeColorIdx}`}
+                          checked={activeColor.featured || false}
+                          onChange={(e) => updateColorFeatured(activeColorIdx, e.target.checked)}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <label htmlFor={`featured-cv-${activeColorIdx}`} className="text-[13px] font-medium text-dark/80 cursor-pointer">
+                          Feature this variant on the home page
+                        </label>
                       </div>
                       <button
                         type="button"
@@ -751,108 +712,19 @@ export default function CreateProductPage() {
 
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-dark/80">Material</label>
-            <CreatableSelect
-              isClearable
-              controlShouldRenderValue={false}
-              options={materials.filter(m => !selectedMaterials.includes(m.value))}
-              value={null}
-              onChange={handleAddMaterial}
-              onCreateOption={handleCreateMaterial}
-              placeholder="Select or type to add material..."
-              styles={{
-                control: (base, state) => ({
-                  ...base,
-                  minHeight: '48px',
-                  borderRadius: '12px',
-                  borderColor: state.isFocused ? '#E1BFE6' : '#EEDDF0',
-                  boxShadow: state.isFocused ? '0 0 0 1px #E1BFE6' : 'none',
-                  fontSize: '14px',
-                  '&:hover': {
-                    borderColor: '#E1BFE6'
-                  }
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  fontSize: '14px',
-                  backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'var(--color-primary-light)' : 'white',
-                  color: state.isSelected ? 'white' : '#1A0F1C',
-                  cursor: 'pointer',
-                  '&:active': {
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'white'
-                  }
-                })
-              }}
+            <input 
+              type="text" 
+              value={formMaterial} 
+              onChange={(e) => setFormMaterial(e.target.value)} 
+              placeholder="e.g. 100% Cotton, Polyester" 
+              className="h-12 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary/50" 
             />
-            {selectedMaterials.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {selectedMaterials.map((mat) => (
-                  <span key={mat} className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-light)] px-3 py-1.5 text-[12px] font-medium text-[#7A187C]">
-                    {mat}
-                    <button type="button" onClick={() => handleRemoveMaterial(mat)} className="text-primary hover:text-red-500 transition-colors">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Image Upload Section */}
           <div className="rounded-2xl border border-dashed border-primary/50 bg-surface/50 p-6 space-y-6">
             <p className="text-[13px] font-semibold text-dark/80 flex items-center gap-2"><ImageIcon className="h-4 w-4 text-primary" /> Product Images (Max 500KB each)</p>
 
-            {/* Main Image */}
-            <div>
-              <label className="mb-2 block text-[13px] font-medium text-dark/70">Main Image <span className="text-red-500">*</span></label>
-              <input
-                ref={mainInputRef}
-                required
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setMainImageFile(file);
-                  if (mainImagePreview) URL.revokeObjectURL(mainImagePreview);
-                  setMainImagePreview(file ? URL.createObjectURL(file) : null);
-                }}
-              />
-              {mainImagePreview ? (
-                <div className="relative inline-block">
-                  <img
-                    src={mainImagePreview}
-                    alt="Main preview"
-                    className="h-36 w-36 rounded-xl object-cover border-2 border-primary shadow-md"
-                  />
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    <span className="text-[11px] text-dark/70 truncate max-w-[130px]">{mainImageFile?.name}</span>
-                    <span className="text-[10px] text-[#9A8A9D]">({((mainImageFile?.size || 0) / 1024).toFixed(0)} KB)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      URL.revokeObjectURL(mainImagePreview);
-                      setMainImagePreview(null);
-                      setMainImageFile(null);
-                      if (mainInputRef.current) mainInputRef.current.value = "";
-                    }}
-                    className="absolute -top-2 -right-2 grid h-6 w-6 place-items-center rounded-full bg-red-500 text-white shadow hover:bg-red-600"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => mainInputRef.current?.click()}
-                  className="flex h-36 w-36 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/50 bg-white text-dark/50 transition hover:border-primary hover:text-primary"
-                >
-                  <ImageIcon className="h-8 w-8" />
-                  <span className="text-[12px] font-medium">Click to upload</span>
-                </button>
-              )}
-            </div>
 
             {/* Legacy Detailed Images (only shown when no colors) */}
             {!hasColors && (
@@ -920,28 +792,7 @@ export default function CreateProductPage() {
             )}
           </div>
 
-          {/* Featured Toggle */}
-          <div className="flex items-start gap-4 rounded-2xl border border-border bg-surface/60 p-5">
-            <div className="relative mt-0.5">
-              <input
-                type="checkbox"
-                id="featuredCheck"
-                checked={formFeatured}
-                onChange={(e) => setFormFeatured(e.target.checked)}
-                className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-border bg-white checked:border-primary checked:bg-primary transition"
-              />
-              <svg className="pointer-events-none absolute inset-0 m-auto h-3 w-3 text-white opacity-0 peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <label htmlFor="featuredCheck" className="cursor-pointer flex-1">
-              <span className="flex items-center gap-2 text-[14px] font-semibold text-dark">
-                ⭐ Featured Product
-                {formFeatured && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Active</span>}
-              </span>
-              <p className="mt-0.5 text-[12px] text-dark/50">When checked, this product will appear in the <strong className="text-primary">"Featured This Week"</strong> section on the home page.</p>
-            </label>
-          </div>
+
 
           <div className="pt-6 border-t border-border">
             <button disabled={submitting} type="submit" className="w-full sm:w-auto rounded-full bg-primary px-8 py-3.5 text-[15px] font-medium text-white transition hover:bg-[#7A187C] disabled:opacity-50">
