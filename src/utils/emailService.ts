@@ -615,3 +615,92 @@ export async function sendOutOfStockEmail(productTitle: string, variantDetails?:
   console.log(`Recipient Admin: ${adminEmail}`);
   console.log("==================================================================");
 }
+
+export interface ContactInquiryDetails {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
+export async function sendInquiryEmail(details: ContactInquiryDetails) {
+  const { name, email, phone, subject, message } = details;
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || "zenvibe.011@gmail.com";
+
+  const adminHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E7EB; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <div style="background-color: #3D2FB3; padding: 20px; text-align: center; color: white;">
+        <h2 style="margin: 0; font-size: 20px;">New Contact Form Inquiry</h2>
+      </div>
+      <div style="padding: 25px; color: #1A0F1C; line-height: 1.6;">
+        <p>Hello Admin,</p>
+        <p>A new message has been submitted via the website contact form.</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: #F8FAFC; border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB; font-weight: bold; width: 30%;">Name:</td>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB;">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB; font-weight: bold;">Email:</td>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB;"><a href="mailto:${email}">${email}</a></td>
+          </tr>
+          ${phone ? `
+          <tr>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB; font-weight: bold;">Phone:</td>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB;">${phone}</td>
+          </tr>
+          ` : ""}
+          <tr>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB; font-weight: bold;">Subject:</td>
+            <td style="padding: 10px 15px; border-bottom: 1px solid #E5E7EB;">${subject}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 15px; font-weight: bold; vertical-align: top;">Message:</td>
+            <td style="padding: 10px 15px;">${message}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  `;
+
+  let host = process.env.SMTP_HOST;
+  let port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+  if (!host && process.env.EMAIL_USER) {
+    host = "smtp.gmail.com";
+    port = 465;
+  }
+
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+
+      await transporter.sendMail({
+        from: `"Somnath NX Contact" <${user}>`,
+        to: adminEmail,
+        subject: `New Inquiry: ${subject}`,
+        html: adminHtml,
+      });
+
+      console.log(`[Email Service] Inquiry email sent to ${adminEmail}`);
+      return;
+    } catch (error) {
+      console.error("[Email Service] Failed to send inquiry email via SMTP:", error);
+    }
+  }
+
+  console.log("==================================================================");
+  console.log(`[MOCK EMAIL FALLBACK] Inquiry Email Sent.`);
+  console.log(`From: ${name} (${email})${phone ? ` - Phone: ${phone}` : ""}`);
+  console.log(`Subject: ${subject}`);
+  console.log("==================================================================");
+}

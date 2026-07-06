@@ -174,7 +174,7 @@ function AdminDashboard() {
           fetch("/api/products"),
           fetch("/api/admin/orders"),
           fetch("/api/admin/users"),
-          fetch("/api/inquiries"),
+          fetch("/api/admin/inquiries"),
           fetch("/api/admin/orders?exchangeOnly=true")
         ]);
         const [prodData, orderData, userData, inqData, exchData] = await Promise.all([
@@ -187,7 +187,7 @@ function AdminDashboard() {
         if (prodData.success) setProducts(prodData.products);
         if (orderData.success) setOrders(orderData.orders);
         if (userData.success) setUsers(userData.users);
-        if (inqData.success) setInquiries(inqData.inquiries);
+        if (inqData.success) setInquiries(inqData.data);
         if (exchData.success) setExchanges(exchData.orders.filter((o: any) => o.exchangeRequested));
       } else if (activeTab === "products") {
         const res = await fetch("/api/products");
@@ -206,9 +206,9 @@ function AdminDashboard() {
         const data = await res.json();
         if (data.success) setUsers(data.users);
       } else if (activeTab === "inquiries") {
-        const res = await fetch("/api/inquiries");
+        const res = await fetch("/api/admin/inquiries");
         const data = await res.json();
-        if (data.success) setInquiries(data.inquiries);
+        if (data.success) setInquiries(data.data);
       } else if (activeTab === "coupons") {
         const res = await fetch("/api/admin/coupons");
         const data = await res.json();
@@ -1085,16 +1085,17 @@ function AdminDashboard() {
 
               {/* 4. INQUIRIES TAB */}
               {activeTab === "inquiries" && (
-                <div>
+                <div className="relative">
                   <div className="mb-6 flex items-center justify-between">
                     <h2 className="text-[18px] font-semibold text-dark">Customer Support Inquiries</h2>
                     <button
                       onClick={() => {
                         const csvContent = [
-                          ["Name", "Email", "Date", "Status", "Message"].join(","),
+                          ["Name", "Email", "Phone", "Date", "Status", "Message"].join(","),
                           ...inquiries.map(inq => [
                             `"${inq.name?.replace(/"/g, '""') || ''}"`,
                             `"${inq.email || ''}"`,
+                            `"${inq.phone || ''}"`,
                             `"${new Date(inq.createdAt).toLocaleDateString("en-IN")}"`,
                             `"${inq.status || 'pending'}"`,
                             `"${inq.message?.replace(/"/g, '""') || ''}"`
@@ -1120,12 +1121,56 @@ function AdminDashboard() {
                           <div className="flex items-center justify-between border-b border-border pb-3 mb-3">
                             <div>
                               <div className="font-semibold text-dark">{inq.name}</div>
-                              <div className="text-[12px] text-dark/50">{inq.email} • {new Date(inq.createdAt).toLocaleDateString("en-IN")}</div>
+                              <div className="text-[12px] text-dark/50">{inq.email}{inq.phone ? ` • ${inq.phone}` : ""} • {new Date(inq.createdAt).toLocaleDateString("en-IN")}</div>
                             </div>
-                            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${inq.status === "resolved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {inq.status === "resolved" ? "Resolved" : "Pending Action"}
-                            </span>
+                            <div className="flex items-center gap-3">
+                              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${inq.status === "resolved" || inq.status === "Replied" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {inq.status === "resolved" || inq.status === "Replied" ? "Resolved" : "Pending Action"}
+                              </span>
+                              {(inq.status === "pending" || inq.status === "New") && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`/api/admin/inquiries/${inq._id}`, {
+                                        method: "PUT",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ status: "resolved" })
+                                      });
+                                      if (res.ok) {
+                                        setInquiries(inquiries.map(i => i._id === inq._id ? { ...i, status: "resolved" } : i));
+                                        fireToast("Marked as resolved!");
+                                      }
+                                    } catch(e) {
+                                      fireToast("Failed to update status");
+                                    }
+                                  }}
+                                  className="text-[12px] font-medium text-primary hover:underline"
+                                >
+                                  Mark Resolved
+                                </button>
+                              )}
+                              <button
+                                onClick={async () => {
+                                  if (!confirm("Delete this inquiry?")) return;
+                                  try {
+                                    const res = await fetch(`/api/admin/inquiries/${inq._id}`, { method: "DELETE" });
+                                    if (res.ok) {
+                                      setInquiries(inquiries.filter(i => i._id !== inq._id));
+                                      fireToast("Inquiry deleted!");
+                                    }
+                                  } catch(e) {
+                                    fireToast("Failed to delete inquiry");
+                                  }
+                                }}
+                                className="text-[12px] font-medium text-red-500 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
+                          {inq.subject && (
+                            <div className="font-medium text-[13px] text-dark mb-1">Subject: {inq.subject}</div>
+                          )}
                           <p className="text-[13.5px] text-dark/80 leading-relaxed">"{inq.message}"</p>
                         </div>
                       ))

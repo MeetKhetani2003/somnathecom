@@ -209,6 +209,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Shop All
               <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-primary to-secondary transition-all duration-300 group-hover:w-full" />
             </Link>
+            <Link href="/contact" className="group relative py-2 text-[14px] font-medium text-dark transition-colors hover:text-primary">
+              Contact
+              <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-primary to-secondary transition-all duration-300 group-hover:w-full" />
+            </Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
@@ -520,6 +524,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 className="h-12 w-auto object-contain"
               />
               <p className="mt-6 max-w-[320px] text-[14.5px] leading-relaxed text-dark/70">India’s premium destination for nightwear and loungewear. Experience unmatched comfort, modern designs, and breathable fabrics.</p>
+              <div className="mt-6 text-[14px] text-dark/70 space-y-2">
+                <p>Email: <a href="mailto:somnathnx1@gmail.com" className="font-medium hover:text-primary transition-colors">somnathnx1@gmail.com</a></p>
+                <p>Phone: <a href="tel:+918780003927" className="font-medium hover:text-primary transition-colors">+91 87800 03927</a></p>
+              </div>
             </div>
             {[
               { title: "Shop", links: ["Women's Nightwear", "Men's Nightwear", "Tencel Collection", "Oversized Collection"] },
@@ -530,14 +538,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className="text-[13px] font-bold uppercase tracking-wider text-dark">{col.title}</div>
                 <ul className="mt-5 space-y-3">
                   {col.links.map((l) => (
-                    <li key={l}><Link href={col.title === "Shop" ? `/products?category=${l}` : "#"} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link></li>
+                    <li key={l}><Link href={col.title === "Shop" ? `/products?category=${l}` : l === "Contact Us" ? "/contact" : "#"} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link></li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
           <div className="mt-16 flex flex-col items-center justify-between gap-6 border-t border-border pt-8 md:flex-row">
-            <div className="text-[13px] text-dark/50">© {new Date().getFullYear()} Somnath NX. All rights reserved. Premium Nightwear & Loungewear.</div>
+            <div className="text-[13px] text-dark/50">
+              <p>© {new Date().getFullYear()} Somnath NX. All rights reserved. Premium Nightwear & Loungewear.</p>
+              <p className="mt-2">Powered by <a href="https://paleradesign.com" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-primary transition-colors">paleradesign.com</a></p>
+            </div>
             <div className="flex items-center gap-3 text-[12px] text-dark/60">
               <span className="rounded-full border border-border px-3 py-1.5">UPI</span>
               <span className="rounded-full border border-border px-3 py-1.5">Cards</span>
