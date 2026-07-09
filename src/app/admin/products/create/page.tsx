@@ -13,6 +13,9 @@ import { ChevronLeft, Package, Plus, Trash2, X, ImageIcon, Palette } from "lucid
 interface SizeEntry {
   size: string;
   stock: number;
+  price?: number | "";
+  mrp?: number | "";
+  netPrice?: number | "";
 }
 
 interface ColorVariant {
@@ -30,9 +33,6 @@ export default function CreateProductPage() {
 
   const [formTitle, setFormTitle] = useState("");
   const [formCategory, setFormCategory] = useState("Ladies Collection > Night Suits > Ladies Full Night Suit");
-  const [formPrice, setFormPrice] = useState("");
-  const [formMrp, setFormMrp] = useState("");
-  const [formNetPrice, setFormNetPrice] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formTag, setFormTag] = useState("");
   const [formMaterial, setFormMaterial] = useState("");
@@ -47,7 +47,7 @@ export default function CreateProductPage() {
 
   // Legacy fallback: sizes without colors (used when no colors are defined)
   const [legacySizeEntries, setLegacySizeEntries] = useState<SizeEntry[]>([
-    { size: "", stock: 0 },
+    { size: "", stock: 0, price: "", mrp: "", netPrice: "" },
   ]);
   const [legacyDetailedFiles, setLegacyDetailedFiles] = useState<File[]>([]);
   const [legacyDetailedPreviews, setLegacyDetailedPreviews] = useState<string[]>([]);
@@ -67,7 +67,7 @@ export default function CreateProductPage() {
 
   // ─── Color Variant Helpers ──────────────────────────────────────────────────
   const addColorVariant = () => {
-    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0 }] }]);
+    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }] }]);
     setActiveColorIdx(colorVariants.length);
   };
 
@@ -112,7 +112,7 @@ export default function CreateProductPage() {
   };
 
   const addColorSizeRow = (colorIdx: number) => {
-    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0 }] } : cv));
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }] } : cv));
   };
 
   const removeColorSizeRow = (colorIdx: number, sizeIdx: number) => {
@@ -122,13 +122,13 @@ export default function CreateProductPage() {
   const updateColorSizeRow = (colorIdx: number, sizeIdx: number, field: keyof SizeEntry, value: string | number) => {
     setColorVariants(prev => prev.map((cv, i) => {
       if (i !== colorIdx) return cv;
-      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: field === "stock" ? Number(value) : value } : s) };
+      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : s) };
     }));
   };
 
   // ─── Legacy Size Helpers (no colors) ────────────────────────────────────────
   const addLegacySizeRow = () => {
-    setLegacySizeEntries(prev => [...prev, { size: "", stock: 0 }]);
+    setLegacySizeEntries(prev => [...prev, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }]);
   };
 
   const removeLegacySizeRow = (idx: number) => {
@@ -138,7 +138,7 @@ export default function CreateProductPage() {
   const updateLegacySizeRow = (idx: number, field: keyof SizeEntry, value: string | number) => {
     setLegacySizeEntries(prev =>
       prev.map((entry, i) =>
-        i === idx ? { ...entry, [field]: field === "stock" ? Number(value) : value } : entry
+        i === idx ? { ...entry, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : entry
       )
     );
   };
@@ -213,9 +213,6 @@ export default function CreateProductPage() {
     const formData = new FormData();
     formData.append("title", formTitle);
     formData.append("category", formCategory);
-    formData.append("price", formPrice);
-    formData.append("mrp", formMrp);
-    formData.append("netPrice", formNetPrice);
     formData.append("description", formDescription);
     formData.append("tag", formTag);
     formData.append("material", formMaterial);
@@ -351,32 +348,7 @@ export default function CreateProductPage() {
             </div>
           </div>
 
-          <div>
-            <div className="grid gap-6 sm:grid-cols-3">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-dark/80">Net Cost Price (₹)</label>
-                <input type="number" value={formNetPrice} onChange={(e) => setFormNetPrice(e.target.value)} placeholder="e.g. 500" className="h-12 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary/50" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-dark/80">Selling Price (₹)</label>
-                <input required type="number" value={formPrice} onChange={(e) => setFormPrice(e.target.value)} className="h-12 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary/50" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-medium text-dark/80">MRP (₹)</label>
-                <input required type="number" value={formMrp} onChange={(e) => setFormMrp(e.target.value)} className="h-12 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary/50" />
-              </div>
-            </div>
 
-            {/* Profit Display */}
-            {formPrice && formNetPrice && (
-              <div className="mt-2 text-[13px] font-medium">
-                <span className="text-dark/70">Estimated Profit per unit: </span>
-                <span className={Number(formPrice) - Number(formNetPrice) >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                  ₹{(Number(formPrice) - Number(formNetPrice)).toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
 
           {/* ════════════ COLOR VARIANTS SECTION ════════════ */}
           <div className="rounded-2xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-purple-50/50 to-pink-50/30 p-5">
@@ -541,29 +513,46 @@ export default function CreateProductPage() {
 
                       <div className="space-y-2">
                         {activeColor.sizes.map((entry, sIdx) => (
-                          <div key={sIdx} className="grid grid-cols-[1fr_100px_36px] items-center gap-2">
-                            <input
-                              type="text"
-                              value={entry.size}
-                              onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "size", e.target.value)}
-                              placeholder="e.g. M, L, XL"
-                              className="h-10 rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
-                            />
-                            <input
-                              type="number"
-                              min={0}
-                              value={entry.stock}
-                              onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "stock", e.target.value)}
-                              className={`h-10 w-full rounded-xl border px-3 text-[13px] text-center font-semibold outline-none focus:border-primary ${entry.stock === 0 ? "border-red-200 bg-red-50 text-red-600" : "border-border bg-white text-dark"}`}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeColorSizeRow(activeColorIdx, sIdx)}
-                              disabled={activeColor.sizes.length === 1}
-                              className="grid h-10 w-10 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                          <div key={sIdx} className="space-y-2 rounded-xl border border-border bg-surface/30 p-3">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={entry.size}
+                                onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "size", e.target.value)}
+                                placeholder="e.g. M, L, XL"
+                                className="h-10 flex-1 rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                              />
+                              <input
+                                type="number"
+                                min={0}
+                                value={entry.stock}
+                                onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "stock", e.target.value)}
+                                placeholder="Stock"
+                                className={`h-10 w-24 rounded-xl border px-3 text-[13px] text-center font-semibold outline-none focus:border-primary ${entry.stock === 0 ? "border-red-200 bg-red-50 text-red-600" : "border-border bg-white text-dark"}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeColorSizeRow(activeColorIdx, sIdx)}
+                                disabled={activeColor.sizes.length === 1}
+                                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-dark/40">₹</span>
+                                <input required type="number" value={entry.price} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "price", e.target.value)} placeholder="Price *" className="h-9 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-[12px] outline-none focus:border-primary" />
+                              </div>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-dark/40">₹</span>
+                                <input required type="number" value={entry.mrp} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "mrp", e.target.value)} placeholder="MRP *" className="h-9 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-[12px] outline-none focus:border-primary" />
+                              </div>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-dark/40">₹</span>
+                                <input type="number" value={entry.netPrice} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-9 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-[12px] outline-none focus:border-primary" />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -621,39 +610,55 @@ export default function CreateProductPage() {
 
                 <div className="space-y-2.5">
                   {legacySizeEntries.map((entry, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_120px_40px] items-center gap-3">
-                      <input
-                        type="text"
-                        value={entry.size}
-                        onChange={(e) => updateLegacySizeRow(idx, "size", e.target.value)}
-                        placeholder="e.g. 3-4 Yrs, Size 26"
-                        className="h-11 rounded-xl border border-border bg-white px-4 text-[13.5px] outline-none focus:border-primary"
-                      />
-                      <div className="relative">
+                    <div key={idx} className="space-y-2.5 rounded-xl border border-border bg-surface/30 p-3">
+                      <div className="flex items-center gap-3">
                         <input
-                          type="number"
-                          min={0}
-                          value={entry.stock}
-                          onChange={(e) => updateLegacySizeRow(idx, "stock", e.target.value)}
-                          className={`h-11 w-full rounded-xl border px-4 text-[13.5px] text-center font-semibold outline-none focus:border-primary ${entry.stock === 0
-                            ? "border-red-200 bg-red-50 text-red-600"
-                            : "border-border bg-white text-dark"
-                            }`}
+                          type="text"
+                          value={entry.size}
+                          onChange={(e) => updateLegacySizeRow(idx, "size", e.target.value)}
+                          placeholder="e.g. 3-4 Yrs, Size 26"
+                          className="h-11 flex-1 rounded-xl border border-border bg-white px-4 text-[13.5px] outline-none focus:border-primary"
                         />
-                        {entry.stock === 0 && (
-                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-600">
-                            Out of Stock
-                          </span>
-                        )}
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min={0}
+                            value={entry.stock}
+                            onChange={(e) => updateLegacySizeRow(idx, "stock", e.target.value)}
+                            className={`h-11 w-24 rounded-xl border px-4 text-[13.5px] text-center font-semibold outline-none focus:border-primary ${entry.stock === 0
+                              ? "border-red-200 bg-red-50 text-red-600"
+                              : "border-border bg-white text-dark"
+                              }`}
+                          />
+                          {entry.stock === 0 && (
+                            <span className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-red-600">
+                              Out of Stock
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeLegacySizeRow(idx)}
+                          disabled={legacySizeEntries.length === 1}
+                          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeLegacySizeRow(idx)}
-                        disabled={legacySizeEntries.length === 1}
-                        className="grid h-11 w-11 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-dark/40">₹</span>
+                          <input required type="number" value={entry.price} onChange={(e) => updateLegacySizeRow(idx, "price", e.target.value)} placeholder="Price *" className="h-10 w-full rounded-lg border border-border bg-white pl-7 pr-3 text-[13px] outline-none focus:border-primary" />
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-dark/40">₹</span>
+                          <input required type="number" value={entry.mrp} onChange={(e) => updateLegacySizeRow(idx, "mrp", e.target.value)} placeholder="MRP *" className="h-10 w-full rounded-lg border border-border bg-white pl-7 pr-3 text-[13px] outline-none focus:border-primary" />
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-dark/40">₹</span>
+                          <input type="number" value={entry.netPrice} onChange={(e) => updateLegacySizeRow(idx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-10 w-full rounded-lg border border-border bg-white pl-7 pr-3 text-[13px] outline-none focus:border-primary" />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

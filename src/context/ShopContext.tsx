@@ -155,19 +155,29 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     }
     const cartItemId = makeCartItemId(product.id, color, size);
     
-    // Find stock limit of the selected variant
+    // Find stock limit and price of the selected variant
     let maxStock = product.stock || 0;
+    let itemPrice = product.price;
+    let itemMrp = product.mrp;
     const hasColors = product.colors && product.colors.length > 0;
     
     if (hasColors && color) {
       const colorObj = product.colors?.find((c: any) => c.name === color);
       if (colorObj && size) {
         const sizeObj = colorObj.sizes.find((s: any) => s.size === size);
-        if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+        if (sizeObj) {
+          maxStock = Number(sizeObj.stock) || 0;
+          if (sizeObj.price) itemPrice = Number(sizeObj.price);
+          if (sizeObj.mrp) itemMrp = Number(sizeObj.mrp);
+        }
       }
     } else if (product.sizes && product.sizes.length > 0 && size) {
       const sizeObj = product.sizes.find((s: any) => s.size === size);
-      if (sizeObj) maxStock = Number(sizeObj.stock) || 0;
+      if (sizeObj) {
+        maxStock = Number(sizeObj.stock) || 0;
+        if (sizeObj.price) itemPrice = Number(sizeObj.price);
+        if (sizeObj.mrp) itemMrp = Number(sizeObj.mrp);
+      }
     }
 
     // Find color-specific image for cart thumbnail
@@ -192,7 +202,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
         fireToast("Sorry, this variant is out of stock.", "error");
         return prev;
       }
-      return [...prev, { ...product, image: itemImage, quantity: 1, selectedColor: color, selectedSize: size, cartItemId }];
+      return [...prev, { ...product, image: itemImage, price: itemPrice, mrp: itemMrp, quantity: 1, selectedColor: color, selectedSize: size, cartItemId }];
     });
     setShowCart(true);
     setTimeout(() => setShowCart(false), 2000);
@@ -242,13 +252,31 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       const updatedSize = newSize !== undefined ? newSize : item.selectedSize;
       const newCartItemId = makeCartItemId(item.id, updatedColor, updatedSize);
 
-      // Find color-specific image for the updated color
+      // Find color-specific image and dynamic price for the updated color/size
       let updatedImage = item.image;
+      let updatedPrice = item.price; // fallback if not found
+      let updatedMrp = item.mrp;     // fallback if not found
       const hasColors = item.colors && item.colors.length > 0;
+
       if (hasColors && updatedColor) {
         const colorObj = item.colors?.find((c: any) => c.name === updatedColor);
-        if (colorObj && colorObj.images && colorObj.images.length > 0) {
-          updatedImage = colorObj.images[0];
+        if (colorObj) {
+          if (colorObj.images && colorObj.images.length > 0) {
+            updatedImage = colorObj.images[0];
+          }
+          if (updatedSize) {
+             const sizeObj = colorObj.sizes.find((s: any) => s.size === updatedSize);
+             if (sizeObj) {
+                if (sizeObj.price) updatedPrice = Number(sizeObj.price);
+                if (sizeObj.mrp) updatedMrp = Number(sizeObj.mrp);
+             }
+          }
+        }
+      } else if (item.sizes && item.sizes.length > 0 && updatedSize) {
+        const sizeObj = item.sizes.find((s: any) => s.size === updatedSize);
+        if (sizeObj) {
+           if (sizeObj.price) updatedPrice = Number(sizeObj.price);
+           if (sizeObj.mrp) updatedMrp = Number(sizeObj.mrp);
         }
       }
 
@@ -262,7 +290,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
       return prev.map(p =>
         p.cartItemId === cartItemId
-          ? { ...p, image: updatedImage, selectedColor: updatedColor, selectedSize: updatedSize, cartItemId: newCartItemId }
+          ? { ...p, image: updatedImage, price: updatedPrice, mrp: updatedMrp, selectedColor: updatedColor, selectedSize: updatedSize, cartItemId: newCartItemId }
           : p
       );
     });

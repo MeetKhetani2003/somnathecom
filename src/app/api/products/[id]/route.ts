@@ -16,15 +16,12 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     let updateData: any = {};
     
-    const fields = ['title', 'category', 'price', 'mrp', 'netPrice', 'stock', 'description', 'tag', 'material', 'careInstructions'];
+    const fields = ['title', 'category', 'description', 'tag', 'material', 'careInstructions'];
     fields.forEach(f => {
       const val = formData.get(f);
       if (val !== null) updateData[f] = val;
     });
 
-    if (updateData.price) updateData.price = parseFloat(updateData.price);
-    if (updateData.mrp) updateData.mrp = parseFloat(updateData.mrp);
-    if (updateData.netPrice) updateData.netPrice = parseFloat(updateData.netPrice);
     if (updateData.stock) updateData.stock = parseInt(updateData.stock);
 
     const sizesStr = formData.get("sizes");
@@ -127,6 +124,18 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           updateData.image = updateData.images[0];
         }
       }
+    }
+
+    // ─── Calculate Global Base Prices ─────────────────────────────────────────
+    if (updateData.sizes && updateData.sizes.length > 0) {
+      const validPrices = updateData.sizes.map((s: any) => Number(s.price)).filter((p: number) => !isNaN(p) && p > 0);
+      if (validPrices.length > 0) updateData.price = Math.min(...validPrices);
+      
+      const validMrps = updateData.sizes.map((s: any) => Number(s.mrp)).filter((p: number) => !isNaN(p) && p > 0);
+      if (validMrps.length > 0) updateData.mrp = Math.min(...validMrps);
+      
+      const validNetPrices = updateData.sizes.map((s: any) => Number(s.netPrice)).filter((p: number) => !isNaN(p) && p > 0);
+      if (validNetPrices.length > 0) updateData.netPrice = Math.min(...validNetPrices);
     }
 
     let product;

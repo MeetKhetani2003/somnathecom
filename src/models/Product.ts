@@ -16,7 +16,10 @@ const ProductSchema = new Schema({
   material: { type: String },
   sizes: [{
     size: { type: String, required: true },
-    stock: { type: Number, default: 0 }
+    stock: { type: Number, default: 0 },
+    price: { type: Number },
+    mrp: { type: Number },
+    netPrice: { type: Number }
   }],
   colors: [{
     name: { type: String, required: true },
@@ -25,7 +28,10 @@ const ProductSchema = new Schema({
     images: [{ type: String }],
     sizes: [{
       size: { type: String, required: true },
-      stock: { type: Number, default: 0 }
+      stock: { type: Number, default: 0 },
+      price: { type: Number },
+      mrp: { type: Number },
+      netPrice: { type: Number }
     }]
   }],
   whatsIncluded: [{ type: String }],

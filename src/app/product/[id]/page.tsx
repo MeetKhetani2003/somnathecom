@@ -270,6 +270,11 @@ export default function ProductSlug() {
     ? activeColorObj.sizes || []
     : product.sizes || [];
   
+  // ─── Dynamic Pricing ───────────────────────────────────────────────────────
+  const activeSizeObj = availableSizes.find((s: any) => s.size === selectedSize);
+  const displayPrice = activeSizeObj?.price || product.price;
+  const displayMrp = activeSizeObj?.mrp || product.mrp;
+
   const reviewsList = product.reviews || [];
 
   // Check if current combination is out of stock
@@ -442,12 +447,12 @@ export default function ProductSlug() {
             </div>
 
             <div className="mt-8 flex flex-wrap items-baseline gap-3">
-              <span className="font-display text-[36px] font-bold text-dark">₹{product.price}</span>
-              {product.mrp > product.price && (
+              <span className="font-display text-[36px] font-bold text-dark">₹{displayPrice}</span>
+              {displayMrp > displayPrice && (
                 <>
-                  <span className="text-[20px] text-dark/40 line-through">₹{product.mrp}</span>
+                  <span className="text-[20px] text-dark/40 line-through">₹{displayMrp}</span>
                   <span className="ml-2 rounded-lg bg-secondary/10 px-3 py-1 text-[14px] font-bold text-secondary border border-secondary/20">
-                    {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                    {Math.round(((displayMrp - displayPrice) / displayMrp) * 100)}% OFF
                   </span>
                 </>
               )}

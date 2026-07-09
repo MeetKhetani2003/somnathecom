@@ -21,9 +21,6 @@ export async function POST(req: Request) {
     
     const title = formData.get("title") as string;
     const category = formData.get("category") as string;
-    const price = formData.get("price") as string;
-    const mrp = formData.get("mrp") as string;
-    const netPriceStr = formData.get("netPrice") as string;
     const description = formData.get("description") as string;
     const tag = formData.get("tag") as string;
     const material = formData.get("material") as string;
@@ -34,7 +31,7 @@ export async function POST(req: Request) {
     const imagesFiles = formData.getAll("images") as File[];
     const colorImageFiles = formData.getAll("colorImages") as File[];
 
-    if (!title || !category || !price || !mrp) {
+    if (!title || !category) {
       return NextResponse.json({ success: false, message: "Missing required product fields" }, { status: 400 });
     }
 
@@ -147,14 +144,30 @@ export async function POST(req: Request) {
 
     const whatsIncluded = whatsIncludedStr ? whatsIncludedStr.split("\n").map(s => s.trim()).filter(Boolean) : [];
 
+    // ─── Calculate Global Base Prices ─────────────────────────────────────────
+    let computedPrice = 0;
+    let computedMrp = 0;
+    let computedNetPrice = 0;
+    
+    if (sizes && sizes.length > 0) {
+      const validPrices = sizes.map((s: any) => Number(s.price)).filter(p => !isNaN(p) && p > 0);
+      if (validPrices.length > 0) computedPrice = Math.min(...validPrices);
+      
+      const validMrps = sizes.map((s: any) => Number(s.mrp)).filter(p => !isNaN(p) && p > 0);
+      if (validMrps.length > 0) computedMrp = Math.min(...validMrps);
+      
+      const validNetPrices = sizes.map((s: any) => Number(s.netPrice)).filter(p => !isNaN(p) && p > 0);
+      if (validNetPrices.length > 0) computedNetPrice = Math.min(...validNetPrices);
+    }
+
     const product = await Product.create({
       id: nextId,
       sku,
       title,
       category,
-      price: parseFloat(price),
-      mrp: parseFloat(mrp),
-      ...(netPriceStr && !isNaN(parseFloat(netPriceStr)) ? { netPrice: parseFloat(netPriceStr) } : {}),
+      price: computedPrice,
+      mrp: computedMrp,
+      ...(computedNetPrice > 0 ? { netPrice: computedNetPrice } : {}),
       image: mainImageUrl,
       images: detailedImageUrls,
       stock: computedStock,
