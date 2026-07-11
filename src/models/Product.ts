@@ -11,6 +11,7 @@ const ProductSchema = new Schema({
   image: { type: String },
   tag: { type: String },
   description: { type: String },
+  ytVideoUrl: { type: String },
   stock: { type: Number, default: 50 },
   featured: { type: Boolean, default: false },
   material: { type: String },
@@ -26,6 +27,7 @@ const ProductSchema = new Schema({
     title: { type: String }, // Variant specific title
     featured: { type: Boolean, default: false }, // Feature this specific variant
     images: [{ type: String }],
+    ytVideoUrl: { type: String },
     sizes: [{
       size: { type: String, required: true },
       stock: { type: Number, default: 0 },

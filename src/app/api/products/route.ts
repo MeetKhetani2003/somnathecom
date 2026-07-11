@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     const category = formData.get("category") as string;
     const description = formData.get("description") as string;
     const tag = formData.get("tag") as string;
+    const ytVideoUrl = formData.get("ytVideoUrl") as string;
     const material = formData.get("material") as string;
     const sizesStr = formData.get("sizes") as string;
     const whatsIncludedStr = formData.get("whatsIncluded") as string;
@@ -44,11 +45,11 @@ export async function POST(req: Request) {
 
 
     // ─── Process Color Variants ──────────────────────────────────────────────
-    let colors: { name: string; title?: string; featured: boolean; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+    let colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizes: { size: string; stock: number }[] }[] = [];
     
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
         
         // Upload color images in order
         let colorImageIdx = 0;
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
             title: meta.title,
             featured: meta.featured || false,
             images: colorImages,
+            ytVideoUrl: meta.ytVideoUrl || "",
             sizes: meta.sizes,
           });
         }
@@ -110,7 +112,13 @@ export async function POST(req: Request) {
     }
 
     const lastProduct = await Product.findOne().sort({ id: -1 });
-    const nextId = lastProduct ? lastProduct.id + 1 : 101;
+    let nextId = 101;
+    if (lastProduct && lastProduct.id) {
+      const parsedId = Number(lastProduct.id);
+      if (!isNaN(parsedId)) {
+        nextId = parsedId + 1;
+      }
+    }
 
     // ─── SKU Generation ───────────────────────────────────────────────────────
     function encodeSingleSize(sizeStr: string): string {
@@ -172,6 +180,7 @@ export async function POST(req: Request) {
       images: detailedImageUrls,
       stock: computedStock,
       description: description || "",
+      ytVideoUrl: ytVideoUrl || "",
       rating: 4.5,
       tag: tag || "",
       material: material || "",

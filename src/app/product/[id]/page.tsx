@@ -12,6 +12,30 @@ import { useToast } from "@/context/ToastContext";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
+const getEmbedUrl = (url: string) => {
+  if (!url) return "";
+  let videoId = "";
+  if (url.includes("youtu.be/")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0];
+  } else if (url.includes("youtube.com/watch")) {
+    const params = new URLSearchParams(url.split("?")[1]);
+    videoId = params.get("v") || "";
+  }
+  return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : url;
+};
+
+const getThumbnailUrl = (url: string) => {
+  if (!url) return "";
+  let videoId = "";
+  if (url.includes("youtu.be/")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0];
+  } else if (url.includes("youtube.com/watch")) {
+    const params = new URLSearchParams(url.split("?")[1]);
+    videoId = params.get("v") || "";
+  }
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
+};
+
 const ImageMagnifier = ({ src, alt }: { src: string, alt: string }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [showMagnifier, setShowMagnifier] = useState(false);
@@ -67,6 +91,9 @@ export default function ProductSlug() {
 
   // Size guide modal state
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+
+  // Video modal state
+  const [ytVideoOpen, setYtVideoOpen] = useState(false);
 
   // Review states
   const [reviewRating, setReviewRating] = useState<number>(5);
@@ -265,6 +292,13 @@ export default function ProductSlug() {
       : detailedImages.length > 0 ? detailedImages : [];
   }
 
+  // ─── Determine current ytVideoUrl ─────────────────────────────────────────
+  const currentVideoUrl = (hasColors && activeColorObj?.ytVideoUrl) ? activeColorObj.ytVideoUrl : product?.ytVideoUrl;
+
+  if (currentVideoUrl) {
+    images = [...images, "__VIDEO__"];
+  }
+
   // ─── Color-aware sizes ────────────────────────────────────────────────────
   const availableSizes = hasColors && activeColorObj
     ? activeColorObj.sizes || []
@@ -411,17 +445,35 @@ export default function ProductSlug() {
             </div>
 
             {images.length > 1 && (
-              <div className="grid grid-cols-5 gap-3 sm:gap-4">
+              <div className="grid grid-cols-5 gap-3 sm:gap-4 mt-4">
                 {images.map((img: string, idx: number) => (
                   <button
                     key={idx}
-                    onClick={() => setActiveImage(idx)}
+                    onClick={() => {
+                      if (img === "__VIDEO__") {
+                        setYtVideoOpen(true);
+                      } else {
+                        setActiveImage(idx);
+                      }
+                    }}
                     className={cn(
                       "relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition-all hover:shadow-lg",
-                      activeImage === idx ? "border-primary" : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
+                      (activeImage === idx && img !== "__VIDEO__") ? "border-primary" : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
                     )}
                   >
-                    <img src={img} alt={`${displayTitle} view ${idx + 1}`} className="h-full w-full object-cover object-top" />
+                    {img === "__VIDEO__" ? (
+                      <div className="relative flex h-full w-full items-center justify-center bg-dark text-white group-hover:opacity-90 transition overflow-hidden">
+                        {currentVideoUrl && getThumbnailUrl(currentVideoUrl) && (
+                          <>
+                            <img src={getThumbnailUrl(currentVideoUrl)} alt="Video Thumbnail" className="absolute inset-0 h-full w-full object-cover opacity-60 transition group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-black/10" />
+                          </>
+                        )}
+                        <svg className="relative z-10 w-8 h-8 drop-shadow-lg text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4l12 6-12 6V4z"/></svg>
+                      </div>
+                    ) : (
+                      <img src={img} alt={`${displayTitle} view ${idx + 1}`} className="h-full w-full object-cover object-top" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -1016,6 +1068,21 @@ export default function ProductSlug() {
                     </p>
                   </div>
                 </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* YouTube Video Modal */}
+        <AnimatePresence>
+          {ytVideoOpen && currentVideoUrl && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center px-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setYtVideoOpen(false)} className="absolute inset-0 bg-dark/80 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-4xl aspect-video bg-black rounded-[32px] overflow-hidden shadow-2xl z-10">
+                <button onClick={() => setYtVideoOpen(false)} className="absolute top-4 right-4 z-20 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 transition backdrop-blur-md">
+                  <X className="h-6 w-6" />
+                </button>
+                <iframe src={getEmbedUrl(currentVideoUrl)} title="YouTube video" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full relative z-10"></iframe>
               </motion.div>
             </div>
           )}

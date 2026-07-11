@@ -23,6 +23,7 @@ interface ColorVariant {
   name: string;
   title: string;
   featured: boolean;
+  ytVideoUrl?: string;
   existingImages: string[];      // URLs already saved in DB
   newImageFiles: File[];         // Newly uploaded files
   newImagePreviews: string[];    // Object URLs for previews
@@ -42,6 +43,7 @@ export default function EditProductPage() {
   const [formCategory, setFormCategory] = useState("Ladies Collection > Night Suits > Ladies Full Night Suit");
   const [formDescription, setFormDescription] = useState("");
   const [formTag, setFormTag] = useState("");
+  const [formYtVideoUrl, setFormYtVideoUrl] = useState("");
   const [formMaterial, setFormMaterial] = useState("");
   const [formWhatsIncluded, setFormWhatsIncluded] = useState("");
   const [formCareInstructions, setFormCareInstructions] = useState("");
@@ -91,6 +93,7 @@ export default function EditProductPage() {
         setFormCategory(product.category || "Ladies Collection > Night Suits > Ladies Full Night Suit");
         setExistingDetailedImages(product.images && product.images.length > 0 ? product.images : []);
         setFormDescription(product.description || "");
+        setFormYtVideoUrl(product.ytVideoUrl || "");
         setFormTag(product.tag || "");
         setFormMaterial(product.material || "");
         setFormWhatsIncluded(product.whatsIncluded?.join('\n') || "");
@@ -102,6 +105,7 @@ export default function EditProductPage() {
             name: c.name || "",
             title: c.title || "",
             featured: c.featured || false,
+            ytVideoUrl: c.ytVideoUrl || "",
             existingImages: c.images || [],
             newImageFiles: [],
             newImagePreviews: [],
@@ -168,6 +172,7 @@ export default function EditProductPage() {
       name: "", 
       title: "",
       featured: false,
+      ytVideoUrl: "",
       existingImages: [], 
       newImageFiles: [], 
       newImagePreviews: [], 
@@ -191,6 +196,10 @@ export default function EditProductPage() {
 
   const updateColorFeatured = (idx: number, featured: boolean) => {
     setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, featured } : cv));
+  };
+
+  const updateColorYtVideoUrl = (idx: number, ytVideoUrl: string) => {
+    setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, ytVideoUrl } : cv));
   };
 
   const addColorImage = (idx: number, files: File[]) => {
@@ -306,6 +315,7 @@ export default function EditProductPage() {
     formData.append("category", formCategory);
     formData.append("description", formDescription);
     formData.append("tag", formTag);
+    formData.append("ytVideoUrl", formYtVideoUrl);
     formData.append("material", formMaterial);
     formData.append("whatsIncluded", formWhatsIncluded);
     formData.append("careInstructions", formCareInstructions);
@@ -315,6 +325,7 @@ export default function EditProductPage() {
         name: cv.name,
         title: cv.title,
         featured: cv.featured,
+        ytVideoUrl: cv.ytVideoUrl,
         sizes: cv.sizes.filter(s => s.size.trim()),
         imageCount: cv.newImageFiles.length,
         existingImages: cv.existingImages,
@@ -525,19 +536,6 @@ export default function EditProductPage() {
                         </div>
                       </div>
                       
-                      {/* Featured Checkbox */}
-                      <div className="flex items-center gap-2 mt-2">
-                        <input
-                          type="checkbox"
-                          id={`featured-cv-${activeColorIdx}`}
-                          checked={activeColor.featured || false}
-                          onChange={(e) => updateColorFeatured(activeColorIdx, e.target.checked)}
-                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <label htmlFor={`featured-cv-${activeColorIdx}`} className="text-[13px] font-medium text-dark/80 cursor-pointer">
-                          Feature this variant on the home page
-                        </label>
-                      </div>
                       <button
                         type="button"
                         onClick={() => removeColorVariant(activeColorIdx)}
@@ -546,6 +544,36 @@ export default function EditProductPage() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                    </div>
+
+                    {/* Featured & Video */}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="flex flex-col justify-center">
+                        <label className="mb-2 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">Visibility</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`featured-cv-${activeColorIdx}`}
+                            checked={activeColor.featured || false}
+                            onChange={(e) => updateColorFeatured(activeColorIdx, e.target.checked)}
+                            className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                          />
+                          <label htmlFor={`featured-cv-${activeColorIdx}`} className="text-[13px] font-medium text-dark/80 cursor-pointer">
+                            Feature this variant on the home page
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold uppercase tracking-wide text-dark/50">YouTube Video URL (Optional)</label>
+                        <input
+                          type="text"
+                          value={activeColor.ytVideoUrl || ""}
+                          onChange={(e) => updateColorYtVideoUrl(activeColorIdx, e.target.value)}
+                          placeholder="e.g. https://www.youtube.com/watch?v=..."
+                          className="h-11 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary"
+                        />
+                      </div>
                     </div>
 
                     {/* Color Images */}
@@ -833,6 +861,8 @@ export default function EditProductPage() {
               className="h-12 w-full rounded-xl border border-border px-4 text-[14px] outline-none focus:border-primary/50" 
             />
           </div>
+
+
 
           {/* Image Upload Section */}
           <div className="rounded-2xl border border-dashed border-primary/50 bg-surface/50 p-6 space-y-6">

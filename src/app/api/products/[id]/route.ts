@@ -16,7 +16,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     let updateData: any = {};
     
-    const fields = ['title', 'category', 'description', 'tag', 'material', 'careInstructions'];
+    const fields = ['title', 'category', 'description', 'ytVideoUrl', 'tag', 'material', 'careInstructions'];
     fields.forEach(f => {
       const val = formData.get(f);
       if (val !== null) updateData[f] = val;
@@ -47,10 +47,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
         
         let colorImageIdx = 0;
-        const colors: { name: string; title?: string; featured: boolean; images: string[]; sizes: { size: string; stock: number }[] }[] = [];
+        const colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizes: { size: string; stock: number }[] }[] = [];
         
         for (const meta of colorsMeta) {
           const colorImages: string[] = [...(meta.existingImages || [])];
@@ -71,6 +71,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             title: meta.title,
             featured: meta.featured || false,
             images: colorImages,
+            ytVideoUrl: meta.ytVideoUrl || "",
             sizes: meta.sizes,
           });
         }
