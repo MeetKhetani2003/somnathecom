@@ -15,8 +15,8 @@ export type Product = {
   tag: string;
   description?: string;
   stock?: number;
-  colors?: { name: string; images: string[]; sizes: { size: string; stock: number }[] }[];
-  sizes?: { size: string; stock: number }[];
+  colors?: { name: string; images: string[]; sizes: { size: string; stock: number; price?: number; mrp?: number }[] }[];
+  sizes?: { size: string; stock: number; price?: number; mrp?: number }[];
 };
 
 export type CartItem = Product & {
