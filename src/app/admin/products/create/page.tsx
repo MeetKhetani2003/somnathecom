@@ -36,7 +36,6 @@ export default function CreateProductPage() {
   const [formCategory, setFormCategory] = useState("Ladies Collection > Night Suits > Ladies Full Night Suit");
   const [formDescription, setFormDescription] = useState("");
   const [formTag, setFormTag] = useState("");
-  const [formYtVideoUrl, setFormYtVideoUrl] = useState("");
   const [formMaterial, setFormMaterial] = useState("");
   const [formWhatsIncluded, setFormWhatsIncluded] = useState("");
   const [formCareInstructions, setFormCareInstructions] = useState("");
@@ -221,7 +220,6 @@ export default function CreateProductPage() {
     formData.append("category", formCategory);
     formData.append("description", formDescription);
     formData.append("tag", formTag);
-    formData.append("ytVideoUrl", formYtVideoUrl);
     formData.append("material", formMaterial);
     formData.append("whatsIncluded", formWhatsIncluded);
     formData.append("careInstructions", formCareInstructions);

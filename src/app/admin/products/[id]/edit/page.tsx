@@ -43,7 +43,6 @@ export default function EditProductPage() {
   const [formCategory, setFormCategory] = useState("Ladies Collection > Night Suits > Ladies Full Night Suit");
   const [formDescription, setFormDescription] = useState("");
   const [formTag, setFormTag] = useState("");
-  const [formYtVideoUrl, setFormYtVideoUrl] = useState("");
   const [formMaterial, setFormMaterial] = useState("");
   const [formWhatsIncluded, setFormWhatsIncluded] = useState("");
   const [formCareInstructions, setFormCareInstructions] = useState("");
@@ -93,7 +92,6 @@ export default function EditProductPage() {
         setFormCategory(product.category || "Ladies Collection > Night Suits > Ladies Full Night Suit");
         setExistingDetailedImages(product.images && product.images.length > 0 ? product.images : []);
         setFormDescription(product.description || "");
-        setFormYtVideoUrl(product.ytVideoUrl || "");
         setFormTag(product.tag || "");
         setFormMaterial(product.material || "");
         setFormWhatsIncluded(product.whatsIncluded?.join('\n') || "");
@@ -315,7 +313,6 @@ export default function EditProductPage() {
     formData.append("category", formCategory);
     formData.append("description", formDescription);
     formData.append("tag", formTag);
-    formData.append("ytVideoUrl", formYtVideoUrl);
     formData.append("material", formMaterial);
     formData.append("whatsIncluded", formWhatsIncluded);
     formData.append("careInstructions", formCareInstructions);
