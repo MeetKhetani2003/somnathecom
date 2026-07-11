@@ -17,3 +17,5 @@ const InquirySchema = new Schema({
 
 export const Inquiry = models.Inquiry || model("Inquiry", InquirySchema);
 export default Inquiry;
+
+
