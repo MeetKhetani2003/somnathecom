@@ -70,14 +70,16 @@ export async function POST(req: Request) {
     try {
       await sendInvoiceEmail({
         orderId: order._id.toString(),
-        customerName: order.shippingDetails?.name || "Customer",
+        customerName: order.shippingDetails?.firstName ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}`.trim() : "Customer",
         email: order.email,
         items: order.items,
         subtotal: order.subtotal,
         discount: order.discount,
         shippingCost: order.shippingCost,
+        gstAmount: order.gstAmount,
+        platformFee: order.platformFee,
         total: order.total,
-        address: order.shippingDetails?.address || "",
+        address: order.shippingDetails ? `${order.shippingDetails.street}, ${order.shippingDetails.city}, ${order.shippingDetails.state} - ${order.shippingDetails.pincode}` : "",
         phone: order.shippingDetails?.phone || "",
       });
     } catch (mailErr) {

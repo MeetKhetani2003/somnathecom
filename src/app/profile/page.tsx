@@ -146,10 +146,14 @@ export default function Profile() {
   const [trackingLoading, setTrackingLoading] = useState(false);
 
   // Address fields
-  const [addresses, setAddresses] = useState<string[]>([]);
-  const [defaultAddress, setDefaultAddress] = useState<string>("");
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [defaultAddress, setDefaultAddress] = useState<any>(null);
   
   // Address form fields (Shiprocket aligned)
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [lastNameInput, setLastNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
   const [streetInput, setStreetInput] = useState("");
   const [cityInput, setCityInput] = useState("");
   const [stateInput, setStateInput] = useState("");
@@ -233,45 +237,6 @@ export default function Profile() {
     }
   };
 
-  // Client-side address parser helper to avoid server libraries inside browser
-  const parseClientAddress = (addressStr: string) => {
-    const pincodeMatch = addressStr.match(/\b\d{6}\b/);
-    const pincode = pincodeMatch ? pincodeMatch[0] : "";
-    
-    let cleanAddress = addressStr.replace(/\b\d{6}\b/, "").trim();
-    cleanAddress = cleanAddress.replace(/[-\s,]+$/, "").trim();
-    
-    const parts = cleanAddress.split(",").map(p => p.trim()).filter(Boolean);
-    
-    let city = "";
-    let state = "";
-    let street = cleanAddress;
-    
-    if (parts.length >= 2) {
-      state = parts[parts.length - 1];
-      city = parts[parts.length - 2];
-      street = parts.slice(0, parts.length - 2).join(", ") || city;
-    } else if (parts.length === 1) {
-      const words = parts[0].split(/\s+/).map(w => w.trim()).filter(Boolean);
-      if (words.length >= 3) {
-        city = words[words.length - 1];
-        street = words.slice(0, words.length - 1).join(" ");
-      } else if (words.length === 2) {
-        city = words[1];
-        street = words[0];
-      } else {
-        city = words[0] || "";
-        street = words[0] || "";
-      }
-    }
-    
-    return {
-      street: street.replace(" - Detailed Address Info", ""),
-      city,
-      state,
-      pincode
-    };
-  };
 
   const handleTrackShipment = async (trackingNum: string) => {
     setActiveTrackingId(trackingNum);
@@ -493,8 +458,8 @@ export default function Profile() {
 
   const handleAddAddress = async () => {
     setAddressError("");
-    if (!streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
-      setAddressError("All fields (Street, City, State, Pincode) are required.");
+    if (!firstNameInput.trim() || !lastNameInput.trim() || !emailInput.trim() || !phoneInput.trim() || !streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
+      setAddressError("All fields are required.");
       return;
     }
 
@@ -503,14 +468,20 @@ export default function Profile() {
       return;
     }
 
-    const trimmedStreet = streetInput.trim();
-    const trimmedCity = cityInput.trim();
-    const trimmedState = stateInput.trim();
-    const trimmedPincode = pincodeInput.trim();
+    const newAddress = {
+      firstName: firstNameInput.trim(),
+      lastName: lastNameInput.trim(),
+      email: emailInput.trim(),
+      phone: phoneInput.trim(),
+      street: streetInput.trim(),
+      city: cityInput.trim(),
+      state: stateInput.trim(),
+      pincode: pincodeInput.trim(),
+      country: "India"
+    };
 
-    const combinedAddress = `${trimmedStreet}, ${trimmedCity}, ${trimmedState} - ${trimmedPincode}`;
-    const updatedAddresses = [...addresses, combinedAddress];
-    const updatedDefault = defaultAddress ? defaultAddress : combinedAddress;
+    const updatedAddresses = [...addresses, newAddress];
+    const updatedDefault = defaultAddress ? defaultAddress : newAddress;
 
     setAddresses(updatedAddresses);
     if (!defaultAddress) {
@@ -518,6 +489,10 @@ export default function Profile() {
     }
     
     // Clear inputs
+    setFirstNameInput("");
+    setLastNameInput("");
+    setEmailInput("");
+    setPhoneInput("");
     setStreetInput("");
     setCityInput("");
     setStateInput("");
@@ -530,16 +505,23 @@ export default function Profile() {
     const addr = addresses[idx];
     if (!addr) return;
     
-    const parsed = parseClientAddress(addr);
-    setStreetInput(parsed.street);
-    setCityInput(parsed.city);
-    setStateInput(parsed.state);
-    setPincodeInput(parsed.pincode);
+    setFirstNameInput(addr.firstName || "");
+    setLastNameInput(addr.lastName || "");
+    setEmailInput(addr.email || "");
+    setPhoneInput(addr.phone || "");
+    setStreetInput(addr.street || "");
+    setCityInput(addr.city || "");
+    setStateInput(addr.state || "");
+    setPincodeInput(addr.pincode || "");
     setEditingAddressIndex(idx);
     setAddressError("");
   };
 
   const handleCancelEdit = () => {
+    setFirstNameInput("");
+    setLastNameInput("");
+    setEmailInput("");
+    setPhoneInput("");
     setStreetInput("");
     setCityInput("");
     setStateInput("");
@@ -552,8 +534,8 @@ export default function Profile() {
     setAddressError("");
     if (editingAddressIndex === null) return;
     
-    if (!streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
-      setAddressError("All fields (Street, City, State, Pincode) are required.");
+    if (!firstNameInput.trim() || !lastNameInput.trim() || !emailInput.trim() || !phoneInput.trim() || !streetInput.trim() || !cityInput.trim() || !stateInput.trim() || !pincodeInput.trim()) {
+      setAddressError("All fields are required.");
       return;
     }
 
@@ -562,26 +544,35 @@ export default function Profile() {
       return;
     }
 
-    const trimmedStreet = streetInput.trim();
-    const trimmedCity = cityInput.trim();
-    const trimmedState = stateInput.trim();
-    const trimmedPincode = pincodeInput.trim();
-
-    const combinedAddress = `${trimmedStreet}, ${trimmedCity}, ${trimmedState} - ${trimmedPincode}`;
+    const updatedAddress = {
+      firstName: firstNameInput.trim(),
+      lastName: lastNameInput.trim(),
+      email: emailInput.trim(),
+      phone: phoneInput.trim(),
+      street: streetInput.trim(),
+      city: cityInput.trim(),
+      state: stateInput.trim(),
+      pincode: pincodeInput.trim(),
+      country: "India"
+    };
     
     const updatedAddresses = [...addresses];
     const oldAddress = updatedAddresses[editingAddressIndex];
-    updatedAddresses[editingAddressIndex] = combinedAddress;
+    updatedAddresses[editingAddressIndex] = updatedAddress;
     
     let updatedDefault = defaultAddress;
-    if (defaultAddress === oldAddress) {
-      updatedDefault = combinedAddress;
+    if (JSON.stringify(defaultAddress) === JSON.stringify(oldAddress)) {
+      updatedDefault = updatedAddress;
     }
 
     setAddresses(updatedAddresses);
     setDefaultAddress(updatedDefault);
     
     // Clear inputs & close edit mode
+    setFirstNameInput("");
+    setLastNameInput("");
+    setEmailInput("");
+    setPhoneInput("");
     setStreetInput("");
     setCityInput("");
     setStateInput("");
@@ -591,11 +582,11 @@ export default function Profile() {
     await saveAddressesToDb(updatedAddresses, updatedDefault);
   };
 
-  const handleDeleteAddress = async (addrToDelete: string) => {
-    const updatedAddresses = addresses.filter((a) => a !== addrToDelete);
+  const handleDeleteAddress = async (addrToDelete: any) => {
+    const updatedAddresses = addresses.filter((a) => JSON.stringify(a) !== JSON.stringify(addrToDelete));
     let updatedDefault = defaultAddress;
-    if (defaultAddress === addrToDelete) {
-      updatedDefault = updatedAddresses.length > 0 ? updatedAddresses[0] : "";
+    if (JSON.stringify(defaultAddress) === JSON.stringify(addrToDelete)) {
+      updatedDefault = updatedAddresses.length > 0 ? updatedAddresses[0] : null;
     }
 
     setAddresses(updatedAddresses);
@@ -604,7 +595,7 @@ export default function Profile() {
     await saveAddressesToDb(updatedAddresses, updatedDefault);
   };
 
-  const handleSetDefaultAddress = async (addr: string) => {
+  const handleSetDefaultAddress = async (addr: any) => {
     setDefaultAddress(addr);
     await saveAddressesToDb(addresses, addr);
   };
@@ -1180,13 +1171,14 @@ export default function Profile() {
                     addresses.map((addr, idx) => (
                       <div key={idx} className={cn(
                         "flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-[24px] border-[2px] p-6 transition-all bg-surface",
-                        addr === defaultAddress ? "border-primary shadow-md shadow-primary/5" : "border-border hover:border-primary/50"
+                        JSON.stringify(defaultAddress) === JSON.stringify(addr) ? "border-primary shadow-md shadow-primary/5" : "border-border hover:border-primary/50"
                       )}>
                         <div className="flex items-start gap-4 min-w-0">
-                          <MapPin className={cn("h-6 w-6 shrink-0 mt-0.5", addr === defaultAddress ? "text-primary" : "text-dark/40")} />
+                          <MapPin className={cn("h-6 w-6 shrink-0 mt-0.5", JSON.stringify(defaultAddress) === JSON.stringify(addr) ? "text-primary" : "text-dark/40")} />
                           <div className="min-w-0">
-                            <p className="text-[15px] text-dark font-medium leading-relaxed break-words">{addr}</p>
-                            {addr === defaultAddress && (
+                            <p className="text-[15px] text-dark font-medium leading-relaxed break-words">{addr.firstName} {addr.lastName}, {addr.street}, {addr.city}, {addr.state} - {addr.pincode}</p>
+                            <p className="text-[13px] text-dark/60 mt-1">{addr.phone} • {addr.email}</p>
+                            {JSON.stringify(defaultAddress) === JSON.stringify(addr) && (
                               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold tracking-wider uppercase text-primary">
                                 ★ Default
                               </span>
@@ -1195,7 +1187,7 @@ export default function Profile() {
                         </div>
 
                         <div className="flex items-center gap-3 sm:self-center self-end shrink-0">
-                          {addr !== defaultAddress && (
+                          {JSON.stringify(defaultAddress) !== JSON.stringify(addr) && (
                             <button
                               onClick={() => handleSetDefaultAddress(addr)}
                               className="rounded-full border border-border px-4 py-2 text-[13px] font-bold text-dark/70 hover:bg-bg-base hover:text-dark transition-all active:scale-[0.97]"
@@ -1227,6 +1219,52 @@ export default function Profile() {
                     </h3>
                     
                     <div className="space-y-4 max-w-[600px]">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">First Name</label>
+                          <input
+                            type="text"
+                            value={firstNameInput}
+                            onChange={(e) => setFirstNameInput(e.target.value)}
+                            placeholder="e.g. John"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Last Name</label>
+                          <input
+                            type="text"
+                            value={lastNameInput}
+                            onChange={(e) => setLastNameInput(e.target.value)}
+                            placeholder="e.g. Doe"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Phone Number</label>
+                          <input
+                            type="tel"
+                            value={phoneInput}
+                            onChange={(e) => setPhoneInput(e.target.value)}
+                            placeholder="e.g. 9876543210"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Email Address</label>
+                          <input
+                            type="email"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder="e.g. john@example.com"
+                            className="h-12 w-full rounded-xl border border-border bg-bg-base px-4 text-[14px] font-medium outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+                          />
+                        </div>
+                      </div>
+
                       <div>
                         <label className="mb-1.5 block text-[12px] font-bold uppercase tracking-wider text-dark/60">Street Address</label>
                         <input
@@ -1516,21 +1554,21 @@ export default function Profile() {
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {addresses.map((addr) => (
+                        {addresses.map((addr, idx) => (
                           <button
-                            key={addr}
+                            key={idx}
                             type="button"
-                            onClick={() => setNewExchangeAddress(addr)}
+                            onClick={() => setNewExchangeAddress(JSON.stringify(addr))}
                             className={cn(
                               "w-full flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all",
-                              newExchangeAddress === addr
+                              newExchangeAddress === JSON.stringify(addr)
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-primary/40 bg-bg-base"
                             )}
                           >
-                            <MapPin className={cn("h-4 w-4 mt-0.5 shrink-0", newExchangeAddress === addr ? "text-primary" : "text-dark/40")} />
-                            <span className="text-[13px] font-medium text-dark leading-relaxed">{addr}</span>
-                            {addr === defaultAddress && (
+                            <MapPin className={cn("h-4 w-4 mt-0.5 shrink-0", newExchangeAddress === JSON.stringify(addr) ? "text-primary" : "text-dark/40")} />
+                            <span className="text-[13px] font-medium text-dark leading-relaxed">{addr.street}, {addr.city}, {addr.state} - {addr.pincode}</span>
+                            {JSON.stringify(defaultAddress) === JSON.stringify(addr) && (
                               <span className="ml-auto shrink-0 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">Default</span>
                             )}
                           </button>

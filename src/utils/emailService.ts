@@ -17,6 +17,8 @@ interface InvoiceDetails {
   subtotal: number;
   discount: number;
   shippingCost?: number;
+  gstAmount?: number;
+  platformFee?: number;
   total: number;
   address: string;
   phone: string;
@@ -196,6 +198,18 @@ export async function generateInvoicePDF(details: InvoiceDetails): Promise<Buffe
     page.drawText("FREE", { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(15/255, 138/255, 75/255) });
   }
 
+  if (details.gstAmount && details.gstAmount > 0) {
+    totalsY -= 18;
+    page.drawText("GST (5%):", { x: 330, y: totalsY, size: 9.5, font: font, color: rgb(74/255, 53/255, 77/255) });
+    page.drawText(`Rs. ${details.gstAmount.toFixed(2)}`, { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(26/255, 15/255, 28/255) });
+  }
+
+  if (details.platformFee && details.platformFee > 0) {
+    totalsY -= 18;
+    page.drawText("Platform Fee (2%):", { x: 330, y: totalsY, size: 9.5, font: font, color: rgb(74/255, 53/255, 77/255) });
+    page.drawText(`Rs. ${details.platformFee.toFixed(2)}`, { x: 470, y: totalsY, size: 9.5, font: boldFont, color: rgb(26/255, 15/255, 28/255) });
+  }
+
   totalsY -= 12;
   page.drawLine({
     start: { x: 330, y: totalsY },
@@ -241,6 +255,8 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
     subtotal,
     discount,
     shippingCost,
+    gstAmount,
+    platformFee,
     total,
     address,
     phone,
@@ -321,6 +337,16 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
               <span>Shipping:</span>
               <span style="font-weight: 600;">${shippingCost && shippingCost > 0 ? `₹${shippingCost}` : 'Free'}</span>
             </div>
+            ${gstAmount ? `
+            <div style="display: flex; justify-content: space-between;">
+              <span>GST (5%):</span>
+              <span style="font-weight: 600; color: #111827;">₹${gstAmount}</span>
+            </div>` : ''}
+            ${platformFee ? `
+            <div style="display: flex; justify-content: space-between;">
+              <span>Platform Fee (2%):</span>
+              <span style="font-weight: 600; color: #111827;">₹${platformFee}</span>
+            </div>` : ''}
             <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; border-top: 1px solid #E5E7EB; padding-top: 8px; margin-top: 8px; color: #3D2FB3;">
               <span>Grand Total:</span>
               <span>₹${total}</span>

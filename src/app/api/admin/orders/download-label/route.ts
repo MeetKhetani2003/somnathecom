@@ -84,7 +84,9 @@ export async function GET(req: Request) {
     // 3. MIDDLE LEFT COLUMN: SHIP TO & PINCODE (x=5 to x=150)
     page.drawText("SHIP TO (RECIPIENT):", { x: 12, y: 360, size: 8, font: boldFont, color: purpleCol });
 
-    const name = order.shippingDetails?.name || "Customer";
+    const name = order.shippingDetails?.firstName 
+      ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}`.trim()
+      : "Customer";
     page.drawText(name, { x: 12, y: 348, size: 10, font: boldFont, color: textCol });
 
     const phone = order.shippingDetails?.phone || "N/A";
@@ -93,7 +95,7 @@ export async function GET(req: Request) {
     // Wrap address details into multiple lines
     const rawAddress = isExchange && (order.exchangeDetails as any)?.newAddress 
       ? (order.exchangeDetails as any).newAddress 
-      : order.shippingDetails?.address || "";
+      : (order.shippingDetails ? `${order.shippingDetails.street}, ${order.shippingDetails.city}, ${order.shippingDetails.state} - ${order.shippingDetails.pincode}` : "");
     
     const addressWords = rawAddress.split(" ");
     let line1 = "";
@@ -266,7 +268,7 @@ export async function GET(req: Request) {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
       JSON.stringify({
         orderId: order._id.toString(),
-        name: order.shippingDetails?.name,
+        name: order.shippingDetails?.firstName ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}`.trim() : "Customer",
         total: order.total,
         status: order.shippingStatus,
         payment: order.paymentStatus

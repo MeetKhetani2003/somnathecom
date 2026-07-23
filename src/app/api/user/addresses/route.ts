@@ -21,12 +21,12 @@ export async function POST(req: Request) {
     if (phone) {
       updateFields.phone = phone;
     }
-    if (typeof defaultAddress === "string") {
+    if (defaultAddress) {
       updateFields.defaultAddress = defaultAddress;
     } else if (addresses.length > 0) {
       updateFields.defaultAddress = addresses[0];
     } else {
-      updateFields.defaultAddress = "";
+      updateFields.defaultAddress = null;
     }
 
     const result = await User.updateOne(

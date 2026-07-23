@@ -24,14 +24,14 @@ export async function GET(req: Request) {
 
     const pdfBuffer = await generateInvoicePDF({
       orderId: order._id.toString(),
-      customerName: order.shippingDetails.name,
+      customerName: order.shippingDetails.firstName ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}`.trim() : "Customer",
       email: order.email,
       items: order.items,
       subtotal: order.subtotal,
       discount: order.discount,
       shippingCost: order.shippingCost || 0,
       total: order.total,
-      address: order.shippingDetails.address,
+      address: order.shippingDetails ? `${order.shippingDetails.street}, ${order.shippingDetails.city}, ${order.shippingDetails.state} - ${order.shippingDetails.pincode}` : "",
       phone: order.shippingDetails.phone,
     });
 

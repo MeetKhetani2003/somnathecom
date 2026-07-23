@@ -152,12 +152,12 @@ export async function POST(req: Request) {
 
       // Address Update
       let previousAddress = "";
-      let updatedAddress = order.shippingDetails?.address || "";
+      let updatedAddress = order.shippingDetails ? `${order.shippingDetails.street}, ${order.shippingDetails.city}, ${order.shippingDetails.state} - ${order.shippingDetails.pincode}` : "";
       if (newAddress && newAddress.trim() && newAddress.trim() !== updatedAddress) {
         previousAddress = updatedAddress;
         updatedAddress = newAddress.trim();
         if (order.shippingDetails) {
-          order.shippingDetails.address = updatedAddress;
+          order.shippingDetails.street = updatedAddress;
         }
       }
 

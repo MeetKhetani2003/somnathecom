@@ -1,65 +1,51 @@
-import fs from "fs";
-import path from "path";
+
 import { Product } from "@/models/Product";
 
 // Paths and config
-const TOKEN_CACHE_PATH = path.join(process.cwd(), "src", "data", "shiprocket_token.json");
 const DEFAULT_PICKUP_PINCODE = process.env.SHIPROCKET_PICKUP_PINCODE || "380001";
-const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL || "";
-const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD || "";
 
-interface TokenCache {
-  token: string;
-  expiresAt: number; // timestamp in milliseconds
-}
-
-/**
- * Checks if current credentials are dummy/placeholder credentials.
- */
-function isDummyCredentials(): boolean {
-  return (
-    !SHIPROCKET_EMAIL ||
-    !SHIPROCKET_PASSWORD ||
-    SHIPROCKET_EMAIL.includes("demo") ||
-    SHIPROCKET_EMAIL.includes("placeholder")
-  );
-}
+// In-memory cache for Shiprocket JWT token
+let cachedToken: string | null = null;
+let tokenExpiry: number | null = null;
 
 /**
  * Retrieves the Shiprocket authentication token. Uses cached token if valid.
  */
 export async function getShiprocketToken(): Promise<string | null> {
-  if (isDummyCredentials()) {
-    console.log("[Shiprocket API] Dummy credentials in use. Bypassing live login.");
+  if (process.env.SHIPROCKET_SANDBOX === "true" && (!process.env.SHIPROCKET_EMAIL || process.env.SHIPROCKET_EMAIL.includes("placeholder"))) {
+    return "mock_sandbox_token_1234567890";
+  }
+
+  const now = Date.now();
+  if (cachedToken && tokenExpiry && now < tokenExpiry) {
+    return cachedToken;
+  }
+
+  const email = process.env.SHIPROCKET_EMAIL;
+  const password = process.env.SHIPROCKET_PASSWORD;
+  console.log(process.env.SHIPROCKET_EMAIL);
+  console.log(process.env.SHIPROCKET_PASSWORD?.length);
+  if (!email || !password) {
+    console.warn("[Shiprocket API] Missing credentials in .env.local");
     return null;
   }
 
-  // 1. Try to read token from cache file
   try {
-    if (fs.existsSync(TOKEN_CACHE_PATH)) {
-      const cacheData = fs.readFileSync(TOKEN_CACHE_PATH, "utf8");
-      const cache: TokenCache = JSON.parse(cacheData);
-
-      // Token is valid if expiration is at least 1 day in the future
-      if (cache.token && cache.expiresAt > Date.now() + 24 * 60 * 60 * 1000) {
-        return cache.token;
+    console.log(`[Shiprocket API] Requesting new auth token from Shiprocket for ${email}...`);
+    const response = await fetch(
+      "https://apiv2.shiprocket.in/v1/external/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       }
-    }
-  } catch (err) {
-    console.error("[Shiprocket API] Error reading token cache:", err);
-  }
+    );
 
-  // 2. Obtain new token from Shiprocket Auth Login API
-  try {
-    console.log("[Shiprocket API] Requesting new auth token from Shiprocket...");
-    const response = await fetch("https://apiv2.shiprocket.in/v1/external/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: SHIPROCKET_EMAIL,
-        password: SHIPROCKET_PASSWORD,
-      }),
-    });
     if (!response.ok) {
       const errorText = await response.text();
       console.warn(`[Shiprocket API] Login failed: ${response.status} - ${errorText}`);
@@ -67,27 +53,13 @@ export async function getShiprocketToken(): Promise<string | null> {
     }
 
     const data = await response.json();
-    console.log("[Shiprocket API] Login response data:", data);
+    console.log(data);
+    console.log("[Shiprocket API] Successfully authenticated.");
     if (data && data.token) {
-      const token = data.token;
       // Tokens are typically valid for 10 days. We set cache expiration to 8 days.
-      const expiresAt = Date.now() + 8 * 24 * 60 * 60 * 1000;
-
-      // Make sure data directory exists
-      const dataDir = path.dirname(TOKEN_CACHE_PATH);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-
-      // Save to cache file
-      fs.writeFileSync(
-        TOKEN_CACHE_PATH,
-        JSON.stringify({ token, expiresAt }, null, 2),
-        "utf8"
-      );
-
-      console.log("[Shiprocket API] Successfully authenticated and token cached.");
-      return token;
+      cachedToken = data.token;
+      tokenExpiry = Date.now() + 8 * 24 * 60 * 60 * 1000;
+      return cachedToken;
     }
   } catch (err) {
     console.error("[Shiprocket API] Exception during auth login:", err);
@@ -96,70 +68,7 @@ export async function getShiprocketToken(): Promise<string | null> {
   return null;
 }
 
-/**
- * Parses shipping address into structured state, city, pincode, and street address.
- */
-export function parseAddressDetails(addressStr: string) {
-  const pincodeMatch = addressStr.match(/\b\d{6}\b/);
-  
-  // If no pincode, default to a valid paired location in Ahmedabad
-  if (!pincodeMatch) {
-    let streetVal = addressStr.trim() || "Not Provided";
-    if (streetVal.length < 10) {
-      streetVal = streetVal + " - Detailed Address Info";
-    }
-    return {
-      street: streetVal,
-      city: "Ahmedabad",
-      state: "Gujarat",
-      pincode: "380001",
-    };
-  }
 
-  const pincode = pincodeMatch[0];
-
-  // Clean address of pincode
-  let cleanAddress = addressStr.replace(/\b\d{6}\b/, "").trim();
-  // Clean trailing dashes or commas
-  cleanAddress = cleanAddress.replace(/[-\s,]+$/, "").trim();
-
-  const parts = cleanAddress.split(",").map((p) => p.trim()).filter(Boolean);
-
-  let city = "Ahmedabad";
-  let state = "Gujarat";
-  let street = cleanAddress;
-
-  if (parts.length >= 2) {
-    state = parts[parts.length - 1];
-    city = parts[parts.length - 2];
-    street = parts.slice(0, parts.length - 2).join(", ") || city;
-  } else if (parts.length === 1) {
-    // If no commas, split by whitespace to guess street vs city
-    const words = parts[0].split(/\s+/).map((w) => w.trim()).filter(Boolean);
-    if (words.length >= 3) {
-      city = words[words.length - 1];
-      street = words.slice(0, words.length - 1).join(" ");
-    } else if (words.length === 2) {
-      city = words[1];
-      street = words[0];
-    } else {
-      city = words[0] || "Ahmedabad";
-      street = words[0] || "Not Provided";
-    }
-  }
-
-  let finalStreet = street || "Not Provided";
-  if (finalStreet.length < 10) {
-    finalStreet = finalStreet + " - Detailed Address Info";
-  }
-
-  return {
-    street: finalStreet,
-    city: city || "Ahmedabad",
-    state: state || "Gujarat",
-    pincode,
-  };
-}
 
 /**
  * Calculates delivery/shipping charges using Shiprocket Serviceability API.
@@ -286,13 +195,11 @@ export async function calculateShippingCost(
  */
 export async function createShiprocketOrder(order: any): Promise<{ success: boolean; shipment_id: string | null; message: string }> {
   const token = await getShiprocketToken();
-  const addressDetails = parseAddressDetails(order.shippingDetails.address);
+  const addressDetails = order.shippingDetails;
   const isCod = order.paymentMethod === "cod";
 
-  const customerName = order.shippingDetails.name;
-  const nameParts = customerName.trim().split(/\s+/);
-  const firstName = nameParts[0] || "Customer";
-  const lastName = nameParts.slice(1).join(" ") || "User";
+  const firstName = addressDetails.firstName || "Customer";
+  const lastName = addressDetails.lastName || "User";
 
   // Build the order items, fetch SKUs from DB
   const orderItems = [];
@@ -324,8 +231,8 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
   const payload = {
     order_id: order._id.toString(),
     order_date: formattedOrderDate,
-    pickup_location: "Primary",
-    
+    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "work",
+
     billing_customer_name: firstName,
     billing_last_name: lastName,
     billing_address: addressDetails.street,
@@ -335,7 +242,7 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
     billing_country: "India",
     billing_email: order.email,
     billing_phone: order.shippingDetails.phone,
-    
+
     shipping_is_billing: true,
     shipping_customer_name: firstName,
     shipping_last_name: lastName,
@@ -346,12 +253,12 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
     shipping_country: "India",
     shipping_email: order.email,
     shipping_phone: order.shippingDetails.phone,
-    
+
     order_items: orderItems,
     payment_method: isCod ? "COD" : "Prepaid",
     sub_total: isCod ? (order.total - order.shippingCost) : order.total,
     length: 15,
-    width: 15,
+    breadth: 15,
     height: 10,
     weight: weight > 0 ? weight : 0.5,
   };
@@ -398,6 +305,7 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
         });
 
         const awbData = await awbResponse.json();
+        console.log(`[Shiprocket API] Full AWB assign response:`, JSON.stringify(awbData, null, 2));
         if (awbResponse.ok && awbData && awbData.awb_assign_status === 1 && awbData.response?.data?.awb_code) {
           const awbCode = awbData.response.data.awb_code.toString();
           console.log(`[Shiprocket API] AWB assigned successfully! AWB Code: ${awbCode}`);
@@ -419,18 +327,13 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
         message: "Order created successfully. AWB assignment failed, using shipment ID.",
       };
     } else {
-      throw new Error(
-        data?.message || (data?.errors ? JSON.stringify(data.errors) : "Unknown Error")
-      );
+      console.error("[Shiprocket API] Validation errors:", JSON.stringify(data, null, 2));
+      const errorMsg = data?.errors ? JSON.stringify(data.errors) : data?.message;
+      throw new Error(errorMsg || "Unknown Error");
     }
   } catch (err: any) {
     console.error("[Shiprocket API] Failed to push order to Shiprocket:", err.message || err);
-    const mockShipmentId = "SR_MOCK_FALLBACK_" + Math.random().toString(36).substring(2, 11).toUpperCase();
-    return {
-      success: true,
-      shipment_id: mockShipmentId,
-      message: `Failed to create live Shiprocket order (${err.message || "Error"}). Local mock generated.`,
-    };
+    throw new Error(`Shiprocket Order Creation Failed: ${err.message || "Unknown error"}`);
   }
 }
 
@@ -460,6 +363,7 @@ export async function getShiprocketAwbFromApi(orderId: string): Promise<string |
     }
 
     const data = await res.json();
+    console.log(`[Shiprocket API] Full order fetch response:`, JSON.stringify(data, null, 2));
     if (data && data.data && data.data.length > 0) {
       const shiprocketOrder = data.data[0];
       const awbCode = shiprocketOrder.shipments?.[0]?.awb_code || shiprocketOrder.awb_code;
@@ -467,7 +371,7 @@ export async function getShiprocketAwbFromApi(orderId: string): Promise<string |
         console.log(`[Shiprocket API] Found AWB Code: ${awbCode}`);
         return awbCode.toString();
       }
-      
+
       const shipmentId = shiprocketOrder.shipments?.[0]?.id || shiprocketOrder.shipment_id;
       if (shipmentId) {
         console.log(`[Shiprocket API] Found Shipment ID: ${shipmentId}`);
@@ -524,7 +428,7 @@ export async function getShiprocketTrackStatus(trackingNumber: string): Promise<
       if (track && track.current_status) {
         const statusStr = track.current_status.toLowerCase();
         console.log(`[Shiprocket API] Tracking status received: ${statusStr}`);
-        
+
         if (statusStr.includes("delivered")) {
           return "Delivered";
         }

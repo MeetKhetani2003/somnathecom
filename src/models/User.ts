@@ -6,8 +6,18 @@ const UserSchema = new Schema({
   image: { type: String },
   // Accept both cases; the set transform normalises to lowercase on assignment
   role: { type: String, enum: ["user", "admin"], default: "user", set: (v: string) => v?.toLowerCase() ?? "user" },
-  addresses: [{ type: String }],
-  defaultAddress: { type: String, default: "" },
+  addresses: [{
+    firstName: { type: String },
+    lastName: { type: String },
+    phone: { type: String },
+    email: { type: String },
+    street: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
+    country: { type: String, default: "India" }
+  }],
+  defaultAddress: { type: Schema.Types.Mixed, default: null },
   phone: { type: String, default: "" },
   cart: [{
     id: { type: Number },

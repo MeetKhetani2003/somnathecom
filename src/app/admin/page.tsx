@@ -614,7 +614,7 @@ function AdminDashboard() {
                       </thead>
                       <tbody>
                         {products.map((p) => (
-                          <tr key={p.id} className="border-b border-border last:border-0 hover:bg-surface/30">
+                          <tr key={p._id || p.id || Math.random()} className="border-b border-border last:border-0 hover:bg-surface/30">
                             <td className="py-3.5 pr-4">
                               <img src={p.image} className="h-12 w-10 rounded-lg object-cover bg-gray-50 border border-gray-100" />
                             </td>

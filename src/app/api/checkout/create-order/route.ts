@@ -79,9 +79,9 @@ export async function POST(req: Request) {
       subtotal += product.price * item.quantity;
       itemsToOrder.push({
         productDocument: product,
-        productId: product.id,
-        title: product.title,
-        price: product.price,
+        productId: Number(item.id),
+        title: product.title || item.title,
+        price: product.price || item.price || 0,
         quantity: item.quantity,
         image: product.image,
         selectedSize: item.selectedSize || "",
@@ -101,7 +101,10 @@ export async function POST(req: Request) {
     }
 
     const finalShippingCost = paymentMethod === "cod" ? (shippingCost || 0) : 0;
-    const total = subtotal - discount + finalShippingCost;
+    const baseTotal = subtotal - discount;
+    const gstAmount = Math.round(baseTotal * 0.05);
+    const platformFee = Math.round(baseTotal * 0.02);
+    const total = baseTotal + finalShippingCost + gstAmount + platformFee;
 
     // 3. Deduct Stock Temporarily (Reservation)
     for (const item of itemsToOrder) {
@@ -177,6 +180,8 @@ export async function POST(req: Request) {
       subtotal,
       discount,
       shippingCost: finalShippingCost,
+      gstAmount,
+      platformFee,
       total,
       couponUsed: couponCode || null,
       referralCode: referralCode || null,
