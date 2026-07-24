@@ -17,7 +17,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const body = await req.json();
     const { status } = body;
 
-    if (!["New", "Read", "Replied"].includes(status)) {
+    if (!["pending", "resolved", "New", "Read", "Replied"].includes(status)) {
       return NextResponse.json({ success: false, error: "Invalid status" }, { status: 400 });
     }
 
