@@ -10,6 +10,7 @@ import { useShop } from "@/context/ShopContext";
 import { useSession, signOut } from "next-auth/react";
 import LoginModal from "@/components/LoginModal";
 import SizeGuideModal from "@/components/SizeGuideModal";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const megaMenuGroups = [
   {
@@ -605,6 +606,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       
       {/* Size Guide Modal */}
       <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />
+
+      {/* Floating WhatsApp Button */}
+      <WhatsAppButton />
     </div>
   );
 }
