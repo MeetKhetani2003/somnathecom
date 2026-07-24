@@ -45,11 +45,11 @@ export async function POST(req: Request) {
 
 
     // ─── Process Color Variants ──────────────────────────────────────────────
-    let colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizes: { size: string; stock: number }[] }[] = [];
+    let colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: { size: string; stock: number }[] }[] = [];
     
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
         
         // Upload color images in order
         let colorImageIdx = 0;
@@ -66,12 +66,14 @@ export async function POST(req: Request) {
             }
             colorImageIdx++;
           }
+
           colors.push({
             name: meta.name,
             title: meta.title,
             featured: meta.featured || false,
             images: colorImages,
             ytVideoUrl: meta.ytVideoUrl || "",
+            sizeGuide: meta.hasSizeGuide ? meta.sizeGuide : undefined,
             sizes: meta.sizes,
           });
         }

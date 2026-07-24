@@ -47,10 +47,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
         
         let colorImageIdx = 0;
-        const colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizes: { size: string; stock: number }[] }[] = [];
+        const colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: { size: string; stock: number }[] }[] = [];
         
         for (const meta of colorsMeta) {
           const colorImages: string[] = [...(meta.existingImages || [])];
@@ -66,12 +66,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
             }
             colorImageIdx++;
           }
+
           colors.push({
             name: meta.name,
             title: meta.title,
             featured: meta.featured || false,
             images: colorImages,
             ytVideoUrl: meta.ytVideoUrl || "",
+            sizeGuide: meta.hasSizeGuide ? meta.sizeGuide : undefined,
             sizes: meta.sizes,
           });
         }

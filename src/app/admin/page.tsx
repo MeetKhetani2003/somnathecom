@@ -14,7 +14,7 @@ import Barcode from "react-barcode";
 function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "storefront">("overview");
 
   const isEnvAdmin = (session?.user as any)?.isEnvAdmin === true;
 
@@ -25,7 +25,7 @@ function AdminDashboard() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
-
+  const [storefrontAssets, setStorefrontAssets] = useState<any[]>([]);
 
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [exchangeSearchQuery, setExchangeSearchQuery] = useState("");
@@ -38,9 +38,12 @@ function AdminDashboard() {
   const [newCouponExpiry, setNewCouponExpiry] = useState("");
   const [newCouponReseller, setNewCouponReseller] = useState("");
 
-  // Loading & Action states
   const [loading, setLoading] = useState(true);
   const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
+
+  // Storefront Image Upload State
+  const [uploadingAssetId, setUploadingAssetId] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -53,7 +56,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons"].includes(tabParam)) {
+    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons", "storefront"].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -213,7 +216,10 @@ function AdminDashboard() {
         const res = await fetch("/api/admin/coupons");
         const data = await res.json();
         if (data.success) setCoupons(data.coupons);
-
+      } else if (activeTab === "storefront") {
+        const res = await fetch("/api/storefront");
+        const data = await res.json();
+        if (data.success) setStorefrontAssets(data.assets);
       }
     } catch (err) {
       console.error("Error fetching admin data:", err);
@@ -391,6 +397,7 @@ function AdminDashboard() {
             { id: "users", label: "User Accounts", icon: Users },
             { id: "inquiries", label: "Support Inquiries", icon: HelpCircle },
             { id: "coupons", label: "Discount Coupons", icon: DollarSign },
+            { id: "storefront", label: "Storefront Images", icon: LayoutDashboard },
           ].map((tab: any) => {
             const Icon = tab.icon;
             const isTabActive = activeTab === tab.id;
@@ -1402,6 +1409,102 @@ function AdminDashboard() {
                 </div>
               )}
 
+
+              {activeTab === "storefront" && (
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-[18px] font-semibold text-dark">Storefront Images</h2>
+                    <p className="text-[13px] text-dark/60">Update Hero Banners and Category images</p>
+                  </div>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !uploadingAssetId) return;
+                      
+                      const formData = new FormData();
+                      formData.append("id", uploadingAssetId);
+                      formData.append("image", file);
+
+                      fireToast("Uploading image...");
+                      fetch("/api/admin/storefront", {
+                        method: "PUT",
+                        body: formData
+                      })
+                      .then(r => r.json())
+                      .then(d => {
+                        if (d.success) {
+                          fireToast("Image updated successfully!");
+                          fetchData();
+                        } else {
+                          fireToast("Error: " + d.error);
+                        }
+                      })
+                      .catch(() => {
+                        fireToast("Upload failed.");
+                      })
+                      .finally(() => {
+                        setUploadingAssetId(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      });
+                    }}
+                  />
+
+                  <div className="space-y-8">
+                    {/* Hero Section */}
+                    <div>
+                      <h3 className="mb-4 text-[16px] font-bold text-dark border-b border-border pb-2">Hero Section Banners</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {storefrontAssets.filter(a => a.type === "hero").map((asset) => (
+                          <div key={asset._id} className="rounded-xl border border-border p-4 bg-surface flex flex-col items-center">
+                            <div className="w-full aspect-[4/3] rounded-lg overflow-hidden mb-3 border border-border/50">
+                              <img src={asset.image} alt={asset.title} className="w-full h-full object-cover" />
+                            </div>
+                            <h4 className="font-semibold text-dark text-[14px] mb-3">{asset.title}</h4>
+                            <button
+                              onClick={() => {
+                                setUploadingAssetId(asset._id);
+                                if (fileInputRef.current) fileInputRef.current.click();
+                              }}
+                              className="w-full flex justify-center items-center gap-1.5 rounded-lg bg-primary/10 px-4 py-2 text-[13px] font-semibold text-primary hover:bg-primary hover:text-white transition cursor-pointer"
+                            >
+                              <Edit className="h-4 w-4" /> {uploadingAssetId === asset._id ? "Uploading..." : "Upload New Image"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Category Section */}
+                    <div>
+                      <h3 className="mb-4 text-[16px] font-bold text-dark border-b border-border pb-2">Shop By Category</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {storefrontAssets.filter(a => a.type === "category").map((asset) => (
+                          <div key={asset._id} className="rounded-xl border border-border p-4 bg-surface flex flex-col items-center text-center">
+                            <div className="w-full aspect-[4/5] rounded-lg overflow-hidden mb-3 border border-border/50">
+                              <img src={asset.image} alt={asset.title} className="w-full h-full object-cover object-top" />
+                            </div>
+                            <h4 className="font-medium text-dark text-[12.5px] leading-tight mb-3 line-clamp-2 h-8">{asset.title}</h4>
+                            <button
+                              onClick={() => {
+                                setUploadingAssetId(asset._id);
+                                if (fileInputRef.current) fileInputRef.current.click();
+                              }}
+                              className="w-full flex justify-center items-center gap-1.5 rounded-lg border border-primary/20 bg-white px-3 py-1.5 text-[12px] font-semibold text-primary hover:bg-primary hover:text-white transition cursor-pointer"
+                            >
+                              <Edit className="h-3.5 w-3.5" /> {uploadingAssetId === asset._id ? "Uploading..." : "Upload New Image"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </>
           )}

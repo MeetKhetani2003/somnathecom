@@ -25,6 +25,8 @@ interface ColorVariant {
   ytVideoUrl?: string;
   imageFiles: File[];
   imagePreviews: string[];
+  hasSizeGuide: boolean;
+  sizeGuide: { size: string; chest: string; waist: string; hip: string }[];
   sizes: SizeEntry[];
 }
 
@@ -60,7 +62,9 @@ export default function CreateProductPage() {
   useEffect(() => {
     return () => {
       legacyDetailedPreviews.forEach(url => URL.revokeObjectURL(url));
-      colorVariants.forEach(cv => cv.imagePreviews.forEach(url => URL.revokeObjectURL(url)));
+      colorVariants.forEach(cv => {
+        cv.imagePreviews.forEach(url => URL.revokeObjectURL(url));
+      });
     };
   }, []);
 
@@ -68,7 +72,7 @@ export default function CreateProductPage() {
 
   // ─── Color Variant Helpers ──────────────────────────────────────────────────
   const addColorVariant = () => {
-    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, ytVideoUrl: "", imageFiles: [], imagePreviews: [], sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }] }]);
+    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, ytVideoUrl: "", imageFiles: [], imagePreviews: [], hasSizeGuide: false, sizeGuide: [{ size: "", chest: "", waist: "", hip: "" }], sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }] }]);
     setActiveColorIdx(colorVariants.length);
   };
 
@@ -113,6 +117,25 @@ export default function CreateProductPage() {
         imageFiles: cv.imageFiles.filter((_, j) => j !== imgIdx),
         imagePreviews: cv.imagePreviews.filter((_, j) => j !== imgIdx),
       };
+    }));
+  };
+
+  const toggleColorSizeGuide = (idx: number, enabled: boolean) => {
+    setColorVariants(prev => prev.map((cv, i) => i === idx ? { ...cv, hasSizeGuide: enabled } : cv));
+  };
+
+  const addColorSizeGuideRow = (colorIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizeGuide: [...cv.sizeGuide, { size: "", chest: "", waist: "", hip: "" }] } : cv));
+  };
+
+  const removeColorSizeGuideRow = (colorIdx: number, rowIdx: number) => {
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizeGuide: cv.sizeGuide.filter((_, j) => j !== rowIdx) } : cv));
+  };
+
+  const updateColorSizeGuideRow = (colorIdx: number, rowIdx: number, field: "size" | "chest" | "waist" | "hip", value: string) => {
+    setColorVariants(prev => prev.map((cv, i) => {
+      if (i !== colorIdx) return cv;
+      return { ...cv, sizeGuide: cv.sizeGuide.map((r, j) => j === rowIdx ? { ...r, [field]: value } : r) };
     }));
   };
 
@@ -231,12 +254,14 @@ export default function CreateProductPage() {
         title: cv.title,
         featured: cv.featured,
         ytVideoUrl: cv.ytVideoUrl,
+        hasSizeGuide: cv.hasSizeGuide,
+        sizeGuide: cv.hasSizeGuide ? cv.sizeGuide.filter(r => r.size.trim()) : [],
         sizes: cv.sizes.filter(s => s.size.trim()),
         imageCount: cv.imageFiles.length,
       }));
       formData.append("colorsMeta", JSON.stringify(colorsMeta));
 
-      // Append color images in order: all images for color 0, then color 1, etc.
+      // Append color images
       for (const cv of colorVariants) {
         for (const file of cv.imageFiles) {
           formData.append("colorImages", file);
@@ -517,6 +542,91 @@ export default function CreateProductPage() {
                           <span className="text-[11px] font-medium">Add</span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Custom Size Guide */}
+                    <div className="mt-4 rounded-xl border border-border p-4 bg-surface/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="block text-[12px] font-semibold uppercase tracking-wide text-dark/50">
+                          Custom Size Guide for "{activeColor.name || `Color ${activeColorIdx + 1}`}"
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`hasSizeGuide-cv-${activeColorIdx}`}
+                            checked={activeColor.hasSizeGuide || false}
+                            onChange={(e) => toggleColorSizeGuide(activeColorIdx, e.target.checked)}
+                            className="h-5 w-5 rounded border-border text-primary focus:ring-primary"
+                          />
+                          <label htmlFor={`hasSizeGuide-cv-${activeColorIdx}`} className="text-[13px] font-medium text-dark/80 cursor-pointer">
+                            Enable Custom Size Guide
+                          </label>
+                        </div>
+                      </div>
+
+                      {activeColor.hasSizeGuide && (
+                        <div className="mt-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] font-medium text-dark/70">Measurements (in inches)</span>
+                            <button
+                              type="button"
+                              onClick={() => addColorSizeGuideRow(activeColorIdx)}
+                              className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[12px] font-medium text-primary transition hover:bg-primary/20"
+                            >
+                              <Plus className="h-3 w-3" /> Add Row
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-5 gap-2 px-3 pb-1 border-b border-border">
+                            <span className="text-[11px] font-semibold text-dark/50 uppercase">Size Label</span>
+                            <span className="text-[11px] font-semibold text-dark/50 uppercase">Chest</span>
+                            <span className="text-[11px] font-semibold text-dark/50 uppercase">Waist</span>
+                            <span className="text-[11px] font-semibold text-dark/50 uppercase">Hip</span>
+                            <span></span>
+                          </div>
+
+                          {(activeColor.sizeGuide || []).map((row, rIdx) => (
+                            <div key={rIdx} className="grid grid-cols-5 gap-2 items-center">
+                              <input
+                                type="text"
+                                value={row.size}
+                                onChange={(e) => updateColorSizeGuideRow(activeColorIdx, rIdx, "size", e.target.value)}
+                                placeholder="e.g. M"
+                                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                              />
+                              <input
+                                type="text"
+                                value={row.chest}
+                                onChange={(e) => updateColorSizeGuideRow(activeColorIdx, rIdx, "chest", e.target.value)}
+                                placeholder="38-40"
+                                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                              />
+                              <input
+                                type="text"
+                                value={row.waist}
+                                onChange={(e) => updateColorSizeGuideRow(activeColorIdx, rIdx, "waist", e.target.value)}
+                                placeholder="30-32"
+                                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                              />
+                              <input
+                                type="text"
+                                value={row.hip}
+                                onChange={(e) => updateColorSizeGuideRow(activeColorIdx, rIdx, "hip", e.target.value)}
+                                placeholder="40-42"
+                                className="h-10 w-full rounded-xl border border-border bg-white px-3 text-[13px] outline-none focus:border-primary"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeColorSizeGuideRow(activeColorIdx, rIdx)}
+                                disabled={!activeColor.sizeGuide || activeColor.sizeGuide.length <= 1}
+                                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-dark/50 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Color Sizes */}

@@ -29,6 +29,12 @@ const ProductSchema = new Schema({
     featured: { type: Boolean, default: false }, // Feature this specific variant
     images: [{ type: String }],
     ytVideoUrl: { type: String },
+    sizeGuide: [{
+      size: { type: String },
+      chest: { type: String },
+      waist: { type: String },
+      hip: { type: String }
+    }],
     sizes: [{
       size: { type: String, required: true },
       stock: { type: Number, default: 0 },

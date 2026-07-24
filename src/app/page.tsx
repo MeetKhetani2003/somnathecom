@@ -24,17 +24,18 @@ function HeroCarousel() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    fetch("/api/banners").then(r => r.json()).then(d => {
-      if (d.success && d.banners.length > 0) {
-        setSlides(d.banners.map((b: any) => ({
-          id: b._id,
-          image: b.image,
-          title: b.title,
-          subtitle: b.subtitle,
-          eyebrow: b.eyebrow,
-          cta: b.cta,
-          badge: b.badge || "New Collection",
-        })));
+    fetch("/api/storefront").then(r => r.json()).then(d => {
+      if (d.success && d.assets) {
+        const heroAssets = d.assets.filter((a: any) => a.type === "hero");
+        if (heroAssets.length > 0) {
+          setSlides(heroSlides.map(slide => {
+            const asset = heroAssets.find((a: any) => a.identifier === `hero_slide_${slide.id}`);
+            return {
+              ...slide,
+              image: asset ? asset.image : slide.image
+            };
+          }));
+        }
       }
     });
   }, []);
@@ -206,6 +207,24 @@ export default function Home() {
 
   const [productsList, setProductsList] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [storeCategories, setStoreCategories] = useState(categories);
+
+  useEffect(() => {
+    fetch("/api/storefront").then(r => r.json()).then(d => {
+      if (d.success && d.assets) {
+        const categoryAssets = d.assets.filter((a: any) => a.type === "category");
+        if (categoryAssets.length > 0) {
+          setStoreCategories(categories.map(cat => {
+            const asset = categoryAssets.find((a: any) => a.identifier === cat.name);
+            return {
+              ...cat,
+              image: asset ? asset.image : cat.image
+            };
+          }));
+        }
+      }
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -315,7 +334,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 md:gap-6">
-          {categories.map((cat) => (
+          {storeCategories.map((cat) => (
             <Link
               key={cat.name}
               href={`/products?category=${encodeURIComponent(cat.name)}`}

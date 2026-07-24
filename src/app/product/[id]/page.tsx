@@ -991,13 +991,16 @@ export default function ProductSlug() {
                         </tr>
                       </thead>
                       <tbody>
-                        {[
-                          { size: "M (Medium)", chest: "38-40", waist: "30-32", hip: "40-42" },
-                          { size: "L (Large)", chest: "40-42", waist: "32-34", hip: "42-44" },
-                          { size: "XL (X-Large)", chest: "42-44", waist: "34-36", hip: "44-46" },
-                          { size: "XXL (2X-Large)", chest: "44-46", waist: "36-38", hip: "46-48" },
-                          { size: "3XL (3X-Large)", chest: "46-48", waist: "38-40", hip: "48-50" },
-                        ].map((row, idx) => (
+                        {(product?.colors?.find((c: any) => c.name === selectedColor)?.sizeGuide?.length > 0
+                          ? product.colors.find((c: any) => c.name === selectedColor).sizeGuide
+                          : [
+                              { size: "M (Medium)", chest: "38-40", waist: "30-32", hip: "40-42" },
+                              { size: "L (Large)", chest: "40-42", waist: "32-34", hip: "42-44" },
+                              { size: "XL (X-Large)", chest: "42-44", waist: "34-36", hip: "44-46" },
+                              { size: "XXL (2X-Large)", chest: "44-46", waist: "36-38", hip: "46-48" },
+                              { size: "3XL (3X-Large)", chest: "46-48", waist: "38-40", hip: "48-50" },
+                            ]
+                        ).map((row: any, idx: number) => (
                           <tr key={idx} className="border-b border-border last:border-0 transition-colors hover:bg-bg-base/50">
                             <td className="p-4 font-bold text-primary">{row.size}</td>
                             <td className="p-4 text-dark/70 font-medium">{row.chest}</td>
