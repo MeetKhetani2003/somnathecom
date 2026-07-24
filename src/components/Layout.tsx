@@ -9,6 +9,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, ChevronDown, Check, Sparkles
 import { useShop } from "@/context/ShopContext";
 import { useSession, signOut } from "next-auth/react";
 import LoginModal from "@/components/LoginModal";
+import SizeGuideModal from "@/components/SizeGuideModal";
 
 const megaMenuGroups = [
   {
@@ -62,6 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const [mobileMenu, setMobileMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const { wishlist, cartCount, showCart, setShowCart, isLoginOpen, setIsLoginOpen } = useShop();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -530,16 +532,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             {[
-              { title: "Shop", links: ["Women's Nightwear", "Men's Nightwear", "Tencel Collection", "Oversized Collection"] },
+              { title: "Shop", links: ["Ladies Collection", "Men's Collection", "Tencel Collection", "Hosiery Collection"] },
               { title: "Support", links: ["Size Guide", "Shipping Info", "Returns Policy", "Track Order", "Contact Us"] },
-              { title: "Brand", links: ["Our Story", "Fabric Guide", "Journal", "Sustainability", "Privacy Policy"] },
+              { title: "Brand", links: ["Our Story", "Privacy Policy", "Terms & Conditions"] },
             ].map((col) => (
                <div key={col.title}>
                 <div className="text-[13px] font-bold uppercase tracking-wider text-dark">{col.title}</div>
                 <ul className="mt-5 space-y-3">
-                  {col.links.map((l) => (
-                    <li key={l}><Link href={col.title === "Shop" ? `/products?category=${l === 'Tencel Collection' ? encodeURIComponent('Tencel Collection > Tencel Nightwear > Tencel Full Night Suit') : l}` : l === "Contact Us" ? "/contact" : "#"} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link></li>
-                  ))}
+                  {col.links.map((l) => {
+                    const getHref = () => {
+                      if (col.title === "Shop") {
+                        if (l === "Ladies Collection") return `/products?category=${encodeURIComponent('Ladies Collection > Night Suits > Ladies Full Night Suit')}`;
+                        if (l === "Men's Collection") return `/products?category=${encodeURIComponent("Men's Collection > Night Suits > Gents Full Night Suit")}`;
+                        if (l === "Tencel Collection") return `/products?category=${encodeURIComponent('Tencel Collection > Tencel Nightwear > Tencel Full Night Suit')}`;
+                        if (l === "Hosiery Collection") return `/products?category=${encodeURIComponent('Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit')}`;
+                        return `/products?category=${encodeURIComponent(l)}`;
+                      }
+                      if (l === "Contact Us") return "/contact";
+                      if (l === "Our Story") return "/about";
+                      if (l === "Shipping Info" || l === "Track Order") return "/profile?tab=orders";
+                      return "#";
+                    };
+                    return (
+                      <li key={l}>
+                        {l === "Size Guide" ? (
+                          <button onClick={() => setIsSizeGuideOpen(true)} className="text-[14px] text-dark/60 transition hover:text-primary outline-none">
+                            {l}
+                          </button>
+                        ) : (
+                          <Link href={getHref()} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
@@ -577,6 +602,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Login Modal */}
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      
+      {/* Size Guide Modal */}
+      <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />
     </div>
   );
 }

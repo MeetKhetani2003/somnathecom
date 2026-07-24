@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Download, Plus, Minus, ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
 import { useToast } from "@/context/ToastContext";
+import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
-export default function Profile() {
+function ProfileContent() {
+  const searchParams = useSearchParams();
   const { data: session, update } = useSession();
   const { wishlist, cartItems, removeFromCart, updateQuantity } = useShop();
   const { success: toastSuccess, error: toastError } = useToast();
@@ -33,6 +35,13 @@ export default function Profile() {
   }, []);
 
   const [activeSection, setActiveSection] = useState<"info" | "orders" | "wishlist" | "addresses" | "cart">("info");
+
+  useEffect(() => {
+    const tab = searchParams?.get("tab");
+    if (tab === "orders" || tab === "wishlist" || tab === "addresses" || tab === "cart") {
+      setActiveSection(tab);
+    }
+  }, [searchParams]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
@@ -1567,5 +1576,17 @@ export default function Profile() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Profile() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }
