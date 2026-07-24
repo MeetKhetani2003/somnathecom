@@ -14,7 +14,7 @@ import Barcode from "react-barcode";
 function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "banners">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons">("overview");
 
   const isEnvAdmin = (session?.user as any)?.isEnvAdmin === true;
 
@@ -25,7 +25,7 @@ function AdminDashboard() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [exchanges, setExchanges] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
-  const [banners, setBanners] = useState<any[]>([]);
+
 
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const [exchangeSearchQuery, setExchangeSearchQuery] = useState("");
@@ -53,7 +53,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons", "banners"].includes(tabParam)) {
+    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons"].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -213,10 +213,7 @@ function AdminDashboard() {
         const res = await fetch("/api/admin/coupons");
         const data = await res.json();
         if (data.success) setCoupons(data.coupons);
-      } else if (activeTab === "banners") {
-        const res = await fetch("/api/admin/banners");
-        const data = await res.json();
-        if (data.success) setBanners(data.banners);
+
       }
     } catch (err) {
       console.error("Error fetching admin data:", err);
@@ -394,7 +391,6 @@ function AdminDashboard() {
             { id: "users", label: "User Accounts", icon: Users },
             { id: "inquiries", label: "Support Inquiries", icon: HelpCircle },
             { id: "coupons", label: "Discount Coupons", icon: DollarSign },
-            { id: "banners", label: "Home Banners", icon: Star },
           ].map((tab: any) => {
             const Icon = tab.icon;
             const isTabActive = activeTab === tab.id;
@@ -1406,91 +1402,6 @@ function AdminDashboard() {
                 </div>
               )}
 
-              {/* 6. BANNERS TAB */}
-              {activeTab === "banners" && (
-                <div>
-                  <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-[18px] font-semibold text-dark">Home Page Banners</h2>
-                    <button
-                      onClick={() => {
-                        const title = prompt("Enter Banner Title:");
-                        if (!title) return;
-                        const subtitle = prompt("Enter Subtitle:");
-                        const imageId = prompt("Enter Image ID from Media Library:");
-                        if (!imageId) return;
-                        const imageUrl = `/api/image/${imageId}`;
-                        fetch("/api/banners", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            title, subtitle, image: imageUrl, active: true
-                          })
-                        }).then(r => r.json()).then(data => {
-                          if (data.success) fetchData();
-                          else fireToast("Error: " + data.message);
-                        });
-                      }}
-                      className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]"
-                    >
-                      <Plus className="h-4 w-4" /> Add Banner
-                    </button>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-[14px]">
-                      <thead>
-                        <tr className="border-b border-border text-left text-dark/50 font-medium">
-                          <th className="pb-3 pr-4">Image</th>
-                          <th className="pb-3 pr-4">Title</th>
-                          <th className="pb-3 pr-4">Status</th>
-                          <th className="pb-3 pr-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {banners.map((b) => (
-                          <tr key={b._id} className="border-b border-border last:border-0 hover:bg-surface/30">
-                            <td className="py-3.5 pr-4">
-                              <img src={b.image} alt={b.title} className="h-12 w-24 object-cover rounded border" />
-                            </td>
-                            <td className="py-3.5 pr-4 font-medium text-dark">{b.title}</td>
-                            <td className="py-3.5 pr-4">
-                              <button
-                                onClick={() => {
-                                  fetch("/api/banners", {
-                                    method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ id: b._id, active: !b.active })
-                                  }).then(r=>r.json()).then(d => { if(d.success) fetchData(); });
-                                }}
-                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition ${b.active ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700" : "bg-gray-100 text-gray-500 hover:bg-green-100 hover:text-green-700"}`}
-                              >
-                                {b.active ? "Active" : "Inactive"}
-                              </button>
-                            </td>
-                            <td className="py-3.5 pr-4 text-right">
-                              <button
-                                onClick={() => {
-                                  if(!confirm("Delete this banner?")) return;
-                                  fetch(`/api/banners?id=${b._id}`, { method: "DELETE" })
-                                    .then(r=>r.json()).then(d => { if(d.success) fetchData(); });
-                                }}
-                                className="grid h-8 w-8 place-items-center rounded-lg border border-red-100 text-red-500 transition hover:bg-red-50 ml-auto"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {banners.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="py-8 text-center text-[14px] text-dark/50">No banners available.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
 
             </>
           )}

@@ -209,10 +209,14 @@ export async function POST(req: Request) {
         const shiprocketRes = await createShiprocketOrder(localOrder);
         if (shiprocketRes && shiprocketRes.shipment_id) {
           localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
-          await localOrder.save();
+        } else {
+          localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
         }
+        await localOrder.save();
       } catch (shiprocketErr) {
         console.error("Failed to create order in Shiprocket for COD order:", shiprocketErr);
+        localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        await localOrder.save();
       }
 
       return NextResponse.json({

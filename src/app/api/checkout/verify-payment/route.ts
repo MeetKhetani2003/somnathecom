@@ -60,10 +60,14 @@ export async function POST(req: Request) {
       const shiprocketRes = await createShiprocketOrder(order);
       if (shiprocketRes && shiprocketRes.shipment_id) {
         order.trackingNumber = shiprocketRes.shipment_id.toString();
-        await order.save();
+      } else {
+        order.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
       }
+      await order.save();
     } catch (shiprocketErr) {
       console.error("Failed to create order in Shiprocket for Prepaid order:", shiprocketErr);
+      order.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+      await order.save();
     }
 
     // Send confirmation email

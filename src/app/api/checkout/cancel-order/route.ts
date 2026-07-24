@@ -43,8 +43,9 @@ export async function POST(req: Request) {
       await reservation.save();
     }
 
-    // 3. Mark payment status as failed
+    // 3. Mark payment status as failed and shipping status as Cancelled
     order.paymentStatus = "failed";
+    order.shippingStatus = "Cancelled";
     await order.save();
 
     return NextResponse.json({ success: true, message: "Order cancelled and stock restored successfully" });

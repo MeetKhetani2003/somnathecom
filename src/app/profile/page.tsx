@@ -708,7 +708,21 @@ function ProfileContent() {
                           {order.items.map((item: any, idx: number) => (
                             <Link href={`/product/${item.productId || item.id}`} key={idx} className="flex items-center gap-5 text-[15px] hover:bg-surface/50 p-2 rounded-xl transition group">
                               <div className="h-16 w-12 rounded-lg bg-bg-base border border-border overflow-hidden shrink-0"><img src={item.image} className="h-full w-full object-cover" /></div>
-                              <span className="font-bold text-dark flex-1 truncate group-hover:text-primary transition">{item.title}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-bold text-dark block truncate group-hover:text-primary transition">{item.title}</span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {item.size && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10.5px] font-bold text-indigo-700">
+                                      Size: {item.size}
+                                    </span>
+                                  )}
+                                  {item.color && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10.5px] font-bold text-purple-700">
+                                      Color: {item.color}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                               <span className="text-dark/60 font-medium">Qty: {item.quantity}</span>
                               <span className="font-display text-[16px] font-bold text-dark w-24 text-right">₹{item.price * item.quantity}</span>
                             </Link>
@@ -838,14 +852,16 @@ function ProfileContent() {
                           </div>
 
                           <div className="flex flex-wrap gap-3">
-                            <a
-                              href={`/api/checkout/download-invoice?orderId=${order._id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="rounded-full border-2 border-primary bg-primary/5 px-5 py-2.5 text-[14px] font-bold text-primary hover:bg-primary hover:text-white transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <Download className="h-4 w-4" /> Download Invoice
-                            </a>
+                            {order.shippingStatus !== "Cancelled" && (
+                              <a
+                                href={`/api/checkout/download-invoice?orderId=${order._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-full border-2 border-primary bg-primary/5 px-5 py-2.5 text-[14px] font-bold text-primary hover:bg-primary hover:text-white transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Download className="h-4 w-4" /> Download Invoice
+                              </a>
+                            )}
                             {order.shippingStatus === "Delivered" && (() => {
                               const deliveryTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.createdAt).getTime();
                               const canExchange = ((Date.now() - deliveryTime) / (1000 * 60 * 60 * 24) <= 7) && !order.exchangeRequested;
