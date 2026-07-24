@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ChevronRight, ChevronDown, Star, Truck, ShieldCheck, RotateCcw, Heart, ShoppingBag, Sparkles, Check, X, Trash2 } from "lucide-react";
 import Link from 'next/link';
+import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from "next-auth/react";
-
-import { Star, ShieldCheck, Truck, RotateCcw, Heart, ShoppingBag, ChevronRight, ChevronDown, X, Trash2, Sparkles, Check } from "lucide-react";
-import { useShop } from "@/context/ShopContext";
-import { motion, AnimatePresence } from "framer-motion";
-import { useToast } from "@/context/ToastContext";
-
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
+import { useShop } from "@/context/ShopContext";
+import { ProductCard } from "@/components/ProductCard";
+import { useToast } from "@/context/ToastContext";
 
 const getEmbedUrl = (url: string) => {
   if (!url) return "";
@@ -961,58 +960,7 @@ export default function ProductSlug() {
               .concat(allProducts.filter((p) => p.id !== product.id && p.category !== product.category))
               .slice(0, 4)
               .map((p) => (
-                <motion.div key={p.id} whileHover={{ y: -6 }} className="group relative w-full">
-                  <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-                      <Link href={`/product/${p.id}`}>
-                        <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-700 group-hover:scale-105" />
-                      </Link>
-                      <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                          <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
-                            {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
-                          </span>
-                          {p.tag && (
-                            <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">
-                              {p.tag}
-                            </span>
-                          )}
-                        </div>
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark backdrop-blur-md shadow-sm transition-all hover:text-primary hover:scale-110">
-                          <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-primary text-primary")} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-5 flex flex-col justify-between flex-1">
-                      <div>
-                        <Link href={`/product/${p.id}`} className="font-display text-[17px] font-semibold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <div className="flex items-center gap-0.5">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={cn("h-3.5 w-3.5", i < Math.floor(p.rating || 4.9) ? "fill-[#F5A524] text-[#F5A524]" : "text-border")} />
-                            ))}
-                          </div>
-                          <span className="text-[12.5px] text-dark/60 ml-1">{p.rating || 4.9} Reviews</span>
-                        </div>
-                        <div className="mt-3 flex items-baseline gap-2">
-                          <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
-                          {p.mrp > p.price && (
-                            <>
-                              <span className="text-[13px] text-dark/40 line-through">₹{p.mrp}</span>
-                              <span className="ml-auto text-[12px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <button 
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); addToCart(p); }} 
-                        className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
-                      >
-                        <ShoppingBag className="h-4 w-4" /> Add to cart
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
+              <ProductCard key={p.id} p={p} />
               ))}
           </div>
         </div>

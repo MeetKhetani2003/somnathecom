@@ -200,7 +200,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <Link href="/products?category=Tencel Collection" className="group relative py-2 text-[14px] font-medium text-dark transition-colors hover:text-primary">
+            <Link href={`/products?category=${encodeURIComponent("Tencel Collection > Tencel Nightwear > Tencel Full Night Suit")}`} className="group relative py-2 text-[14px] font-medium text-dark transition-colors hover:text-primary">
               Tencel Experience
               <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-gradient-to-r from-primary to-secondary transition-all duration-300 group-hover:w-full" />
             </Link>
@@ -448,7 +448,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </div>
                   </details>
 
-                  <Link href="/products?category=Tencel Collection" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                  <Link href={`/products?category=${encodeURIComponent("Tencel Collection > Tencel Nightwear > Tencel Full Night Suit")}`} onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
                     Tencel Experience
                   </Link>
 
@@ -538,7 +538,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <div className="text-[13px] font-bold uppercase tracking-wider text-dark">{col.title}</div>
                 <ul className="mt-5 space-y-3">
                   {col.links.map((l) => (
-                    <li key={l}><Link href={col.title === "Shop" ? `/products?category=${l}` : l === "Contact Us" ? "/contact" : "#"} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link></li>
+                    <li key={l}><Link href={col.title === "Shop" ? `/products?category=${l === 'Tencel Collection' ? encodeURIComponent('Tencel Collection > Tencel Nightwear > Tencel Full Night Suit') : l}` : l === "Contact Us" ? "/contact" : "#"} className="text-[14px] text-dark/60 transition hover:text-primary">{l}</Link></li>
                   ))}
                 </ul>
               </div>

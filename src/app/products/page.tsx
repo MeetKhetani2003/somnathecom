@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
-import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-
-import { Filter, Heart, ShoppingBag, ChevronDown, Search, Check } from "lucide-react";
-import { useShop } from "@/context/ShopContext";
-import { fireToast } from "@/context/ToastContext";
+import { Filter, ChevronDown, Search, Check } from "lucide-react";
+import { ProductCard } from "@/components/ProductCard";
 
 const categoryGroups = [
   {
@@ -71,100 +68,7 @@ export default function Products() {
   );
 }
 
-function ProductCard({ p, wishlist, toggleWishlist, addToCart }: { p: any; wishlist: number[]; toggleWishlist: (id: number) => void; addToCart: (product: any, color?: string, size?: string) => void }) {
-  const selectedColor = p.variantColor || (p.colors && p.colors.length > 0 ? p.colors[0].name : "");
-  const [selectedSize, setSelectedSize] = useState("");
 
-  const selectedColorObj = p.colors?.find((c: any) => c.name === selectedColor);
-  const availableSizes = p.colors && p.colors.length > 0
-    ? (selectedColorObj?.sizes || [])
-    : (p.sizes || []);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (p.colors && p.colors.length > 0 && !selectedColor) {
-      fireToast("Please select a color first", "warning");
-      return;
-    }
-    if (availableSizes.length > 0 && !selectedSize) {
-      fireToast("Please select a size first", "warning");
-      return;
-    }
-
-    addToCart(p, selectedColor || undefined, selectedSize || undefined);
-  };
-
-  return (
-    <div className="group relative w-full shrink-0">
-      <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-dark/5">
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-bg-base">
-          <Link href={`/product/${p._originalId || p.id}${p.variantColor ? `?color=${encodeURIComponent(p.variantColor)}` : ''}`}>
-            <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
-          </Link>
-          <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-              {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">{p.tag}</span>}
-              {p.category.includes("Tencel") && <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-md">Tencel</span>}
-            </div>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
-              className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-md backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
-            >
-              <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
-            </button>
-          </div>
-        </div>
-        <div className="p-5 flex flex-col justify-between flex-1">
-          <div>
-            <Link href={`/product/${p._originalId || p.id}${p.variantColor ? `?color=${encodeURIComponent(p.variantColor)}` : ''}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-            <div className="mt-1 flex items-center justify-between">
-              <div className="text-[13px] font-medium text-dark/50 line-clamp-1">{p.category.split(" > ").pop()}</div>
-            </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="font-display text-[20px] font-bold text-dark">₹{p.price}</span>
-              {p.mrp > p.price && (
-                <>
-                  <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                  <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
-                </>
-              )}
-            </div>
-
-            {/* Sizes Selector */}
-            {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
-              <div className="mt-4 text-[13px]">
-                <select 
-                  value={selectedSize}
-                  onChange={(e) => setSelectedSize(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-white px-3 py-2 font-semibold text-dark/80 outline-none focus:border-primary"
-                >
-                  <option value="">Select Size</option>
-                  {availableSizes.map((s: any) => {
-                    const sizeLabel = typeof s === "object" ? s.size : s;
-                    const sizeStock = typeof s === "object" ? s.stock : 10;
-                    return (
-                      <option key={sizeLabel} value={sizeLabel} disabled={sizeStock === 0}>
-                        {sizeLabel} {sizeStock === 0 ? "(Out of Stock)" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            )}
-          </div>
-          <button 
-            onClick={handleAddToCart} 
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
-          >
-            <ShoppingBag className="h-4 w-4" /> Add to cart
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -210,6 +114,18 @@ function ProductsContent() {
     }
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (activeCategory !== "All") {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        const activeElement = document.getElementById("active-category-item");
+        if (activeElement) {
+          activeElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 100);
+    }
+  }, [activeCategory]);
   
   const handleMobileFilterAction = () => {
     if (window.innerWidth < 768) {
@@ -218,12 +134,21 @@ function ProductsContent() {
     }
   };
   
-  const { wishlist, toggleWishlist, addToCart } = useShop();
+
 
   const filteredProducts = useMemo(() => {
     let result = productsList;
     if (activeCategory !== "All") {
-      result = result.filter(p => p.category.toLowerCase().includes(activeCategory.toLowerCase()));
+      const searchCategory = activeCategory.split(" > ").pop()?.toLowerCase() || "";
+      console.log("DEBUG: activeCategory =", activeCategory);
+      console.log("DEBUG: searchCategory =", searchCategory);
+      result = result.filter(p => {
+        const productCategory = p.category ? p.category.toLowerCase() : "";
+        const matches = productCategory.includes(searchCategory);
+        if (matches) console.log("DEBUG: Matched product:", p.title, "with category:", p.category);
+        return matches;
+      });
+      console.log("DEBUG: result length after category filter =", result.length);
     }
     
     if (activeSizes.length > 0) {
@@ -323,6 +248,7 @@ function ProductsContent() {
                     {group.categories.map((cat) => (
                       <li key={cat.value}>
                         <button
+                          id={activeCategory.toLowerCase() === cat.value.toLowerCase() ? "active-category-item" : undefined}
                           onClick={() => {
                             router.push(`/products?category=${encodeURIComponent(cat.value)}`);
                             handleMobileFilterAction();
@@ -410,7 +336,7 @@ function ProductsContent() {
               <div className="font-display text-[18px] font-bold">Curating Collection...</div>
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[32px] border border-border bg-surface py-32 text-center">
+            <div key="no-styles-found" className="flex flex-col items-center justify-center rounded-[32px] border border-border bg-surface py-32 text-center">
               <div className="mb-6 grid h-20 w-20 place-items-center rounded-full bg-bg-base text-dark/30">
                 <Search className="h-10 w-10" />
               </div>
@@ -428,9 +354,9 @@ function ProductsContent() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-              {filteredProducts.map((p) => (
-                <ProductCard key={p.id} p={p} wishlist={wishlist} toggleWishlist={toggleWishlist} addToCart={addToCart} />
+            <div key="product-grid" className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+              {filteredProducts.map((p, index) => (
+                <ProductCard key={`${p.id}-${p.variantColor || index}`} p={p} />
               ))}
             </div>
           )}
