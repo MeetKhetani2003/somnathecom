@@ -1139,6 +1139,38 @@ function AdminDashboard() {
                                 </div>
                               </div>
 
+                              {/* AWB Tracking */}
+                              <div className="mb-3 space-y-2">
+                                <label className="text-[11px] font-semibold text-dark/50 uppercase tracking-wide">Shiprocket AWB</label>
+                                <div className="flex flex-col gap-2">
+                                  <input
+                                    placeholder="Enter Shiprocket AWB..."
+                                    value={order.trackingNumber || ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setExchanges(exchanges.map(o => o._id === order._id ? { ...o, trackingNumber: val } : o));
+                                    }}
+                                    className="w-full rounded-xl border border-orange-200 bg-white px-3 py-2 text-[13px] font-medium text-dark/80 outline-none focus:border-orange-400"
+                                  />
+                                  <button
+                                    disabled={syncingOrderId === order._id}
+                                    onClick={() => handleSyncShiprocketAwb(order._id)}
+                                    className="w-full rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white text-primary font-bold text-[12px] py-2 inline-flex items-center justify-center gap-1.5 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                  >
+                                    <RefreshCw className={`h-3.5 w-3.5 ${syncingOrderId === order._id ? "animate-spin" : ""}`} />
+                                    {syncingOrderId === order._id ? "Syncing..." : "Sync Shiprocket AWB"}
+                                  </button>
+                                  {order.trackingNumber && (
+                                    <button
+                                      onClick={() => handleAdminTrackShipment(order.trackingNumber)}
+                                      className="w-full rounded-xl border border-primary bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-[12px] py-2 inline-flex items-center justify-center gap-1.5 transition active:scale-[0.98] cursor-pointer"
+                                    >
+                                      Track Shipment
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
                               {/* Admin Action Dropdown */}
                               <div className="space-y-2">
                                 <label className="text-[11px] font-semibold text-dark/50 uppercase tracking-wide">Update Status</label>

@@ -1631,12 +1631,10 @@ function ProfileContent() {
                           <span>Exchange Delivery Charge:</span>
                           <span>₹120</span>
                         </div>
-                        {additionalPrice > 0 && (
-                          <div className="flex justify-between text-dark/60">
-                            <span>Price Difference for New Variant:</span>
-                            <span>₹{additionalPrice}</span>
-                          </div>
-                        )}
+                        <div className="flex justify-between text-dark/60">
+                          <span>Variant Price Difference:</span>
+                          <span>{exchangePriceDiff > 0 ? `+ ₹${exchangePriceDiff}` : '₹0'}</span>
+                        </div>
                         <div className="flex justify-between font-bold text-dark border-t border-border pt-2 mt-1">
                           <span>To Pay Now:</span>
                           <span className="text-[16px] text-primary">₹{totalExchangeFee}</span>

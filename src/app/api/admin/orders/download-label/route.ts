@@ -131,6 +131,27 @@ export async function GET(req: Request) {
     });
     page.drawText(`PINCODE: ${pincode}`, { x: 18, y: 220, size: 8.5, font: boldFont, color: purpleCol });
 
+    if (isExchange && (order.exchangeDetails as any)?.originalSizes) {
+      page.drawRectangle({
+        x: 12,
+        y: 238,
+        width: 132,
+        height: 42,
+        color: lightRedBg,
+        borderColor: darkRedText,
+        borderWidth: 1
+      });
+      page.drawText("EXCHANGE: COLLECT OLD ITEM", { x: 15, y: 270, size: 7.5, font: boldFont, color: darkRedText });
+      let collY = 258;
+      for (const exItem of (order.exchangeDetails as any).originalSizes) {
+        const matchingOriginalItem = order.items.find((orig: any) => orig.productId === exItem.productId);
+        const title = matchingOriginalItem ? matchingOriginalItem.title.substring(0, 18) : "Item";
+        page.drawText(`- ${title} (Sz:${exItem.size})`, { x: 15, y: collY, size: 7, font: boldFont, color: darkRedText });
+        collY -= 10;
+        if (collY < 240) break; // limit items visually
+      }
+    }
+
     // 4. MIDDLE RIGHT COLUMN: BARCODE & AWB (x=150 to x=293)
     let barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(order._id.toString())}&scale=2&rotate=N&includetext=false`;
     const trackingNo = order.trackingNumber || "SR234692909432";
