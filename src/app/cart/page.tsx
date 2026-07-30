@@ -33,7 +33,7 @@ export default function Cart() {
   const [shippingEmail, setShippingEmail] = useState(session?.user?.email || "");
   const [checkoutError, setCheckoutError] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod" | "debit">("online");
   const [shippingCost, setShippingCost] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
 
@@ -332,9 +332,7 @@ export default function Cart() {
       // If Debit Purchase, bypass Razorpay and COD flow
       if (orderData.isDebit) {
         clearCart();
-        toast.success("Debit purchase successful!", {
-          description: "Your trust/khata order has been placed.",
-        });
+        toast.success("Debit purchase successful! Your trust/khata order has been placed.");
         router.push(`/success?orderId=${orderData.orderId}`);
         return;
       }
