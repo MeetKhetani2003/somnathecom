@@ -3,6 +3,7 @@ import dbConnect from "@/utils/dbConnect";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import Razorpay from "razorpay";
+import { createShiprocketOrder } from "@/utils/shiprocket";
 
 export async function POST(req: Request) {
   try {
@@ -86,7 +87,45 @@ export async function POST(req: Request) {
       }
     }
 
-    const flatExchangeFee = 120;
+    let totalExchangePriceDiff = 0;
+    // Calculate price difference for variants
+    if (newSizes && newSizes.length > 0) {
+      for (const reqItem of newSizes) {
+        const orderItem = order.items.find((item: any) => item.productId === reqItem.productId && item.size === reqItem.oldSize);
+        if (orderItem && ((reqItem.newSize && reqItem.newSize !== orderItem.size) || (reqItem.newColor && reqItem.newColor !== orderItem.color))) {
+          const product = await Product.findOne({ id: reqItem.productId });
+          if (product) {
+            let oldPrice = orderItem.price || 0;
+            let newPrice = oldPrice;
+            const hasColors = product.colors && product.colors.length > 0;
+            if (hasColors) {
+              const newColorName = reqItem.newColor || orderItem.color;
+              const newColorObj = product.colors.find((c: any) => c.name === newColorName);
+              if (newColorObj) {
+                const newSizeObj = newColorObj.sizes.find((s: any) => s.size === reqItem.newSize);
+                if (newSizeObj && newSizeObj.price) {
+                  newPrice = newSizeObj.price;
+                } else if (product.price) {
+                  newPrice = product.price;
+                }
+              }
+            } else if (product.sizes && product.sizes.length > 0) {
+              const newSizeObj = product.sizes.find((s: any) => s.size === reqItem.newSize);
+              if (newSizeObj && newSizeObj.price) {
+                newPrice = newSizeObj.price;
+              } else if (product.price) {
+                newPrice = product.price;
+              }
+            }
+            if (newPrice > oldPrice) {
+              totalExchangePriceDiff += (newPrice - oldPrice);
+            }
+          }
+        }
+      }
+    }
+
+    const flatExchangeFee = 120 + totalExchangePriceDiff;
 
     if (payMethod === "cod") {
       // Process database changes immediately for COD
@@ -153,7 +192,7 @@ export async function POST(req: Request) {
       // Address Update
       let previousAddress = "";
       let updatedAddress = order.shippingDetails ? `${order.shippingDetails.street}, ${order.shippingDetails.city}, ${order.shippingDetails.state} - ${order.shippingDetails.pincode}` : "";
-      if (newAddress && newAddress.trim() && newAddress.trim() !== updatedAddress) {
+      if (typeof newAddress === 'string' && newAddress.trim() && newAddress.trim() !== updatedAddress) {
         previousAddress = updatedAddress;
         updatedAddress = newAddress.trim();
         if (order.shippingDetails) {
@@ -177,6 +216,28 @@ export async function POST(req: Request) {
       } as any;
 
       await order.save();
+
+      // Create Shiprocket Order for Exchange
+      try {
+        const exchangeShiprocketOrder = {
+          _id: `${order._id}-EX`,
+          createdAt: new Date(),
+          shippingDetails: order.shippingDetails,
+          paymentMethod: "cod",
+          email: order.email,
+          total: flatExchangeFee,
+          shippingCost: 120,
+          items: newSizes.map((reqItem: any) => ({
+            productId: reqItem.productId,
+            title: `[EXCHANGE] ${order.items.find((i: any) => i.productId === reqItem.productId && i.size === reqItem.oldSize)?.title || "Item"}`,
+            quantity: order.items.find((i: any) => i.productId === reqItem.productId && i.size === reqItem.oldSize)?.quantity || 1,
+            price: 0
+          }))
+        };
+        await createShiprocketOrder(exchangeShiprocketOrder);
+      } catch (err) {
+        console.error("Exchange Shiprocket Error (COD):", err);
+      }
 
       return NextResponse.json({
         success: true,

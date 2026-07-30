@@ -89,13 +89,32 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Calculate Coupon Discount
+    // 2. Calculate Coupon Discount and check Debit Coupon
     let discount = 0;
+    let isDebitPurchase = false;
+    let debitCouponDoc = null;
+
     if (couponCode) {
       const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), active: true });
       if (coupon) {
         if (!coupon.expiresAt || new Date(coupon.expiresAt) > new Date()) {
-          discount = Math.round((subtotal * coupon.discountPercent) / 100);
+          if (coupon.isDebitCoupon) {
+            if (coupon.debitUserName && (email || username)) {
+              if (coupon.debitUserName !== email && coupon.debitUserName !== username) {
+                return NextResponse.json({ success: false, message: "This Debit Coupon is not assigned to your account" }, { status: 403 });
+              }
+            } else if (coupon.debitUserName && !email && !username) {
+              return NextResponse.json({ success: false, message: "You must be logged in to use a Debit Coupon" }, { status: 401 });
+            }
+
+            if ((coupon.usageCount || 0) >= (coupon.usageLimit || 1)) {
+              return NextResponse.json({ success: false, message: "Your limit of coupon is reached" }, { status: 400 });
+            }
+            isDebitPurchase = true;
+            debitCouponDoc = coupon;
+          } else {
+            discount = Math.round((subtotal * coupon.discountPercent) / 100);
+          }
         }
       }
     }
@@ -186,10 +205,50 @@ export async function POST(req: Request) {
       couponUsed: couponCode || null,
       referralCode: referralCode || null,
       username: username || email || "Guest User",
-      paymentStatus: "pending",
-      paymentMethod: paymentMethod || "online",
-      shippingStatus: "Processing"
+      paymentStatus: isDebitPurchase ? "debit" : "pending",
+      paymentMethod: isDebitPurchase ? "debit" : (paymentMethod || "online"),
+      shippingStatus: "Processing",
+      isDebitPurchase,
+      debitPaid: false,
+      debitCouponCode: isDebitPurchase ? couponCode : undefined
     });
+
+    // If Debit Purchase, process immediately
+    if (isDebitPurchase && debitCouponDoc) {
+      debitCouponDoc.usageCount = (debitCouponDoc.usageCount || 0) + 1;
+      await debitCouponDoc.save();
+
+      await Reservation.create({
+        orderId: localOrder._id,
+        items: itemsToOrder.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.selectedSize || null
+        })),
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        active: false // Inactive since it's confirmed
+      });
+
+      try {
+        const shiprocketRes = await createShiprocketOrder(localOrder);
+        if (shiprocketRes && shiprocketRes.shipment_id) {
+          localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
+        } else {
+          localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+        await localOrder.save();
+      } catch (shiprocketErr) {
+        console.error("Failed to create Shiprocket order for Debit purchase:", shiprocketErr);
+        localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
+        await localOrder.save();
+      }
+
+      return NextResponse.json({
+        success: true,
+        orderId: localOrder._id.toString(),
+        isDebit: true
+      });
+    }
 
     // If Cash on Delivery and there is NO shipping cost, bypass Razorpay flow
     if (paymentMethod === "cod" && finalShippingCost === 0) {

@@ -36,8 +36,8 @@ const OrderSchema = new Schema({
   username: { type: String },
   paymentId: { type: String },
   razorpayOrderId: { type: String },
-  paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
-  paymentMethod: { type: String, enum: ["online", "cod", "offline"], default: "online" },
+  paymentStatus: { type: String, enum: ["pending", "paid", "failed", "debit"], default: "pending" },
+  paymentMethod: { type: String, enum: ["online", "cod", "offline", "debit"], default: "online" },
   shippingStatus: { type: String, enum: ["Processing", "Shipped", "Delivered", "Cancelled", "Exchange Processing"], default: "Processing" },
   trackingNumber: { type: String },
   invoiceSent: { type: Boolean, default: false },
@@ -52,6 +52,9 @@ const OrderSchema = new Schema({
   },
   deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
+  isDebitPurchase: { type: Boolean, default: false },
+  debitPaid: { type: Boolean, default: false },
+  debitCouponCode: { type: String },
 });
 
 if (models.Order) {

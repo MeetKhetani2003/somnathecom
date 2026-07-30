@@ -77,7 +77,7 @@ function ProductsContent() {
   const activeCategory = categoryParam || "All";
   const [sortBy, setSortBy] = useState<string>("featured");
   const [showFilters, setShowFilters] = useState(false);
-  
+
   const [activeSizes, setActiveSizes] = useState<string[]>([]);
   const [activePrices, setActivePrices] = useState<string[]>([]);
   const [productsList, setProductsList] = useState<any[]>([]);
@@ -126,14 +126,14 @@ function ProductsContent() {
       }, 100);
     }
   }, [activeCategory]);
-  
+
   const handleMobileFilterAction = () => {
     if (window.innerWidth < 768) {
       setShowFilters(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-  
+
 
 
   const filteredProducts = useMemo(() => {
@@ -150,14 +150,14 @@ function ProductsContent() {
       });
       console.log("DEBUG: result length after category filter =", result.length);
     }
-    
+
     if (activeSizes.length > 0) {
       result = result.filter(p => {
         if (!p.sizes || p.sizes.length === 0) return false;
         return p.sizes.some((s: any) => activeSizes.includes(s.size));
       });
     }
-    
+
     if (activePrices.length > 0) {
       result = result.filter(p => {
         if (activePrices.includes("Under ₹1000") && p.price < 1000) return true;
@@ -166,7 +166,7 @@ function ProductsContent() {
         return false;
       });
     }
-    
+
     if (sortBy === "price-low") {
       result = [...result].sort((a, b) => a.price - b.price);
     } else if (sortBy === "price-high") {
@@ -188,17 +188,17 @@ function ProductsContent() {
             Showing {filteredProducts.length} Premium Styles
           </p>
         </div>
-        
+
         <div className="mt-6 flex items-center gap-3 md:mt-0">
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-3 text-[14px] font-bold text-dark transition hover:bg-bg-base md:hidden shadow-sm"
           >
             <Filter className="h-4 w-4" /> Filters
           </button>
-          
+
           <div className="relative ml-auto md:ml-0">
-            <select 
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="appearance-none rounded-full border border-border bg-surface py-3 pl-5 pr-12 text-[14px] font-bold text-dark outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10 shadow-sm cursor-pointer"
@@ -212,7 +212,7 @@ function ProductsContent() {
           </div>
         </div>
       </div>
-      
+
       <div className="flex flex-col gap-8 md:flex-row md:items-start">
         {/* Filters Sidebar */}
         <aside className={cn(
@@ -230,8 +230,8 @@ function ProductsContent() {
                 }}
                 className={cn(
                   "w-full rounded-xl px-4 py-3 text-left text-[14px] transition-all font-bold",
-                  activeCategory === "All" 
-                    ? "bg-primary text-white shadow-md shadow-primary/20" 
+                  activeCategory === "All"
+                    ? "bg-primary text-white shadow-md shadow-primary/20"
                     : "text-dark/70 hover:bg-bg-base hover:text-primary"
                 )}
               >
@@ -256,7 +256,7 @@ function ProductsContent() {
                           className={cn(
                             "w-full rounded-lg px-3 py-2 text-left text-[14px] transition-all",
                             activeCategory.toLowerCase() === cat.value.toLowerCase()
-                              ? "bg-primary/10 font-bold text-primary" 
+                              ? "bg-primary/10 font-bold text-primary"
                               : "text-dark/70 font-medium hover:bg-bg-base hover:text-primary"
                           )}
                         >
@@ -268,7 +268,7 @@ function ProductsContent() {
                 </div>
               ))}
             </div>
-            
+
             <div className="mt-8 border-t border-border pt-8">
               <h3 className="mb-5 font-display text-[18px] font-bold text-dark">Size</h3>
               <div className="grid grid-cols-3 gap-2">
@@ -283,8 +283,8 @@ function ProductsContent() {
                       }}
                       className={cn(
                         "rounded-lg border py-2 text-[13px] font-bold transition-all",
-                        isActive 
-                          ? "border-primary bg-primary text-white shadow-md shadow-primary/20" 
+                        isActive
+                          ? "border-primary bg-primary text-white shadow-md shadow-primary/20"
                           : "border-border bg-surface text-dark/70 hover:border-primary/50 hover:text-primary"
                       )}
                     >
@@ -294,7 +294,7 @@ function ProductsContent() {
                 })}
               </div>
             </div>
-            
+
             <div className="mt-8 border-t border-border pt-8">
               <h3 className="mb-5 font-display text-[18px] font-bold text-dark">Price</h3>
               <ul className="space-y-3">
@@ -307,14 +307,14 @@ function ProductsContent() {
                       )}>
                         {activePrices.includes(price) && <Check className="h-3.5 w-3.5 text-white" />}
                       </div>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={activePrices.includes(price)}
                         onChange={() => {
                           setActivePrices(prev => prev.includes(price) ? prev.filter(p => p !== price) : [...prev, price]);
                           handleMobileFilterAction();
                         }}
-                        className="hidden" 
+                        className="hidden"
                       />
                       <span className={cn(
                         "text-[14.5px] font-medium transition-colors",
@@ -342,9 +342,9 @@ function ProductsContent() {
               </div>
               <h3 className="font-display text-[24px] font-bold text-dark">No Styles Found</h3>
               <p className="mt-2 text-[15px] text-dark/60 max-w-[300px]">We couldn't find any nightwear matching your selected filters.</p>
-              <button 
-                onClick={() => { 
-                  router.push("/products"); 
+              <button
+                onClick={() => {
+                  router.push("/products");
                   setActiveSizes([]);
                   setActivePrices([]);
                 }}
@@ -354,7 +354,7 @@ function ProductsContent() {
               </button>
             </div>
           ) : (
-            <div key="product-grid" className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+            <div key="product-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
               {filteredProducts.map((p, index) => (
                 <ProductCard key={`${p.id}-${p.variantColor || index}`} p={p} />
               ))}

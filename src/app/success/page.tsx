@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, Mail, MapPin, Phone, Calendar, ArrowRight, ShoppingBag, Loader, Download } from "lucide-react";
+import { CheckCircle, Mail, MapPin, Phone, Calendar, ArrowRight, ShoppingBag, Loader, Download, Truck } from "lucide-react";
 import { motion } from "framer-motion";
 
 function SuccessContent() {
@@ -15,6 +15,7 @@ function SuccessContent() {
   const [loading, setLoading] = useState(true);
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  const [syncingShiprocket, setSyncingShiprocket] = useState(false);
 
   useEffect(() => {
     if (!orderId) {
@@ -30,6 +31,7 @@ function SuccessContent() {
         if (data.success && data.order) {
           setOrder(data.order);
           triggerInvoiceEmail(data.order._id);
+          syncShiprocketAwb(data.order._id);
         } else {
           setError(data.message || "Failed to load order details.");
         }
@@ -43,6 +45,26 @@ function SuccessContent() {
 
     fetchOrderDetails();
   }, [orderId]);
+
+  const syncShiprocketAwb = async (id: string) => {
+    setSyncingShiprocket(true);
+    try {
+      console.log(`[Success Page] Triggering Shiprocket order creation and AWB sync for ${id}...`);
+      const res = await fetch("/api/admin/orders/sync-shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: id }),
+      });
+      const data = await res.json();
+      if (data.success && data.trackingNumber) {
+        setOrder((prev: any) => prev ? { ...prev, trackingNumber: data.trackingNumber, shippingStatus: data.shippingStatus || prev.shippingStatus } : prev);
+      }
+    } catch (syncErr) {
+      console.error("[Success Page] Failed to sync Shiprocket AWB:", syncErr);
+    } finally {
+      setSyncingShiprocket(false);
+    }
+  };
 
   const triggerInvoiceEmail = async (id: string) => {
     setEmailStatus("sending");
@@ -168,6 +190,19 @@ function SuccessContent() {
                     <span className="text-purple-600 font-bold ml-1">Pending (Pay on Delivery)</span>
                   ) : (
                     <span className="text-green-600 font-bold ml-1">Paid (Secured)</span>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-dark">
+                <Truck className="h-5 w-5 text-primary" />
+                <span>
+                  <strong className="text-dark/70">Shiprocket AWB:</strong>
+                  {order.trackingNumber ? (
+                    <span className="font-mono text-primary font-bold ml-1 bg-primary/10 px-2 py-0.5 rounded text-[12.5px] border border-primary/20">{order.trackingNumber}</span>
+                  ) : syncingShiprocket ? (
+                    <span className="text-yellow-600 font-bold ml-1 animate-pulse">Syncing AWB...</span>
+                  ) : (
+                    <span className="text-dark/40 italic ml-1">Assigning...</span>
                   )}
                 </span>
               </div>

@@ -7,14 +7,14 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { 
   Package, ShoppingBag, Users, HelpCircle, Plus, Edit, Trash2, 
-  RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck, X, Download
+  RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck, X, Download, Tag
 } from "lucide-react";
 import Barcode from "react-barcode";
 
 function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "storefront">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "storefront" | "debits">("overview");
 
   const isEnvAdmin = (session?.user as any)?.isEnvAdmin === true;
 
@@ -37,9 +37,14 @@ function AdminDashboard() {
   const [newCouponDiscount, setNewCouponDiscount] = useState("");
   const [newCouponExpiry, setNewCouponExpiry] = useState("");
   const [newCouponReseller, setNewCouponReseller] = useState("");
+  const [newCouponIsDebit, setNewCouponIsDebit] = useState(false);
+  const [newCouponDebitUserName, setNewCouponDebitUserName] = useState("");
+  const [newCouponUsageLimit, setNewCouponUsageLimit] = useState(1);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [syncingOrderId, setSyncingOrderId] = useState<string | null>(null);
+  const [expandedKhataCoupon, setExpandedKhataCoupon] = useState<string | null>(null);
 
   // Storefront Image Upload State
   const [uploadingAssetId, setUploadingAssetId] = useState<string | null>(null);
@@ -213,13 +218,26 @@ function AdminDashboard() {
         const data = await res.json();
         if (data.success) setInquiries(data.data);
       } else if (activeTab === "coupons") {
-        const res = await fetch("/api/admin/coupons");
-        const data = await res.json();
-        if (data.success) setCoupons(data.coupons);
+        const [couponRes, userRes] = await Promise.all([
+          fetch("/api/admin/coupons"),
+          fetch("/api/admin/users")
+        ]);
+        const [couponData, userData] = await Promise.all([couponRes.json(), userRes.json()]);
+        if (couponData.success) setCoupons(couponData.coupons);
+        if (userData.success) setUsers(userData.users);
       } else if (activeTab === "storefront") {
         const res = await fetch("/api/storefront");
         const data = await res.json();
         if (data.success) setStorefrontAssets(data.assets);
+      } else if (activeTab === "debits") {
+        const [orderRes, couponRes] = await Promise.all([
+          fetch("/api/admin/orders"),
+          fetch("/api/admin/coupons")
+        ]);
+        const orderData = await orderRes.json();
+        const couponData = await couponRes.json();
+        if (orderData.success) setOrders(orderData.orders);
+        if (couponData.success) setCoupons(couponData.coupons);
       }
     } catch (err) {
       console.error("Error fetching admin data:", err);
@@ -317,6 +335,11 @@ function AdminDashboard() {
     }
   };
 
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [activeAdminTrackingId, setActiveAdminTrackingId] = useState<string | null>(null);
+  const [adminTrackingData, setAdminTrackingData] = useState<any>(null);
+  const [adminTrackingLoading, setAdminTrackingLoading] = useState(false);
+
   const handleSyncShiprocketAwb = async (orderId: string) => {
     setSyncingOrderId(orderId);
     try {
@@ -337,6 +360,53 @@ function AdminDashboard() {
       fireToast("Error syncing AWB from Shiprocket.");
     } finally {
       setSyncingOrderId(null);
+    }
+  };
+
+  const handleSyncAllShiprocket = async () => {
+    setSyncingAll(true);
+    try {
+      const res = await fetch("/api/admin/orders/sync-shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ syncAll: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fireToast(data.message || "Synced all active orders with Shiprocket!");
+        fetchData();
+      } else {
+        fireToast(data.message || "Batch sync failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      fireToast("Error running batch Shiprocket sync.");
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
+  const handleAdminTrackShipment = async (trackingNum: string) => {
+    if (activeAdminTrackingId === trackingNum) {
+      setActiveAdminTrackingId(null);
+      return;
+    }
+    setActiveAdminTrackingId(trackingNum);
+    setAdminTrackingLoading(true);
+    setAdminTrackingData(null);
+    try {
+      const res = await fetch(`/api/shipping/track?trackingNumber=${trackingNum}`);
+      const data = await res.json();
+      if (data.success) {
+        setAdminTrackingData(data);
+      } else {
+        setAdminTrackingData({ error: data.message || "Failed to load tracking details." });
+      }
+    } catch (err) {
+      console.error(err);
+      setAdminTrackingData({ error: "Failed to connect to tracking service." });
+    } finally {
+      setAdminTrackingLoading(false);
     }
   };
 
@@ -396,8 +466,9 @@ function AdminDashboard() {
             { id: "exchanges", label: "Exchange Requests", icon: ArrowLeftRight, badge: exchanges.length },
             { id: "users", label: "User Accounts", icon: Users },
             { id: "inquiries", label: "Support Inquiries", icon: HelpCircle },
-            { id: "coupons", label: "Discount Coupons", icon: DollarSign },
+            { id: "coupons", label: "Discount Coupons", icon: Tag },
             { id: "storefront", label: "Storefront Images", icon: LayoutDashboard },
+            { id: "debits", label: "Khata (Debits)", icon: DollarSign },
           ].map((tab: any) => {
             const Icon = tab.icon;
             const isTabActive = activeTab === tab.id;
@@ -441,6 +512,17 @@ function AdminDashboard() {
                       <div>
                         <div className="text-[12px] font-medium text-green-800">Total Profit (Paid)</div>
                         <div className="text-[22px] font-bold text-dark mt-0.5">₹{orders.filter(o => o.paymentStatus === "paid").reduce((sum, o) => sum + o.total, 0)}</div>
+                      </div>
+                    </div>
+
+                    {/* Unpaid Debits Card */}
+                    <div className="rounded-2xl border border-red-100 bg-red-50/30 p-5 flex items-center gap-4">
+                      <div className="rounded-xl bg-red-500 p-3 text-white">
+                        <DollarSign className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <div className="text-[12px] font-medium text-red-800">Unpaid Debits (Khata)</div>
+                        <div className="text-[22px] font-bold text-dark mt-0.5">₹{orders.filter(o => o.isDebitPurchase && !o.debitPaid).reduce((sum, o) => sum + o.total, 0)}</div>
                       </div>
                     </div>
 
@@ -659,11 +741,21 @@ function AdminDashboard() {
               {/* 2. ORDERS TAB */}
               {activeTab === "orders" && (
                 <div>
-                  <div className="mb-6 flex items-center justify-between">
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <h2 className="text-[18px] font-semibold text-dark">Customer Order Tracking</h2>
-                    <Link href="/admin/orders/create" className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]">
-                      <Plus className="h-4 w-4" /> Create Offline Order
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <button
+                        disabled={syncingAll}
+                        onClick={handleSyncAllShiprocket}
+                        className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-4 py-2 text-[13px] font-bold text-primary transition hover:bg-primary hover:text-white disabled:opacity-50"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${syncingAll ? "animate-spin" : ""}`} />
+                        {syncingAll ? "Syncing All Orders..." : "Sync All Shiprocket AWBs"}
+                      </button>
+                      <Link href="/admin/orders/create" className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C]">
+                        <Plus className="h-4 w-4" /> Create Offline Order
+                      </Link>
+                    </div>
                   </div>
                   {/* Search Bar */}
                   <div className="relative mb-6">
@@ -811,12 +903,12 @@ function AdminDashboard() {
                               {syncingOrderId === order._id ? "Syncing..." : "Sync Shiprocket AWB"}
                             </button>
                             {order.trackingNumber && (
-                              <div className="text-[12.5px] font-medium text-dark/80 flex items-center gap-1">
-                                <span>Shiprocket AWB:</span>
-                                <span className="font-mono bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded text-[11.5px] font-bold">
-                                  {order.trackingNumber}
-                                </span>
-                              </div>
+                              <button
+                                onClick={() => handleAdminTrackShipment(order.trackingNumber)}
+                                className="rounded-xl border border-primary bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-[12px] py-1.5 px-3.5 inline-flex items-center gap-1.5 transition active:scale-[0.98] cursor-pointer"
+                              >
+                                {activeAdminTrackingId === order.trackingNumber && adminTrackingLoading ? "Fetching..." : "Track Package Live"}
+                              </button>
                             )}
                             <div className="flex items-center gap-2">
                               <a
@@ -830,6 +922,53 @@ function AdminDashboard() {
                             </div>
                             <div className="text-[11.5px] text-dark/50 italic">Press Enter / Click away to save tracking #</div>
                           </div>
+
+                          {/* Admin Real-Time Tracking Drawer */}
+                          {activeAdminTrackingId === order.trackingNumber && (
+                            <div className="mt-4 border-t border-border pt-4 bg-surface p-4 rounded-xl">
+                              <h4 className="font-bold text-dark text-[13px] uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-green-500 animate-ping" /> Real-time Shiprocket Tracking
+                              </h4>
+                              {adminTrackingLoading && (
+                                <div className="flex items-center gap-2 py-3 text-dark/50 text-[12px]">
+                                  <div className="h-4 w-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                  <span>Fetching live scans...</span>
+                                </div>
+                              )}
+                              {adminTrackingData && adminTrackingData.error && (
+                                <div className="text-red-500 text-[12px] bg-red-50 border border-red-100 p-2.5 rounded-lg">
+                                  {adminTrackingData.error}
+                                </div>
+                              )}
+                              {adminTrackingData && !adminTrackingData.error && (
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between text-[12px] text-dark/70 border-b border-border pb-2 font-medium">
+                                    <span>Courier: <strong>{adminTrackingData.courier}</strong></span>
+                                    <span className="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-[11px] uppercase">
+                                      Status: {adminTrackingData.currentStatus}
+                                    </span>
+                                  </div>
+                                  {adminTrackingData.scans && adminTrackingData.scans.length > 0 ? (
+                                    <div className="relative pl-4 border-l-2 border-primary/20 space-y-2.5 py-1">
+                                      {adminTrackingData.scans.map((scan: any, sIdx: number) => (
+                                        <div key={sIdx} className="relative text-[12px]">
+                                          <div className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-white" />
+                                          <div className="font-bold text-dark">{scan.activity}</div>
+                                          <div className="text-dark/50 text-[11px]">
+                                            {scan.date} {scan.location && `• ${scan.location}`}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-dark/50 text-[12px] italic py-1">
+                                      No scan history recorded yet.
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                         </div>
                       ))
@@ -1204,6 +1343,9 @@ function AdminDashboard() {
                           setNewCouponDiscount("");
                           setNewCouponReseller("");
                           setNewCouponExpiry("");
+                          setNewCouponIsDebit(false);
+                          setNewCouponDebitUserName("");
+                          setNewCouponUsageLimit(1);
                           setCouponModalOpen(true);
                         }}
                         className="flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#7A187C] cursor-pointer shadow-sm"
@@ -1229,13 +1371,24 @@ function AdminDashboard() {
                       <tbody>
                         {coupons.map((c) => (
                           <tr key={c._id} className="border-b border-border last:border-0 hover:bg-surface/30">
-                            <td className="py-3.5 pr-4 font-mono font-bold text-primary">{c.code}</td>
+                            <td className="py-3.5 pr-4 font-mono font-bold text-primary">
+                              {c.code}
+                              {c.isDebitCoupon && (
+                                <div className="mt-1 flex flex-col gap-0.5">
+                                  <span className="inline-block rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700 tracking-wide uppercase max-w-max">Khata / Debit</span>
+                                  <span className="text-[11px] font-medium text-dark/70">User: {c.debitUserName}</span>
+                                </div>
+                              )}
+                            </td>
                             <td className="py-3.5 pr-4 font-medium text-dark">{c.discountPercent}% OFF</td>
                             <td className="py-3.5 pr-4 text-dark/80">{c.resellerName || "—"}</td>
                             <td className="py-3.5 pr-4 text-dark/60">
                               {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}
                             </td>
-                            <td className="py-3.5 pr-4 font-bold text-dark">{c.usedCount || 0}</td>
+                            <td className="py-3.5 pr-4 font-bold text-dark">
+                              {c.usedCount || 0}
+                              {c.isDebitCoupon && c.usageLimit && <span className="text-dark/50 font-normal"> / {c.usageLimit}</span>}
+                            </td>
                             <td className="py-3.5 pr-4">
                               <button
                                 onClick={() => {
@@ -1267,6 +1420,9 @@ function AdminDashboard() {
                                     setNewCouponDiscount(c.discountPercent);
                                     setNewCouponReseller(c.resellerName || "");
                                     setNewCouponExpiry(c.expiresAt ? new Date(c.expiresAt).toISOString().split('T')[0] : "");
+                                    setNewCouponIsDebit(!!c.isDebitCoupon);
+                                    setNewCouponDebitUserName(c.debitUserName || "");
+                                    setNewCouponUsageLimit(c.usageLimit || 1);
                                     setCouponModalOpen(true);
                                   }}
                                   className="grid h-8 w-8 place-items-center rounded-lg border border-border text-dark/70 transition hover:bg-surface cursor-pointer"
@@ -1351,6 +1507,76 @@ function AdminDashboard() {
                       </div>
 
                       <div>
+                        <label className="flex items-center gap-2 cursor-pointer mb-3">
+                          <input
+                            type="checkbox"
+                            checked={newCouponIsDebit}
+                            onChange={(e) => setNewCouponIsDebit(e.target.checked)}
+                            className="h-4 w-4 rounded text-primary focus:ring-primary/20 cursor-pointer"
+                          />
+                          <span className="text-[13.5px] font-bold text-dark/80">Make this a Khata (Debit) Coupon</span>
+                        </label>
+                      </div>
+
+                      {newCouponIsDebit && (
+                        <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4 mb-4">
+                          <div className="relative">
+                            <label className="block text-[12.5px] font-bold text-primary uppercase tracking-wider mb-1.5">Debit User Name (Required)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Ramesh Bhai"
+                              value={newCouponDebitUserName}
+                              onChange={(e) => {
+                                setNewCouponDebitUserName(e.target.value);
+                                setShowUserDropdown(true);
+                              }}
+                              onFocus={() => setShowUserDropdown(true)}
+                              onBlur={() => setTimeout(() => setShowUserDropdown(false), 200)}
+                              className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                            />
+                            {showUserDropdown && users.length > 0 && (
+                              <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto rounded-xl border border-border bg-white shadow-lg">
+                                {users
+                                  .filter(u => 
+                                    (u.name?.toLowerCase().includes(newCouponDebitUserName.toLowerCase()) || 
+                                     u.email?.toLowerCase().includes(newCouponDebitUserName.toLowerCase()))
+                                  )
+                                  .map((u) => (
+                                    <div 
+                                      key={u._id}
+                                      onClick={() => {
+                                        setNewCouponDebitUserName(u.name || u.email);
+                                        setShowUserDropdown(false);
+                                      }}
+                                      className="px-4 py-2.5 hover:bg-surface cursor-pointer border-b border-border last:border-0"
+                                    >
+                                      <div className="text-[13.5px] font-semibold text-dark">{u.name || "No Name"}</div>
+                                      <div className="text-[12px] text-dark/60">{u.email}</div>
+                                    </div>
+                                  ))}
+                                {users.filter(u => 
+                                  (u.name?.toLowerCase().includes(newCouponDebitUserName.toLowerCase()) || 
+                                   u.email?.toLowerCase().includes(newCouponDebitUserName.toLowerCase()))
+                                ).length === 0 && (
+                                  <div className="px-4 py-3 text-[13px] text-dark/50 text-center">No users found</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-[12.5px] font-bold text-primary uppercase tracking-wider mb-1.5">Usage Limit (Times)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={newCouponUsageLimit}
+                              onChange={(e) => setNewCouponUsageLimit(parseInt(e.target.value) || 1)}
+                              className="w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-[13.5px] font-medium text-dark focus:border-primary focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
                         <label className="block text-[12.5px] font-bold text-dark/70 uppercase tracking-wider mb-1.5">Expiry Date</label>
                         <input
                           type="date"
@@ -1374,6 +1600,10 @@ function AdminDashboard() {
                             fireToast("Code and Discount are required!");
                             return;
                           }
+                          if (newCouponIsDebit && !newCouponDebitUserName.trim()) {
+                            fireToast("Debit User Name is required for Debit Coupons!");
+                            return;
+                          }
                           
                           const payload = {
                             id: editingCoupon?._id,
@@ -1381,6 +1611,9 @@ function AdminDashboard() {
                             discountPercent: parseInt(newCouponDiscount.toString()),
                             expiresAt: newCouponExpiry ? new Date(newCouponExpiry).toISOString() : null,
                             resellerName: newCouponReseller.trim(),
+                            isDebitCoupon: newCouponIsDebit,
+                            debitUserName: newCouponIsDebit ? newCouponDebitUserName.trim() : null,
+                            usageLimit: newCouponIsDebit ? newCouponUsageLimit : 0,
                             active: editingCoupon ? editingCoupon.active : true
                           };
 
@@ -1506,6 +1739,115 @@ function AdminDashboard() {
                 </div>
               )}
 
+              {activeTab === "debits" && (
+                <div>
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-[18px] font-semibold text-dark">Khata (Debit Purchases)</h2>
+                      <p className="text-[13px] text-dark/60 mt-1">Manage and track credit purchases made via Debit Coupons.</p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                    <table className="w-full text-left text-[13.5px]">
+                      <thead>
+                        <tr className="border-b border-border bg-bg-base text-dark/60">
+                          <th className="px-5 py-4 font-semibold w-1/4">Assigned User</th>
+                          <th className="px-5 py-4 font-semibold">Khata Coupon</th>
+                          <th className="px-5 py-4 font-semibold">Usage</th>
+                          <th className="px-5 py-4 font-semibold text-right">Outstanding Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {coupons.filter(c => c.isDebitCoupon).length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-dark/50">
+                              No Khata coupons have been created yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          coupons.filter(c => c.isDebitCoupon).map((coupon) => {
+                            const userOrders = orders.filter(o => o.isDebitPurchase && (o.debitCouponCode === coupon.code || o.couponUsed === coupon.code));
+                            const unpaidOrders = userOrders.filter(o => !o.debitPaid);
+                            const totalUnpaid = unpaidOrders.reduce((sum, o) => sum + o.total, 0);
+
+                            return (
+                              <React.Fragment key={coupon.code}>
+                                <tr 
+                                  className={`hover:bg-bg-base/50 transition cursor-pointer ${expandedKhataCoupon === coupon.code ? 'bg-primary/5' : ''}`}
+                                  onClick={() => setExpandedKhataCoupon(expandedKhataCoupon === coupon.code ? null : coupon.code)}
+                                >
+                                  <td className="px-5 py-4 font-semibold text-dark">{coupon.debitUserName || "Unassigned"}</td>
+                                  <td className="px-5 py-4 font-mono font-bold text-primary">{coupon.code}</td>
+                                  <td className="px-5 py-4 font-medium text-dark/70">
+                                    <span className="font-bold text-dark">{coupon.usageCount || 0}</span> / {coupon.usageLimit || 1} Used
+                                  </td>
+                                  <td className="px-5 py-4 font-bold text-red-600 text-right">
+                                    ₹{totalUnpaid}
+                                  </td>
+                                </tr>
+                                
+                                {expandedKhataCoupon === coupon.code && (
+                                  <tr>
+                                    <td colSpan={4} className="p-0 bg-primary/5">
+                                      {unpaidOrders.length === 0 ? (
+                                        <div className="p-6 text-center text-[13px] text-dark/50 font-medium">No unpaid debits for this user.</div>
+                                      ) : (
+                                        <div className="max-h-[360px] overflow-y-auto p-5 space-y-3 border-y border-primary/10">
+                                          {unpaidOrders.map(order => (
+                                            <div key={order._id} className="flex flex-wrap items-center justify-between bg-white border border-border rounded-xl p-4 shadow-sm hover:border-primary/30 transition">
+                                              <div className="flex flex-col gap-1">
+                                                <div className="font-semibold text-dark flex items-center gap-2">
+                                                  Order <span className="font-mono text-primary">#{order._id.substring(order._id.length - 8).toUpperCase()}</span>
+                                                </div>
+                                                <div className="text-[12px] text-dark/60 font-medium">Placed on {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}</div>
+                                                <div className="text-[12px] text-dark/60 font-medium">Contact: {order.shippingDetails?.phone} | {order.shippingDetails?.email}</div>
+                                              </div>
+                                              <div className="flex items-center gap-6 mt-3 sm:mt-0">
+                                                <div className="font-bold text-[16px] text-red-600">₹{order.total}</div>
+                                                <button
+                                                  onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`Mark ₹${order.total} as PAID for ${coupon.debitUserName}?`)) {
+                                                      try {
+                                                        const res = await fetch("/api/admin/orders", {
+                                                          method: "POST",
+                                                          headers: { "Content-Type": "application/json" },
+                                                          body: JSON.stringify({ orderId: order._id, debitPaid: true })
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                          fireToast("Debit marked as paid!");
+                                                          setOrders(orders.map((o) => (o._id === order._id ? data.order : o)));
+                                                        } else {
+                                                          fireToast("Error: " + data.message);
+                                                        }
+                                                      } catch (error) {
+                                                        fireToast("Failed to mark debit as paid.");
+                                                      }
+                                                    }
+                                                  }}
+                                                  className="rounded-xl bg-green-500 px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:bg-green-600 transition"
+                                                >
+                                                  Collect & Mark Paid
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
 

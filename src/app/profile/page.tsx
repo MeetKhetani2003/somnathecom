@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Download, Plus, Minus, ArrowRight, Sparkles } from "lucide-react";
+import { User, MapPin, Package, Heart, LogOut, CheckCircle, Truck, ShoppingBag, ShoppingCart, Trash2, X, Tag, Download, Plus, Minus, ArrowRight, Sparkles, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useShop } from "@/context/ShopContext";
 import { useToast } from "@/context/ToastContext";
@@ -49,6 +49,7 @@ function ProfileContent() {
   const [activeTrackingId, setActiveTrackingId] = useState<string | null>(null);
   const [trackingData, setTrackingData] = useState<any>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
+  const [syncingShiprocketOrderId, setSyncingShiprocketOrderId] = useState<string | null>(null);
 
   // Address fields
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -163,6 +164,29 @@ function ProfileContent() {
     }
   };
 
+  const handleSyncShiprocketAwb = async (orderId: string) => {
+    setSyncingShiprocketOrderId(orderId);
+    try {
+      const res = await fetch("/api/admin/orders/sync-shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toastSuccess(data.message || "Shiprocket AWB synced successfully.");
+        fetchOrders();
+      } else {
+        toastError(data.message || "Failed to sync AWB from Shiprocket.");
+      }
+    } catch (err) {
+      console.error(err);
+      toastError("Error syncing Shiprocket AWB.");
+    } finally {
+      setSyncingShiprocketOrderId(null);
+    }
+  };
+
   const handleExchangeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOrderForExchange) return;
@@ -210,7 +234,7 @@ function ProfileContent() {
       // Check if key is placeholder
       if (data.key === "rzp_test_placeholder") {
         const choice = window.confirm(
-          "Razorpay Test Mode Bypass:\n\nClick OK to simulate a SUCCESSFUL payment for the ₹120 exchange fee.\nClick Cancel to abort."
+          `Razorpay Test Mode Bypass:\n\nClick OK to simulate a SUCCESSFUL payment for the ₹${data.amount / 100} exchange fee.\nClick Cancel to abort.`
         );
         if (choice) {
           // Simulate Payment Verification
@@ -764,20 +788,36 @@ function ProfileContent() {
                               })}
                             </div>
 
-                            {order.trackingNumber && (
-                              <div className="mt-6 text-[13.5px] font-medium text-dark/70 bg-bg-base p-5 rounded-2xl border border-border/80 shadow-sm">
-                                <div className="flex items-center justify-between gap-4 flex-wrap">
-                                  <div>
-                                    <strong className="text-dark">AWB Tracking:</strong>
-                                    <span className="font-mono text-primary font-bold ml-1.5 bg-primary/5 px-2 py-0.5 rounded border border-primary/25 text-[12.5px]">{order.trackingNumber}</span>
-                                  </div>
-                                  <button
-                                    onClick={() => handleTrackShipment(order.trackingNumber)}
-                                    className="rounded-full bg-primary hover:bg-[#2E2387] text-white px-4 py-1.5 text-[12px] font-bold transition shadow shadow-primary/10"
-                                  >
-                                    {activeTrackingId === order.trackingNumber && trackingLoading ? "Fetching..." : "Track Package Live"}
-                                  </button>
+                            <div className="mt-6 text-[13.5px] font-medium text-dark/70 bg-bg-base p-5 rounded-2xl border border-border/80 shadow-sm">
+                              <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div>
+                                  <strong className="text-dark">Shiprocket AWB:</strong>
+                                  {order.trackingNumber ? (
+                                    <span className="font-mono text-primary font-bold ml-1.5 bg-primary/5 px-2.5 py-0.5 rounded border border-primary/25 text-[12.5px]">{order.trackingNumber}</span>
+                                  ) : (
+                                    <span className="text-dark/40 italic ml-1.5">Pending Assignment</span>
+                                  )}
                                 </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    disabled={syncingShiprocketOrderId === order._id}
+                                    onClick={() => handleSyncShiprocketAwb(order._id)}
+                                    className="rounded-full border border-primary/30 bg-primary/5 hover:bg-primary hover:text-white text-primary px-3.5 py-1.5 text-[12px] font-bold transition flex items-center gap-1.5 disabled:opacity-50"
+                                    title="Sync AWB & status with Shiprocket"
+                                  >
+                                    <RefreshCw className={`h-3.5 w-3.5 ${syncingShiprocketOrderId === order._id ? "animate-spin" : ""}`} />
+                                    {syncingShiprocketOrderId === order._id ? "Syncing..." : "Sync AWB"}
+                                  </button>
+                                  {order.trackingNumber && (
+                                    <button
+                                      onClick={() => handleTrackShipment(order.trackingNumber)}
+                                      className="rounded-full bg-primary hover:bg-[#2E2387] text-white px-4 py-1.5 text-[12px] font-bold transition shadow shadow-primary/10"
+                                    >
+                                      {activeTrackingId === order.trackingNumber && trackingLoading ? "Fetching..." : "Track Package Live"}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
 
                                 {/* Tracking Scans Detail Timeline */}
                                 {activeTrackingId === order.trackingNumber && (
@@ -829,7 +869,6 @@ function ProfileContent() {
                                   </div>
                                 )}
                               </div>
-                            )}
                           </div>
                         )}
 
@@ -1295,7 +1334,7 @@ function ProfileContent() {
                 {/* Info banner */}
                 <div className="text-[13px] text-primary font-medium bg-primary/5 border border-primary/20 p-4 rounded-2xl leading-relaxed">
                   Select the product &amp; variant you want to exchange, choose a delivery address, and confirm.
-                  A flat processing fee of <span className="font-bold">₹120</span> applies.
+                  A base processing fee of <span className="font-bold">₹120</span> applies plus any price difference for the new variant.
                 </div>
 
                 {/* ── STEP 1: Product Cards ── */}
@@ -1559,32 +1598,92 @@ function ProfileContent() {
 
                 {/* ── Fee Summary ── */}
                 <div className="rounded-2xl bg-bg-base p-4 border border-border text-[13.5px] space-y-2 font-medium">
-                  <div className="flex justify-between text-dark/60">
-                    <span>Original Order Total:</span>
-                    <span>₹{selectedOrderForExchange.total}</span>
-                  </div>
-                  <div className="flex justify-between text-dark/60">
-                    <span>Exchange Delivery Charge:</span>
-                    <span>₹120</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-dark border-t border-border pt-2 mt-1">
-                    <span>To Pay Now:</span>
-                    <span className="text-[16px] text-primary">₹120</span>
-                  </div>
+                  {(() => {
+                    let exchangePriceDiff = 0;
+                    if (selectedProductIdForExchange && selectedSizeForExchange) {
+                      const orderItem = selectedOrderForExchange.items.find((item: any) => String(item.productId) === String(selectedProductIdForExchange));
+                      const dbProduct = allProductsForExchange.find((p: any) => String(p.id) === String(selectedProductIdForExchange));
+                      if (orderItem && dbProduct) {
+                        const oldPrice = orderItem.price || 0;
+                        let newPrice = oldPrice;
+                        const colorOptions = dbProduct.colors || [];
+                        const colorObj = colorOptions.find((c: any) => c.name === selectedColorForExchange);
+                        const sizeOptions = colorOptions.length > 0 ? (colorObj?.sizes || []) : (dbProduct.sizes || []);
+                        const sizeObj = sizeOptions.find((s: any) => (typeof s === "object" ? s.size : s) === selectedSizeForExchange);
+                        if (sizeObj && typeof sizeObj === "object" && sizeObj.price) {
+                          newPrice = sizeObj.price;
+                        } else if (dbProduct.price) {
+                          newPrice = dbProduct.price;
+                        }
+                        exchangePriceDiff = newPrice - oldPrice;
+                      }
+                    }
+                    const additionalPrice = exchangePriceDiff > 0 ? exchangePriceDiff : 0;
+                    const totalExchangeFee = 120 + additionalPrice;
+
+                    return (
+                      <>
+                        <div className="flex justify-between text-dark/60">
+                          <span>Original Order Total:</span>
+                          <span>₹{selectedOrderForExchange.total}</span>
+                        </div>
+                        <div className="flex justify-between text-dark/60">
+                          <span>Exchange Delivery Charge:</span>
+                          <span>₹120</span>
+                        </div>
+                        {additionalPrice > 0 && (
+                          <div className="flex justify-between text-dark/60">
+                            <span>Price Difference for New Variant:</span>
+                            <span>₹{additionalPrice}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-dark border-t border-border pt-2 mt-1">
+                          <span>To Pay Now:</span>
+                          <span className="text-[16px] text-primary">₹{totalExchangeFee}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
               </div>{/* end scroll body */}
 
               {/* ── Sticky Footer Submit ── */}
               <div className="shrink-0 border-t border-border px-6 py-4">
-                <button
-                  type="button"
-                  onClick={handleExchangeSubmit as any}
-                  disabled={submittingExchange || isExchangeFormInvalid || !newExchangeAddress.trim()}
-                  className="w-full rounded-full bg-primary py-4 text-[15px] font-bold text-white transition hover:bg-[#2E2387] shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
-                >
-                  {submittingExchange ? "Processing..." : "Confirm Exchange & Pay ₹120"}
-                </button>
+                {(() => {
+                  let exchangePriceDiff = 0;
+                  if (selectedProductIdForExchange && selectedSizeForExchange) {
+                    const orderItem = selectedOrderForExchange.items.find((item: any) => String(item.productId) === String(selectedProductIdForExchange));
+                    const dbProduct = allProductsForExchange.find((p: any) => String(p.id) === String(selectedProductIdForExchange));
+                    if (orderItem && dbProduct) {
+                      const oldPrice = orderItem.price || 0;
+                      let newPrice = oldPrice;
+                      const colorOptions = dbProduct.colors || [];
+                      const colorObj = colorOptions.find((c: any) => c.name === selectedColorForExchange);
+                      const sizeOptions = colorOptions.length > 0 ? (colorObj?.sizes || []) : (dbProduct.sizes || []);
+                      const sizeObj = sizeOptions.find((s: any) => (typeof s === "object" ? s.size : s) === selectedSizeForExchange);
+                      if (sizeObj && typeof sizeObj === "object" && sizeObj.price) {
+                        newPrice = sizeObj.price;
+                      } else if (dbProduct.price) {
+                        newPrice = dbProduct.price;
+                      }
+                      exchangePriceDiff = newPrice - oldPrice;
+                    }
+                  }
+                  const additionalPrice = exchangePriceDiff > 0 ? exchangePriceDiff : 0;
+                  const totalExchangeFee = 120 + additionalPrice;
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleExchangeSubmit as any}
+                      disabled={submittingExchange || isExchangeFormInvalid || !(typeof newExchangeAddress === 'string' ? newExchangeAddress.trim() : newExchangeAddress)}
+                      className="w-full rounded-full bg-primary py-4 text-[15px] font-bold text-white transition hover:bg-[#2E2387] shadow-lg shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                    >
+                      {submittingExchange ? "Processing..." : `Confirm Exchange & Pay ₹${totalExchangeFee}`}
+                    </button>
+                  );
+                })()}
               </div>
 
             </div>

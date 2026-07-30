@@ -22,6 +22,8 @@ export default function Cart() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponError, setCouponError] = useState("");
+  const [isDebitCoupon, setIsDebitCoupon] = useState(false);
+  const [debitUserName, setDebitUserName] = useState("");
 
   // Shipping form states
   const [shippingFirstName, setShippingFirstName] = useState("");
@@ -187,12 +189,17 @@ export default function Cart() {
       const res = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponCode }),
+        body: JSON.stringify({ code: couponCode, userEmail: session?.user?.email, userName: session?.user?.name }),
       });
       const data = await res.json();
       if (data.valid) {
         setAppliedCoupon(couponCode.toUpperCase());
         setDiscountPercent(data.discountPercent);
+        setIsDebitCoupon(!!data.isDebitCoupon);
+        setDebitUserName(data.debitUserName || "");
+        if (data.isDebitCoupon) {
+          setPaymentMethod("debit" as any);
+        }
         setCouponCode("");
       } else {
         setCouponError(data.message || "Invalid coupon code");
@@ -205,6 +212,11 @@ export default function Cart() {
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setDiscountPercent(0);
+    setIsDebitCoupon(false);
+    setDebitUserName("");
+    if (paymentMethod === "debit") {
+      setPaymentMethod("online");
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -315,6 +327,16 @@ export default function Cart() {
       const orderData = await orderRes.json();
       if (!orderData.success) {
         throw new Error(orderData.message || "Order creation failed.");
+      }
+
+      // If Debit Purchase, bypass Razorpay and COD flow
+      if (orderData.isDebit) {
+        clearCart();
+        toast.success("Debit purchase successful!", {
+          description: "Your trust/khata order has been placed.",
+        });
+        router.push(`/success?orderId=${orderData.orderId}`);
+        return;
       }
 
       // If COD, bypass Razorpay flow entirely
@@ -713,7 +735,7 @@ export default function Cart() {
                 <div className="flex items-center justify-between rounded-xl bg-green-50/50 border border-green-200 p-4 text-[14px] text-green-700 shadow-sm">
                   <div className="flex items-center gap-2 font-medium">
                     <Check className="h-5 w-5 text-green-600" />
-                    <span><strong>{appliedCoupon}</strong> Applied ({discountPercent}% Off)</span>
+                    <span><strong>{appliedCoupon}</strong> Applied {isDebitCoupon ? `(Debit/Khata for ${debitUserName})` : `(${discountPercent}% Off)`}</span>
                   </div>
                   <button onClick={handleRemoveCoupon} className="font-bold text-red-500 hover:text-red-700">Remove</button>
                 </div>

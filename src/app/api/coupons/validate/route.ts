@@ -4,7 +4,7 @@ import { Coupon } from "@/models/Coupon";
 
 export async function POST(req: Request) {
   try {
-    const { code } = await req.json();
+    const { code, userEmail, userName } = await req.json();
     if (!code) {
       return NextResponse.json({ valid: false, message: "Code is required" }, { status: 400 });
     }
@@ -22,6 +22,26 @@ export async function POST(req: Request) {
     // Check expiry
     if (coupon.expiresAt && new Date() > new Date(coupon.expiresAt)) {
       return NextResponse.json({ valid: false, message: "Coupon has expired" });
+    }
+
+    if (coupon.isDebitCoupon) {
+      if (coupon.debitUserName && (userEmail || userName)) {
+        if (coupon.debitUserName !== userEmail && coupon.debitUserName !== userName) {
+          return NextResponse.json({ valid: false, message: "This Debit Coupon is not assigned to your account" });
+        }
+      } else if (coupon.debitUserName && !userEmail && !userName) {
+         return NextResponse.json({ valid: false, message: "You must be logged in to use a Debit Coupon" });
+      }
+
+      if ((coupon.usageCount || 0) >= (coupon.usageLimit || 1)) {
+        return NextResponse.json({ valid: false, message: "Your limit of coupon is reached" });
+      }
+      return NextResponse.json({ 
+        valid: true, 
+        discountPercent: coupon.discountPercent,
+        isDebitCoupon: true,
+        debitUserName: coupon.debitUserName 
+      });
     }
 
     return NextResponse.json({ valid: true, discountPercent: coupon.discountPercent });

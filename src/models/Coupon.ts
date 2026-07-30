@@ -6,6 +6,10 @@ const CouponSchema = new Schema({
   active: { type: Boolean, default: true },
   expiresAt: { type: Date },
   resellerName: { type: String, default: "" },
+  isDebitCoupon: { type: Boolean, default: false },
+  debitUserName: { type: String, default: "" },
+  usageLimit: { type: Number, default: 1 },
+  usageCount: { type: Number, default: 0 }
 });
 
 export const Coupon = models.Coupon || model("Coupon", CouponSchema);

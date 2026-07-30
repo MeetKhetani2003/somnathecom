@@ -35,7 +35,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { code, discountPercent, expiresAt, active, resellerName } = await req.json();
+    const { code, discountPercent, expiresAt, active, resellerName, isDebitCoupon, debitUserName, usageLimit } = await req.json();
     await dbConnect();
 
     const existing = await Coupon.findOne({ code: code.toUpperCase() });
@@ -49,6 +49,10 @@ export async function POST(req: Request) {
       expiresAt: expiresAt ? new Date(expiresAt) : undefined,
       active: active ?? true,
       resellerName: resellerName || "",
+      isDebitCoupon: isDebitCoupon || false,
+      debitUserName: debitUserName || null,
+      usageLimit: usageLimit || 0,
+      usageCount: 0,
     });
 
     return NextResponse.json({ success: true, coupon });
@@ -60,7 +64,7 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const { id, code, discountPercent, expiresAt, active, resellerName } = await req.json();
+    const { id, code, discountPercent, expiresAt, active, resellerName, isDebitCoupon, debitUserName, usageLimit } = await req.json();
     await dbConnect();
 
     const coupon = await Coupon.findByIdAndUpdate(
@@ -71,6 +75,9 @@ export async function PUT(req: Request) {
         expiresAt: expiresAt ? new Date(expiresAt) : undefined,
         active,
         resellerName: resellerName || "",
+        isDebitCoupon: isDebitCoupon || false,
+        debitUserName: debitUserName || null,
+        usageLimit: usageLimit || 0,
       },
       { new: true }
     );

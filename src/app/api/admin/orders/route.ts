@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { orderId, shippingStatus, trackingNumber, paymentStatus } = await req.json();
+    const { orderId, shippingStatus, trackingNumber, paymentStatus, debitPaid } = await req.json();
 
     if (!orderId) {
       return NextResponse.json({ success: false, message: "Order ID is required" }, { status: 400 });
@@ -80,6 +80,13 @@ export async function POST(req: Request) {
 
     if (trackingNumber !== undefined) {
       order.trackingNumber = trackingNumber;
+    }
+
+    if (debitPaid !== undefined) {
+      order.debitPaid = debitPaid;
+      if (debitPaid) {
+        order.paymentStatus = "paid";
+      }
     }
 
     await order.save();
