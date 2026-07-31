@@ -12,9 +12,7 @@ let tokenExpiry: number | null = null;
  * Retrieves the Shiprocket authentication token. Uses cached token if valid.
  */
 export async function getShiprocketToken(): Promise<string | null> {
-  if (process.env.SHIPROCKET_SANDBOX === "true" && (!process.env.SHIPROCKET_EMAIL || process.env.SHIPROCKET_EMAIL.includes("placeholder"))) {
-    return "mock_sandbox_token_1234567890";
-  }
+
 
   const now = Date.now();
   if (cachedToken && tokenExpiry && now < tokenExpiry) {
@@ -83,39 +81,16 @@ export async function calculateShippingCost(
   const weight = weightKg > 0 ? weightKg : 0.5;
   const isCodNum = isCod ? 1 : 0;
 
-  // Zone-based local mock calculation function
-  const getMockShippingCost = () => {
-    let baseRate = 80;
-    const firstDigit = deliveryPincode.charAt(0);
 
-    // Zone 1: Gujarat / Local (pincode starts with 3)
-    if (firstDigit === "3") {
-      baseRate = 50;
-    }
-    // Zone 2: Main neighboring regions (1, 2, 4, 5, 6)
-    else if (["1", "2", "4", "5", "6"].includes(firstDigit)) {
-      baseRate = 80;
-    }
-    // Zone 3: Remote/North-East (7, 8, 9)
-    else {
-      baseRate = 110;
-    }
-
-    const codFee = isCod ? 40 : 0;
-    return baseRate + codFee;
-  };
 
   const token = await getShiprocketToken();
 
   if (!token) {
-    const mockRate = getMockShippingCost();
-    console.log(
-      `[Shiprocket API] [MOCK MODE] Calculated shipping cost for ${deliveryPincode} (COD: ${isCod}): ₹${mockRate}`
-    );
+    console.warn(`[Shiprocket API] Live calculation failed: Missing credentials for ${deliveryPincode}`);
     return {
-      success: true,
-      shippingCost: mockRate,
-      message: "Using mock delivery calculator (demo mode).",
+      success: false,
+      shippingCost: 0,
+      message: "Shipping calculation failed due to missing credentials.",
     };
   }
 
@@ -128,7 +103,7 @@ export async function calculateShippingCost(
       declared_value: declaredValue.toString(),
     });
 
-    console.log(`[Shiprocket API] Querying serviceability for delivery pincode ${deliveryPincode}...`);
+    console.log(`[Shiprocket API] Querying serviceability for delivery pincode ${deliveryPincode} with total weight ${weight}kg...`);
     const response = await fetch(
       `https://apiv2.shiprocket.in/v1/external/courier/serviceability/?${query.toString()}`,
       {
@@ -178,16 +153,53 @@ export async function calculateShippingCost(
 
     throw new Error("No courier companies available for this pincode.");
   } catch (err: any) {
-    const mockRate = getMockShippingCost();
-    console.warn(
-      `[Shiprocket API] Failed to query live serviceability API (${err.message || err}). Falling back to mock.`
-    );
+    console.error(`[Shiprocket API] Failed to query live serviceability API (${err.message || err}).`);
     return {
-      success: true,
-      shippingCost: mockRate,
-      message: `Failed to query live API (${err.message || "Error"}). Used mock fallback.`,
+      success: false,
+      shippingCost: 0,
+      message: `Failed to query live shipping API (${err.message || "Error"}).`,
     };
   }
+}
+
+export async function getPackageDimensionsAndWeight(items: any[]): Promise<{ weight: number, length: number, width: number, height: number }> {
+  let totalWeight = 0;
+  let maxLength = 15;
+  let maxWidth = 15;
+  let maxHeight = 10;
+  
+  for (const item of items) {
+    let itemWeight = 0.5;
+    
+    try {
+      const prod = await Product.findOne({ id: item.productId || item.id });
+      if (prod) {
+        let foundSize = null;
+        if (item.color) {
+          const colorObj = prod.colors?.find((c: any) => c.name === item.color);
+          if (colorObj && colorObj.sizes) {
+            foundSize = colorObj.sizes.find((s: any) => s.size === item.size);
+          }
+        }
+        if (!foundSize && prod.sizes) {
+          foundSize = prod.sizes.find((s: any) => s.size === item.size);
+        }
+        
+        if (foundSize) {
+          if (foundSize.weight) itemWeight = Number(foundSize.weight);
+          if (foundSize.length) maxLength = Math.max(maxLength, Number(foundSize.length));
+          if (foundSize.width) maxWidth = Math.max(maxWidth, Number(foundSize.width));
+          if (foundSize.height) maxHeight = Math.max(maxHeight, Number(foundSize.height));
+        }
+      }
+    } catch (dbErr) {
+      console.error("[Shiprocket API] Product search failed:", dbErr);
+    }
+    
+    totalWeight += (itemWeight * item.quantity);
+  }
+
+  return { weight: totalWeight, length: maxLength, width: maxWidth, height: maxHeight };
 }
 
 /**
@@ -203,17 +215,14 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
 
   // Build the order items, fetch SKUs from DB
   const orderItems = [];
-  for (const item of order.items) {
-    let sku = `SKU-${item.productId}`;
-    try {
-      const prod = await Product.findOne({ id: item.productId });
-      if (prod && prod.sku) {
-        sku = prod.sku;
-      }
-    } catch (dbErr) {
-      console.error("[Shiprocket API] Product SKU search failed:", dbErr);
-    }
+  const pkg = await getPackageDimensionsAndWeight(order.items);
+  let totalWeight = pkg.weight;
+  let maxLength = pkg.length;
+  let maxWidth = pkg.width;
+  let maxHeight = pkg.height;
 
+  for (const item of order.items) {
+    let sku = `SKU-${item.productId || item.id}`;
     orderItems.push({
       name: item.title,
       sku: sku,
@@ -221,8 +230,6 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
       selling_price: item.price,
     });
   }
-
-  const weight = orderItems.reduce((acc, item) => acc + item.units * 0.5, 0);
 
   const dateObj = order.createdAt ? new Date(order.createdAt) : new Date();
   const orderDateStr = isNaN(dateObj.getTime()) ? new Date().toISOString() : dateObj.toISOString();
@@ -257,20 +264,15 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
     order_items: orderItems,
     payment_method: isCod ? "COD" : "Prepaid",
     sub_total: isCod ? (order.total - order.shippingCost) : order.total,
-    length: 15,
-    breadth: 15,
-    height: 10,
-    weight: weight > 0 ? weight : 0.5,
+    length: maxLength,
+    breadth: maxWidth,
+    height: maxHeight,
+    weight: totalWeight > 0 ? totalWeight : 0.5,
   };
 
   if (!token) {
-    const mockShipmentId = "SR_MOCK_" + Math.random().toString(36).substring(2, 11).toUpperCase();
-    console.log(`[Shiprocket API] [MOCK MODE] Created Shiprocket Order for ID ${order._id.toString()} successfully. Shipment ID: ${mockShipmentId}`);
-    return {
-      success: true,
-      shipment_id: mockShipmentId,
-      message: "Order placed in Shiprocket (Mock Mode).",
-    };
+    console.error(`[Shiprocket API] Missing credentials. Cannot create live Shiprocket Order for ID ${order._id.toString()}.`);
+    throw new Error("Shiprocket credentials missing. Cannot push live order.");
   }
 
   try {
@@ -343,7 +345,7 @@ export async function createShiprocketOrder(order: any): Promise<{ success: bool
 export async function getShiprocketAwbFromApi(orderId: string): Promise<string | null> {
   const token = await getShiprocketToken();
   if (!token) {
-    console.log("[Shiprocket API] No token available (Mock Mode / Sandbox).");
+    console.warn("[Shiprocket API] No token available. Cannot fetch AWB.");
     return null;
   }
 
@@ -451,4 +453,67 @@ export async function getShiprocketTrackStatus(trackingNumber: string): Promise<
     console.error("[Shiprocket API] Failed to fetch track status:", err);
   }
   return null;
+}
+
+/**
+ * Cancels an order in Shiprocket using either its AWB or by fetching its Shiprocket internal ID.
+ */
+export async function cancelShiprocketOrder(channelOrderId: string, awb?: string): Promise<{ success: boolean; message: string }> {
+  const token = await getShiprocketToken();
+  if (!token) return { success: false, message: "Authentication failed" };
+
+  try {
+    // 1. If AWB is known, try canceling by AWB
+    if (awb) {
+      console.log(`[Shiprocket API] Attempting cancellation via AWB: ${awb}`);
+      const awbRes = await fetch("https://apiv2.shiprocket.in/v1/external/courier/cancel/awb", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ awbs: [awb] }),
+      });
+      const awbData = await awbRes.json();
+      console.log("[Shiprocket API] Cancel by AWB response:", awbData);
+      // We do not return here, we proceed to cancel the order itself as well.
+    }
+
+    // 2. Fetch the internal Shiprocket order ID using our channel order ID
+    console.log(`[Shiprocket API] Fetching Shiprocket ID for channel_order_id: ${channelOrderId} to cancel.`);
+    const fetchRes = await fetch(`https://apiv2.shiprocket.in/v1/external/orders?channel_order_id=${channelOrderId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await fetchRes.json();
+    if (data && data.data && data.data.length > 0) {
+      const shiprocketOrder = data.data[0];
+      const internalId = shiprocketOrder.id;
+
+      if (internalId) {
+        console.log(`[Shiprocket API] Found internal ID: ${internalId}. Sending cancel request.`);
+        const cancelRes = await fetch("https://apiv2.shiprocket.in/v1/external/orders/cancel", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ids: [internalId] }),
+        });
+        const cancelData = await cancelRes.json();
+        console.log("[Shiprocket API] Cancel by internal ID response:", cancelData);
+        return { success: true, message: "Order cancelled in Shiprocket" };
+      }
+    }
+
+    console.warn(`[Shiprocket API] Could not find Shiprocket order matching channel_order_id: ${channelOrderId}`);
+    return { success: false, message: "Order not found in Shiprocket" };
+  } catch (err: any) {
+    console.error("[Shiprocket API] Error cancelling order:", err);
+    return { success: false, message: err.message || "Error cancelling order" };
+  }
 }

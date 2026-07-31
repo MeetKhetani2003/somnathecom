@@ -10,11 +10,12 @@ import {
   RefreshCw, LayoutDashboard, DollarSign, Heart, ShoppingCart, Star, ArrowLeftRight, LogOut, ShieldCheck, X, Download, Tag
 } from "lucide-react";
 import Barcode from "react-barcode";
+import CategoryManager from "@/components/CategoryManager";
 
 function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "storefront" | "debits">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "products" | "categories" | "orders" | "exchanges" | "users" | "inquiries" | "coupons" | "storefront" | "debits">("overview");
 
   const isEnvAdmin = (session?.user as any)?.isEnvAdmin === true;
 
@@ -61,7 +62,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && ["overview", "products", "orders", "exchanges", "users", "inquiries", "coupons", "storefront"].includes(tabParam)) {
+    if (tabParam && ["overview", "products", "categories", "orders", "exchanges", "users", "inquiries", "coupons", "storefront"].includes(tabParam)) {
       setActiveTab(tabParam as any);
     }
   }, [searchParams]);
@@ -462,6 +463,7 @@ function AdminDashboard() {
           {[
             { id: "overview", label: "Overview Dashboard", icon: LayoutDashboard },
             { id: "products", label: "Products CRUD", icon: Package },
+            { id: "categories", label: "Category Management", icon: Tag },
             { id: "orders", label: "Orders Tracking", icon: ShoppingBag },
             { id: "exchanges", label: "Exchange Requests", icon: ArrowLeftRight, badge: exchanges.length },
             { id: "users", label: "User Accounts", icon: Users },
@@ -610,7 +612,7 @@ function AdminDashboard() {
                           <div key={order._id} className="flex items-center justify-between text-[13px] border-b border-[#FDFBFE] pb-2 last:border-0 last:pb-0">
                             <div>
                               <div className="font-semibold text-dark">{order.shippingDetails?.name ?? "—"}</div>
-                              <div className="text-[11px] text-dark/50">{new Date(order.createdAt).toLocaleDateString()} • {order.paymentMethod === "cod" ? "COD" : "Online"}</div>
+                              <div className="text-[11px] text-dark/50">{new Date(order.createdAt).toLocaleDateString()} • {order.paymentMethod === "debit" ? "KHATA ORDER" : (order.paymentMethod === "cod" ? "COD" : "Online")}</div>
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-dark">₹{order.total}</div>
@@ -738,6 +740,9 @@ function AdminDashboard() {
                 </div>
               )}
 
+              {/* CATEGORIES TAB */}
+              {activeTab === "categories" && <CategoryManager />}
+
               {/* 2. ORDERS TAB */}
               {activeTab === "orders" && (
                 <div>
@@ -796,8 +801,12 @@ function AdminDashboard() {
                             </div>
                             <div className="flex items-center gap-3">
                               {/* Payment Method Badge */}
-                              <span className="rounded-full bg-purple-50 text-purple-700 border border-purple-200 px-3 py-1 text-[11px] font-semibold uppercase">
-                                {order.paymentMethod === "cod" ? "COD" : "Online"}
+                              <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase ${
+                                order.paymentMethod === "debit"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200" 
+                                  : "bg-purple-50 text-purple-700 border-purple-200"
+                              }`}>
+                                {order.paymentMethod === "debit" ? "KHATA ORDER" : (order.paymentMethod === "cod" ? "COD" : "Online")}
                               </span>
 
                               {/* Payment Status Dropdown */}
@@ -1230,10 +1239,10 @@ function AdminDashboard() {
                                     <img src={u.image} alt="" className="h-8 w-8 rounded-full border border-border object-cover" />
                                   ) : (
                                     <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary to-[#E91E7A] text-[12px] font-semibold text-white">
-                                      {u.name.split(" ").map((n: string)=>n[0]).join("")}
+                                      {(u.name || "User").split(" ").map((n: string)=>n[0]).join("")}
                                     </div>
                                   )}
-                                  <span className="font-semibold text-dark">{u.name}</span>
+                                  <span className="font-semibold text-dark">{u.name || "User"}</span>
                                 </Link>
                               </td>
                               <td className="py-3.5 pr-4 text-dark/70">{u.email}</td>

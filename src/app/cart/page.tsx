@@ -142,7 +142,23 @@ export default function Cart() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             delivery_postcode: pincode,
-            weight: cartItems.reduce((acc, item) => acc + item.quantity * 0.5, 0),
+            weight: cartItems.reduce((acc, item) => {
+              let itemWeight = 0.5;
+              let foundSize: any = null;
+              if (item.selectedColor && item.colors) {
+                const colorObj = item.colors.find(c => c.name === item.selectedColor);
+                if (colorObj && colorObj.sizes) {
+                  foundSize = colorObj.sizes.find((s: any) => s.size === item.selectedSize);
+                }
+              }
+              if (!foundSize && item.sizes) {
+                foundSize = item.sizes.find((s: any) => s.size === item.selectedSize);
+              }
+              if (foundSize && foundSize.weight) {
+                itemWeight = Number(foundSize.weight) || 0.5;
+              }
+              return acc + item.quantity * itemWeight;
+            }, 0),
             declared_value: subtotal - discountAmount,
             cod: true
           })
@@ -166,10 +182,12 @@ export default function Cart() {
   }, [paymentMethod, shippingAddress, cartItems, subtotal, discountAmount]);
 
   const baseTotal = subtotal - discountAmount;
-  const gstAmount = Math.round(baseTotal * 0.05);
-  const platformFee = Math.round(baseTotal * 0.02);
+  // const gstAmount = Math.round(baseTotal * 0.05);
+  // const platformFee = Math.round(baseTotal * 0.02);
+  // const gstAmount = 0;
+  // const platformFee = 0;
   const finalShippingCost = paymentMethod === "cod" ? shippingCost : 0;
-  const total = baseTotal + gstAmount + platformFee + finalShippingCost;
+  const total = baseTotal + finalShippingCost; // + gstAmount + platformFee
 
   // Load Razorpay Script Helper
   const loadRazorpayScript = () => {
@@ -351,54 +369,6 @@ export default function Cart() {
         throw new Error("Razorpay SDK failed to load. Check your internet connection.");
       }
 
-      // If Razorpay key is mock/placeholder, simulate checkout in front-end
-      if (orderData.key === "rzp_test_placeholder") {
-        const choice = window.confirm(
-          "Razorpay Test Mode Bypass:\n\nClick OK to simulate a SUCCESSFUL payment.\nClick Cancel to simulate CANCELLED checkout (restores inventory stock)."
-        );
-        if (choice) {
-          // Simulate Payment Verification
-          try {
-            const verifyRes = await fetch("/api/checkout/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_payment_id: "mock_pay_" + Math.random().toString(36).substring(2, 11),
-                razorpay_order_id: orderData.razorpayOrderId,
-                razorpay_signature: "mock_signature",
-                orderId: orderData.orderId,
-              }),
-            });
-            const verifyData = await verifyRes.json();
-            if (verifyData.success) {
-              clearCart();
-              toast.success("Payment Success! [SIMULATED] Order placed. Check your email for invoice.");
-              router.push(`/success?orderId=${orderData.orderId}`);
-            } else {
-              toast.error("Verification failed: " + verifyData.message);
-              setProcessing(false);
-            }
-          } catch (verifyErr) {
-            console.error(verifyErr);
-            toast.error("Error verifying simulated payment.");
-            setProcessing(false);
-          }
-        } else {
-          // Simulate Payment Dismissal / Cancel
-          try {
-            await fetch("/api/checkout/cancel-order", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId: orderData.orderId }),
-            });
-            toast.info("Checkout cancelled. Stocks returned back to inventory.");
-          } catch (cancelErr) {
-            console.error(cancelErr);
-          }
-          setProcessing(false);
-        }
-        return;
-      }
 
       // 3. Open Razorpay Checkout overlay
       const options = {
@@ -790,14 +760,14 @@ export default function Cart() {
                     }
                   </span>
                 </div>
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span>GST (5%)</span>
                   <span className="font-bold text-dark">₹{gstAmount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Platform Fee (2%)</span>
                   <span className="font-bold text-dark">₹{platformFee}</span>
-                </div>
+                </div> */}
                 {paymentMethod === "cod" && isCalculatingShipping && (
                   <div className="text-[12px] text-dark/50 text-right mt-[-8px] animate-pulse">
                     Calculating delivery charges...

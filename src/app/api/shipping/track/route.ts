@@ -15,73 +15,8 @@ export async function GET(req: Request) {
 
     const token = await getShiprocketToken();
 
-    // 1. Generate realistic mock tracking data if in mock mode or tracking number is a mock ID
-    const getMockTrackingData = (num: string) => {
-      // Create a deterministic timeline based on the tracking number hash
-      const isDelivered = num.includes("DELIVER");
-      const isTransit = num.includes("TRANSIT") || (!isDelivered && Math.random() > 0.4);
-
-      const scans = [
-        {
-          date: "2026-06-30 10:15",
-          activity: "Order Manifested & AWB Assigned",
-          location: "Ahmedabad Store",
-          status: "manifested"
-        }
-      ];
-
-      if (isTransit || isDelivered) {
-        scans.push({
-          date: "2026-06-30 14:30",
-          activity: "Package Picked Up by DTDC Express",
-          location: "Ahmedabad Hub",
-          status: "pickup"
-        });
-        scans.push({
-          date: "2026-06-30 20:45",
-          activity: "In Transit to Destination Sorting Facility",
-          location: "Mumbai Main Hub",
-          status: "transit"
-        });
-      }
-
-      if (isDelivered) {
-        scans.push({
-          date: "2026-07-01 09:15",
-          activity: "Out for Delivery",
-          location: "Mumbai Andheri West",
-          status: "out_for_delivery"
-        });
-        scans.push({
-          date: "2026-07-01 13:45",
-          activity: "Delivered successfully. Signed by recipient.",
-          location: "Mumbai",
-          status: "delivered"
-        });
-      }
-
-      // Determine current status
-      let currentStatus = "Manifested";
-      if (isDelivered) {
-        currentStatus = "Delivered";
-      } else if (isTransit) {
-        currentStatus = "In Transit";
-      } else {
-        currentStatus = "Pickup Pending";
-      }
-
-      return {
-        success: true,
-        isMock: true,
-        awb: num,
-        courier: "DTDC Express",
-        currentStatus,
-        scans: scans.reverse() // latest first
-      };
-    };
-
-    if (!token || trackingNumber.startsWith("SR_MOCK")) {
-      return NextResponse.json(getMockTrackingData(trackingNumber));
+    if (!token) {
+      return NextResponse.json({ success: false, message: "Missing Shiprocket credentials" }, { status: 500 });
     }
 
     // 2. Fetch live tracking data from Shiprocket API
@@ -144,10 +79,11 @@ export async function GET(req: Request) {
 
       throw new Error("No tracking info found in Shiprocket response.");
     } catch (liveErr: any) {
-      console.warn(
-        `[Shiprocket API] Failed to query live tracking API (${liveErr.message || liveErr}). Falling back to mock.`
+      console.error(`[Shiprocket API] Failed to query live tracking API (${liveErr.message || liveErr}).`);
+      return NextResponse.json(
+        { success: false, message: "Failed to retrieve live tracking data." },
+        { status: 500 }
       );
-      return NextResponse.json(getMockTrackingData(trackingNumber));
     }
   } catch (error: any) {
     console.error("Error in tracking API:", error);

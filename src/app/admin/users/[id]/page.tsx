@@ -165,13 +165,13 @@ export default function UserDetailPage() {
             <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
               <div className="flex flex-col items-center text-center">
                 {userData.image ? (
-                  <img src={userData.image} alt={userData.name} className="h-24 w-24 rounded-full border-2 border-primary object-cover mb-4" />
+                  <img src={userData.image} alt={userData.name || "User"} className="h-24 w-24 rounded-full border-2 border-primary object-cover mb-4" />
                 ) : (
                   <div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-primary to-[#E91E7A] text-[28px] font-bold text-white mb-4">
-                    {userData.name.split(" ").map((n: string) => n[0]).join("")}
+                    {(userData.name || "User").split(" ").map((n: string) => n[0]).join("")}
                   </div>
                 )}
-                <h2 className="text-[20px] font-bold text-dark">{userData.name}</h2>
+                <h2 className="text-[20px] font-bold text-dark">{userData.name || "User"}</h2>
 
                 <div className="mt-6 w-full space-y-4 border-t border-border pt-4 text-left text-[13.5px] text-dark/80">
                   <div className="flex items-center gap-3">
@@ -197,19 +197,23 @@ export default function UserDetailPage() {
               </h3>
               {userData.addresses && userData.addresses.length > 0 ? (
                 <ul className="space-y-3">
-                  {userData.addresses.map((addr: string, i: number) => (
+                  {userData.addresses.map((addr: any, i: number) => {
+                    const isDefault = JSON.stringify(addr) === JSON.stringify(userData.defaultAddress);
+                    const displayAddr = typeof addr === 'string' ? addr : `${addr.firstName || ""} ${addr.lastName || ""}, ${addr.street || ""}, ${addr.city || ""}, ${addr.state || ""} - ${addr.pincode || ""}`;
+                    return (
                     <li key={i} className="text-[13px] text-dark/80 flex items-start gap-2.5 rounded-2xl border border-border p-3 bg-[#FFFCFE]">
-                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${addr === userData.defaultAddress ? "bg-primary" : "bg-[#D6C4D8]"}`} />
+                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${isDefault ? "bg-primary" : "bg-[#D6C4D8]"}`} />
                       <div className="flex-1 leading-relaxed">
-                        {addr}
-                        {addr === userData.defaultAddress && (
+                        {displayAddr}
+                        {isDefault && (
                           <span className="ml-2 inline-block rounded bg-[var(--color-primary-light)] px-1.5 py-0.5 text-[9.5px] font-bold text-primary border border-[#E9D5ED]">
                             Default
                           </span>
                         )}
                       </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               ) : (
                 <p className="text-[13px] text-gray-400 italic">No addresses saved in profile.</p>
@@ -300,8 +304,12 @@ export default function UserDetailPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                           {/* Payment Method badge */}
-                          <span className="rounded-full bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 text-[11px] font-semibold uppercase">
-                            {order.paymentMethod === "cod" ? "COD" : "Online"}
+                          <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase ${
+                            order.paymentMethod === "debit" 
+                              ? "bg-amber-50 text-amber-700 border-amber-200" 
+                              : "bg-purple-50 text-purple-700 border-purple-200"
+                          }`}>
+                            {order.paymentMethod === "debit" ? "KHATA ORDER" : (order.paymentMethod === "cod" ? "COD" : "Online")}
                           </span>
                           
                           {/* Payment Status Dropdown */}

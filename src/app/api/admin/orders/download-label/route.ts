@@ -1,6 +1,7 @@
 import dbConnect from "@/utils/dbConnect";
 import { Order } from "@/models/Order";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { getPackageDimensionsAndWeight } from "@/utils/shiprocket";
 
 export async function GET(req: Request) {
   try {
@@ -191,6 +192,7 @@ export async function GET(req: Request) {
       ? (order.exchangeDetails as any).newSizes.map((exItem: any) => {
           const matchingOriginalItem = order.items.find((orig: any) => orig.productId === exItem.productId);
           return {
+            productId: exItem.productId,
             title: matchingOriginalItem ? matchingOriginalItem.title : `Product ID ${exItem.productId}`,
             quantity: 1,
             size: exItem.size,
@@ -198,6 +200,7 @@ export async function GET(req: Request) {
           };
         })
       : order.items.map((item: any) => ({
+          productId: item.productId || item.id,
           title: item.title,
           quantity: item.quantity,
           size: item.size || "Std",
@@ -284,6 +287,10 @@ export async function GET(req: Request) {
       page.drawText("TOTAL COLLECTABLE BILL: Rs. 0", { x: 15, y: 52, size: 10, font: boldFont, color: darkGreenText });
       page.drawText("NO CASH PAYMENT TO BE COLLECTED FROM CUSTOMER", { x: 15, y: 35, size: 7, font: font, color: darkGreenText });
     }
+
+    // Print Package Dimensions & Weight in the footer
+    const pkgData = await getPackageDimensionsAndWeight(specItems);
+    page.drawText(`Weight: ${pkgData.weight.toFixed(2)} KG   |   Dimensions: ${pkgData.length} x ${pkgData.width} x ${pkgData.height} cm`, { x: 15, y: 15, size: 7.5, font: boldFont, color: textCol });
 
     // Embed QR Code inside the footer right side for instant scanner tracking
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(

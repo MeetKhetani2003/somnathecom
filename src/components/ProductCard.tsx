@@ -41,14 +41,14 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
             <img src={p.image} alt={p.title} className="h-full w-full object-cover object-top transition duration-1000 group-hover:scale-105" />
           </Link>
           <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-4 gap-2">
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            {/* <div className="flex flex-wrap items-center gap-1.5 min-w-0">
               <span className="rounded-full bg-surface/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-dark backdrop-blur-md shadow-sm">
                 {p.category.split(" > ").pop()?.replace(" Collection", "").replace(" Nightwear", "")}
               </span>
               {p.tag && <span className="rounded-full bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm">{p.tag}</span>}
-            </div>
-            <button 
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }} 
+            </div> */}
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p.id); }}
               className="shrink-0 grid h-10 w-10 place-items-center rounded-full bg-surface/90 text-dark/50 shadow-sm backdrop-blur-md transition-all hover:text-secondary hover:scale-110"
             >
               <Heart className={cn("h-5 w-5 transition", wishlist.includes(p.id) && "fill-secondary text-secondary")} />
@@ -58,7 +58,7 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
         <div className="p-5 flex flex-col justify-between flex-1">
           <div>
             <Link href={`/product/${p._originalId || p.id}${p.variantColor ? `?color=${encodeURIComponent(p.variantColor)}` : ''}`} className="font-display text-[16px] font-bold text-dark transition-colors hover:text-primary line-clamp-1">{p.title}</Link>
-            
+
             <div className="mt-2 flex items-center gap-1.5">
               <div className="flex items-center gap-0.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -81,7 +81,7 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
             {/* Sizes Selector */}
             {((p.colors && p.colors.length > 0) || (p.sizes && p.sizes.length > 0)) && (
               <div className="mt-4 text-[13px]">
-                <select 
+                <select
                   value={selectedSize}
                   onChange={(e) => setSelectedSize(e.target.value)}
                   className="w-full rounded-lg border border-border bg-white px-3 py-2 font-semibold text-dark/80 outline-none focus:border-primary"
@@ -100,8 +100,8 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
               </div>
             )}
           </div>
-          <button 
-            onClick={handleAddToCart} 
+          <button
+            onClick={handleAddToCart}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 py-3 text-[14px] font-bold text-primary transition hover:bg-primary hover:text-white"
           >
             <ShoppingBag className="h-4 w-4" /> Add to cart

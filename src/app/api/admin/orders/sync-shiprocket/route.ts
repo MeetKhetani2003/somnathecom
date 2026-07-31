@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       let trackingNumber = order.trackingNumber || "";
 
       // 1. Check if order exists in Shiprocket
-      if (!trackingNumber || trackingNumber.startsWith("SR_MOCK")) {
+      if (!trackingNumber) {
         console.log(`[Sync AWB] Checking if order ${order._id} already exists in Shiprocket...`);
         const existingAwb = await getShiprocketAwbFromApi(order._id.toString());
         if (existingAwb) {
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
       // 3. Fetch latest tracking status from Shiprocket
       let updatedStatus = order.shippingStatus;
-      if (trackingNumber && !trackingNumber.startsWith("SR_MOCK")) {
+      if (trackingNumber) {
         console.log(`[Sync AWB] Fetching tracking status for AWB: ${trackingNumber}`);
         const latestStatus = await getShiprocketTrackStatus(trackingNumber);
         if (latestStatus) {

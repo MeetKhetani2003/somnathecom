@@ -5,51 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, ChevronDown, Search, Check } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 
-const categoryGroups = [
-  {
-    title: "Ladies Collection",
-    categories: [
-      { label: "Ladies Full Night Suit", value: "Ladies Collection > Night Suits > Ladies Full Night Suit" },
-      { label: "Ladies Capri Night Suit", value: "Ladies Collection > Night Suits > Ladies Capri Night Suit" },
-      { label: "Ladies Short Night Suit", value: "Ladies Collection > Night Suits > Ladies Short Night Suit" },
-      { label: "Oversized T-Shirt", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt" },
-      { label: "Oversized T-Shirt & Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Plazo Set" },
-      { label: "Oversized T-Shirt & Cargo Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set" },
-      { label: "Valentino Plazo", value: "Ladies Collection > Plazo Collection > Valentino Plazo" },
-      { label: "Tencel Plazo", value: "Ladies Collection > Plazo Collection > Tencel Plazo" }
-    ]
-  },
-  {
-    title: "Men's Collection",
-    categories: [
-      { label: "Gents Full Night Suit", value: "Men's Collection > Night Suits > Gents Full Night Suit" },
-      { label: "Gents Capri Night Suit", value: "Men's Collection > Night Suits > Gents Capri Night Suit" },
-      { label: "Gents Short Night Suit", value: "Men's Collection > Night Suits > Gents Short Night Suit" }
-    ]
-  },
-  {
-    title: "Tencel Collection",
-    categories: [
-      { label: "Tencel Full Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Full Night Suit" },
-      { label: "Tencel Capri Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Capri Night Suit" },
-      { label: "Tencel Short Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Short Night Suit" },
-      { label: "Tencel Plazo", value: "Tencel Collection > Tencel Plazo > Tencel Plazo" },
-      { label: "Tencel Lounge Wear", value: "Tencel Collection > Future Collections > Tencel Lounge Wear" },
-      { label: "Tencel Couple Set", value: "Tencel Collection > Future Collections > Tencel Couple Set" }
-    ]
-  },
-  {
-    title: "Hosiery Collection",
-    categories: [
-      { label: "Hosiery Full Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit" },
-      { label: "Hosiery Capri Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Capri Night Suit" },
-      { label: "Hosiery Short Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Short Night Suit" },
-      { label: "Hosiery Oversized T-Shirt", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt" },
-      { label: "Hosiery Oversized T-Shirt & Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Plazo Set" },
-      { label: "Hosiery Oversized T-Shirt & Cargo Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Cargo Plazo Set" }
-    ]
-  }
-];
+// categoryGroups will be fetched dynamically from the API
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -81,13 +37,30 @@ function ProductsContent() {
   const [activeSizes, setActiveSizes] = useState<string[]>([]);
   const [activePrices, setActivePrices] = useState<string[]>([]);
   const [productsList, setProductsList] = useState<any[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchData() {
       try {
-        const res = await fetch("/api/products");
-        const data = await res.json();
+        const [catRes, prodRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch("/api/products")
+        ]);
+
+        const catData = await catRes.json();
+        if (catData.success) {
+          const groupsMap = new Map();
+          catData.categories.forEach((c: any) => {
+            if (!groupsMap.has(c.group)) {
+              groupsMap.set(c.group, { title: c.group, categories: [] });
+            }
+            groupsMap.get(c.group).categories.push({ label: c.name, value: c.fullPath });
+          });
+          setCategoryGroups(Array.from(groupsMap.values()));
+        }
+
+        const data = await prodRes.json();
         if (data.success) {
           const explodedProducts = data.products.flatMap((p: any) => {
             if (p.colors && p.colors.length > 0) {
@@ -107,12 +80,12 @@ function ProductsContent() {
           setProductsList(explodedProducts);
         }
       } catch (err) {
-        console.error("Error fetching products:", err);
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     }
-    fetchProducts();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -245,7 +218,7 @@ function ProductsContent() {
                     {group.title}
                   </div>
                   <ul className="space-y-1 pl-3 border-l-2 border-border ml-1.5">
-                    {group.categories.map((cat) => (
+                    {group.categories.map((cat: any) => (
                       <li key={cat.value}>
                         <button
                           id={activeCategory.toLowerCase() === cat.value.toLowerCase() ? "active-category-item" : undefined}

@@ -121,9 +121,11 @@ export async function POST(req: Request) {
 
     const finalShippingCost = paymentMethod === "cod" ? (shippingCost || 0) : 0;
     const baseTotal = subtotal - discount;
-    const gstAmount = Math.round(baseTotal * 0.05);
-    const platformFee = Math.round(baseTotal * 0.02);
-    const total = baseTotal + finalShippingCost + gstAmount + platformFee;
+    // const gstAmount = Math.round(baseTotal * 0.05);
+    // const platformFee = Math.round(baseTotal * 0.02);
+    const gstAmount = 0;
+    const platformFee = 0;
+    const total = baseTotal + finalShippingCost; // + gstAmount + platformFee;
 
     // 3. Deduct Stock Temporarily (Reservation)
     for (const item of itemsToOrder) {
@@ -233,14 +235,10 @@ export async function POST(req: Request) {
         const shiprocketRes = await createShiprocketOrder(localOrder);
         if (shiprocketRes && shiprocketRes.shipment_id) {
           localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
-        } else {
-          localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
         }
         await localOrder.save();
       } catch (shiprocketErr) {
         console.error("Failed to create Shiprocket order for Debit purchase:", shiprocketErr);
-        localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
-        await localOrder.save();
       }
 
       return NextResponse.json({
@@ -268,14 +266,10 @@ export async function POST(req: Request) {
         const shiprocketRes = await createShiprocketOrder(localOrder);
         if (shiprocketRes && shiprocketRes.shipment_id) {
           localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
-        } else {
-          localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
         }
         await localOrder.save();
       } catch (shiprocketErr) {
         console.error("Failed to create order in Shiprocket for COD order:", shiprocketErr);
-        localOrder.trackingNumber = "SR_MOCK_" + Math.random().toString(36).substring(2, 10).toUpperCase();
-        await localOrder.save();
       }
 
       return NextResponse.json({
@@ -298,16 +292,17 @@ export async function POST(req: Request) {
     });
 
     // 6. Initiate Razorpay Order
-    const key_id = process.env.RAZORPAY_KEY_ID || "rzp_test_placeholder";
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || "placeholder_secret";
-    const isPlaceholder = key_id === "rzp_test_placeholder" || key_secret === "placeholder_secret";
+    const key_id = process.env.RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    
+    if (!key_id || !key_secret) {
+      return NextResponse.json({ success: false, message: "Razorpay credentials are not configured in environment variables." }, { status: 500 });
+    }
 
     let rzpOrderId = "";
     let rzpAmount = (paymentMethod === "cod" ? finalShippingCost : total) * 100;
 
-    if (isPlaceholder) {
-      rzpOrderId = "mock_rzp_" + Math.random().toString(36).substring(2, 11);
-    } else {
+    {
       const razorpay = new Razorpay({
         key_id,
         key_secret

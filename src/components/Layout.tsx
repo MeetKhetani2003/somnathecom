@@ -12,51 +12,7 @@ import LoginModal from "@/components/LoginModal";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-const megaMenuGroups = [
-  {
-    title: "Ladies Collection",
-    categories: [
-      { label: "Ladies Full Night Suit", value: "Ladies Collection > Night Suits > Ladies Full Night Suit" },
-      { label: "Ladies Capri Night Suit", value: "Ladies Collection > Night Suits > Ladies Capri Night Suit" },
-      { label: "Ladies Short Night Suit", value: "Ladies Collection > Night Suits > Ladies Short Night Suit" },
-      { label: "Oversized T-Shirt", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt" },
-      { label: "Oversized T-Shirt & Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Plazo Set" },
-      { label: "Oversized T-Shirt & Cargo Plazo Set", value: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set" },
-      { label: "Valentino Plazo", value: "Ladies Collection > Plazo Collection > Valentino Plazo" },
-      { label: "Tencel Plazo", value: "Ladies Collection > Plazo Collection > Tencel Plazo" }
-    ]
-  },
-  {
-    title: "Men's Collection",
-    categories: [
-      { label: "Gents Full Night Suit", value: "Men's Collection > Night Suits > Gents Full Night Suit" },
-      { label: "Gents Capri Night Suit", value: "Men's Collection > Night Suits > Gents Capri Night Suit" },
-      { label: "Gents Short Night Suit", value: "Men's Collection > Night Suits > Gents Short Night Suit" }
-    ]
-  },
-  {
-    title: "Tencel Collection",
-    categories: [
-      { label: "Tencel Full Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Full Night Suit" },
-      { label: "Tencel Capri Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Capri Night Suit" },
-      { label: "Tencel Short Night Suit", value: "Tencel Collection > Tencel Nightwear > Tencel Short Night Suit" },
-      { label: "Tencel Plazo", value: "Tencel Collection > Tencel Plazo > Tencel Plazo" },
-      { label: "Tencel Lounge Wear", value: "Tencel Collection > Future Collections > Tencel Lounge Wear" },
-      { label: "Tencel Couple Set", value: "Tencel Collection > Future Collections > Tencel Couple Set" }
-    ]
-  },
-  {
-    title: "Hosiery Collection",
-    categories: [
-      { label: "Hosiery Full Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Full Night Suit" },
-      { label: "Hosiery Capri Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Capri Night Suit" },
-      { label: "Hosiery Short Night Suit", value: "Hosiery Collection > Hosiery Nightwear > Hosiery Short Night Suit" },
-      { label: "Hosiery Oversized T-Shirt", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt" },
-      { label: "Hosiery Oversized T-Shirt & Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Plazo Set" },
-      { label: "Hosiery Oversized T-Shirt & Cargo Plazo Set", value: "Hosiery Collection > Hosiery Oversized > Hosiery Oversized T-Shirt & Cargo Plazo Set" }
-    ]
-  }
-];
+// megaMenuGroups will be fetched dynamically from the API
 
 const cn = (...c: (string | boolean | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -73,8 +29,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [hasFetchedProducts, setHasFetchedProducts] = useState(false);
+  const [megaMenuGroups, setMegaMenuGroups] = useState<any[]>([]);
 
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await fetch("/api/categories");
+        const data = await res.json();
+        if (data.success) {
+          const groupsMap = new Map();
+          data.categories.forEach((c: any) => {
+            if (!groupsMap.has(c.group)) {
+              groupsMap.set(c.group, { title: c.group, categories: [] });
+            }
+            groupsMap.get(c.group).categories.push({ label: c.name, value: c.fullPath });
+          });
+          setMegaMenuGroups(Array.from(groupsMap.values()));
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const fetchSearchProducts = async () => {
     if (hasFetchedProducts) return;
@@ -185,7 +164,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           {group.title}
                         </div>
                         <ul className="space-y-3 border-l-2 border-bg-base pl-4">
-                          {group.categories.map((cat) => (
+                          {group.categories.map((cat: any) => (
                             <li key={cat.value}>
                               <Link 
                                 href={`/products?category=${encodeURIComponent(cat.value)}`}
@@ -435,7 +414,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             {group.title}
                           </div>
                           <div className="space-y-1 pl-1">
-                            {group.categories.map((cat) => (
+                            {group.categories.map((cat: any) => (
                               <Link 
                                 key={cat.value} 
                                 href={`/products?category=${encodeURIComponent(cat.value)}`}

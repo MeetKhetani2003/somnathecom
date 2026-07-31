@@ -17,6 +17,10 @@ interface SizeEntry {
   price?: number | "";
   mrp?: number | "";
   netPrice?: number | "";
+  weight?: number | "";
+  length?: number | "";
+  width?: number | "";
+  height?: number | "";
 }
 
 interface ColorVariant {
@@ -50,7 +54,7 @@ export default function EditProductPage() {
   const [formCareInstructions, setFormCareInstructions] = useState("");
   
   // Legacy Size-stock pairs (no colors)
-  const [sizeEntries, setSizeEntries] = useState<SizeEntry[]>([{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }]);
+  const [sizeEntries, setSizeEntries] = useState<SizeEntry[]>([{ size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }]);
 
   // Legacy detailed images
   const [existingDetailedImages, setExistingDetailedImages] = useState<string[]>([]);
@@ -119,9 +123,13 @@ export default function EditProductPage() {
                   stock: typeof s === "object" ? Number(s.stock) || 0 : 0,
                   price: typeof s === "object" && s.price ? Number(s.price) : "",
                   mrp: typeof s === "object" && s.mrp ? Number(s.mrp) : "",
-                  netPrice: typeof s === "object" && s.netPrice ? Number(s.netPrice) : ""
+                  netPrice: typeof s === "object" && s.netPrice ? Number(s.netPrice) : "",
+                  weight: typeof s === "object" && s.weight ? Number(s.weight) : "",
+                  length: typeof s === "object" && s.length ? Number(s.length) : "",
+                  width: typeof s === "object" && s.width ? Number(s.width) : "",
+                  height: typeof s === "object" && s.height ? Number(s.height) : ""
                 }))
-              : [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }],
+              : [{ size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }],
           }));
           setColorVariants(loadedColors);
           setActiveColorIdx(0);
@@ -133,11 +141,15 @@ export default function EditProductPage() {
             stock: Number(s.stock) || 0,
             price: s.price ? Number(s.price) : "",
             mrp: s.mrp ? Number(s.mrp) : "",
-            netPrice: s.netPrice ? Number(s.netPrice) : ""
+            netPrice: s.netPrice ? Number(s.netPrice) : "",
+            weight: s.weight ? Number(s.weight) : "",
+            length: s.length ? Number(s.length) : "",
+            width: s.width ? Number(s.width) : "",
+            height: s.height ? Number(s.height) : ""
           }));
           setSizeEntries(loaded);
         } else {
-          setSizeEntries([{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }]);
+          setSizeEntries([{ size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }]);
         }
       } else {
         fireToast("Product not found!");
@@ -182,7 +194,7 @@ export default function EditProductPage() {
       newImagePreviews: [], 
       hasSizeGuide: false,
       sizeGuide: [{ size: "", chest: "", waist: "", hip: "" }],
-      sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }] 
+      sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }] 
     }]);
     setActiveColorIdx(colorVariants.length);
   };
@@ -255,7 +267,7 @@ export default function EditProductPage() {
   };
 
   const addColorSizeRow = (colorIdx: number) => {
-    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }] } : cv));
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }] } : cv));
   };
 
   const removeColorSizeRow = (colorIdx: number, sizeIdx: number) => {
@@ -265,12 +277,12 @@ export default function EditProductPage() {
   const updateColorSizeRow = (colorIdx: number, sizeIdx: number, field: keyof SizeEntry, value: string | number) => {
     setColorVariants(prev => prev.map((cv, i) => {
       if (i !== colorIdx) return cv;
-      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : s) };
+      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice" || field === "weight" || field === "length" || field === "width" || field === "height") && value !== "" ? Number(value) : value } : s) };
     }));
   };
 
   const addSizeRow = () => {
-    setSizeEntries((prev) => [...prev, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }]);
+    setSizeEntries((prev) => [...prev, { size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }]);
   };
 
   const removeSizeRow = (idx: number) => {
@@ -280,7 +292,7 @@ export default function EditProductPage() {
   const updateSizeRow = (idx: number, field: keyof SizeEntry, value: string | number) => {
     setSizeEntries((prev) =>
       prev.map((entry, i) =>
-        i === idx ? { ...entry, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : entry
+        i === idx ? { ...entry, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice" || field === "weight" || field === "length" || field === "width" || field === "height") && value !== "" ? Number(value) : value } : entry
       )
     );
   };
@@ -808,6 +820,20 @@ export default function EditProductPage() {
                                 <input type="number" value={entry.netPrice} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-9 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-[12px] outline-none focus:border-primary" />
                               </div>
                             </div>
+                            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-border mt-1">
+                              <div className="relative">
+                                <input type="number" step="0.01" value={entry.weight} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "weight", e.target.value)} placeholder="Weight (kg) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.length} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "length", e.target.value)} placeholder="Length (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.width} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "width", e.target.value)} placeholder="Width (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.height} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "height", e.target.value)} placeholder="Height (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -904,6 +930,20 @@ export default function EditProductPage() {
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-dark/40">₹</span>
                         <input type="number" value={entry.netPrice} onChange={(e) => updateSizeRow(idx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-10 w-full rounded-lg border border-border bg-white pl-7 pr-3 text-[13px] outline-none focus:border-primary" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border mt-2">
+                      <div className="relative">
+                        <input type="number" step="0.01" value={entry.weight} onChange={(e) => updateSizeRow(idx, "weight", e.target.value)} placeholder="Weight (kg) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                      </div>
+                      <div className="relative">
+                        <input type="number" step="0.1" value={entry.length} onChange={(e) => updateSizeRow(idx, "length", e.target.value)} placeholder="Length (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                      </div>
+                      <div className="relative">
+                        <input type="number" step="0.1" value={entry.width} onChange={(e) => updateSizeRow(idx, "width", e.target.value)} placeholder="Width (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                      </div>
+                      <div className="relative">
+                        <input type="number" step="0.1" value={entry.height} onChange={(e) => updateSizeRow(idx, "height", e.target.value)} placeholder="Height (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
                       </div>
                     </div>
                   </div>

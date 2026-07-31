@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
+import { cancelShiprocketOrder } from "@/utils/shiprocket";
 
 export async function GET(req: Request) {
   try {
@@ -65,6 +66,13 @@ export async function POST(req: Request) {
             product.stock += item.quantity;
             await product.save();
           }
+        }
+        
+        // Cancel order in Shiprocket
+        try {
+          await cancelShiprocketOrder(order._id.toString(), order.trackingNumber || undefined);
+        } catch (shiprocketErr) {
+          console.error("Failed to cancel order in Shiprocket:", shiprocketErr);
         }
       }
       if (shippingStatus === "Delivered" && order.shippingStatus !== "Delivered") {

@@ -247,16 +247,17 @@ export async function POST(req: Request) {
       });
     } else {
       // Online Payment Init - Create Razorpay Order
-      const key_id = process.env.RAZORPAY_KEY_ID || "rzp_test_placeholder";
-      const key_secret = process.env.RAZORPAY_KEY_SECRET || "placeholder_secret";
-      const isPlaceholder = key_id === "rzp_test_placeholder" || key_secret === "placeholder_secret";
+      const key_id = process.env.RAZORPAY_KEY_ID;
+      const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+      if (!key_id || !key_secret) {
+        return NextResponse.json({ success: false, message: "Razorpay credentials are not configured in environment variables." }, { status: 500 });
+      }
 
       let rzpOrderId = "";
       let rzpAmount = flatExchangeFee * 100; // 12000 paise
 
-      if (isPlaceholder) {
-        rzpOrderId = "mock_rzp_exchange_" + Math.random().toString(36).substring(2, 11);
-      } else {
+      {
         const razorpay = new Razorpay({
           key_id,
           key_secret

@@ -231,46 +231,6 @@ function ProfileContent() {
         return;
       }
 
-      // Check if key is placeholder
-      if (data.key === "rzp_test_placeholder") {
-        const choice = window.confirm(
-          `Razorpay Test Mode Bypass:\n\nClick OK to simulate a SUCCESSFUL payment for the ₹${data.amount / 100} exchange fee.\nClick Cancel to abort.`
-        );
-        if (choice) {
-          // Simulate Payment Verification
-          try {
-            const verifyRes = await fetch("/api/orders/exchange/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_payment_id: "mock_pay_" + Math.random().toString(36).substring(2, 11),
-                razorpay_order_id: data.razorpayOrderId,
-                razorpay_signature: "mock_signature",
-                orderId: selectedOrderForExchange._id,
-                newAddress: newExchangeAddress,
-                newSizes: exchangeItems.map(item => ({
-                  productId: item.productId,
-                  oldSize: item.oldSize,
-                  newSize: item.newSize
-                }))
-              }),
-            });
-            const verifyData = await verifyRes.json();
-            if (verifyData.success) {
-              toastSuccess("Payment Success! [SIMULATED] Exchange request registered.");
-              setIsExchangeModalOpen(false);
-              fetchOrders();
-            } else {
-              toastError("Verification failed: " + verifyData.message);
-            }
-          } catch (verifyErr) {
-            console.error(verifyErr);
-            toastError("Error verifying simulated payment.");
-          }
-        }
-        setSubmittingExchange(false);
-        return;
-      }
 
       // Real Razorpay popup
       const options = {

@@ -425,14 +425,7 @@ export async function sendInvoiceEmail(details: InvoiceDetails) {
       console.error("[Email Service] Failed to send email via SMTP:", error);
     }
   }
-
-  // Fallback: log invoice to the console
-  console.log("==================================================================");
-  console.log(`[MOCK EMAIL FALLBACK] Invoice generated for order ${orderId}`);
-  console.log(`Recipient: ${email}`);
-  console.log(`Subtotal: ₹${subtotal}, Discount: ₹${discount}, Total: ₹${total}`);
-  console.log("HTML Billing Invoice Template content matches generated design.");
-  console.log("==================================================================");
+  throw new Error("Failed to send email. Check your SMTP configuration.");
 }
 
 interface BulkInquiryDetails {
@@ -555,12 +548,7 @@ export async function sendBulkInquiryEmails(details: BulkInquiryDetails) {
     }
   }
 
-  console.log("==================================================================");
-  console.log(`[MOCK EMAIL FALLBACK] Bulk Inquiry Emails Sent.`);
-  console.log(`Product: ${productTitle} (ID: ${productId}), Qty: ${quantity}`);
-  console.log(`Customer: ${name} (${email}), Phone: ${phone}`);
-  console.log("Both admin notification and customer confirmation emails logged.");
-  console.log("==================================================================");
+  throw new Error("Failed to send bulk inquiry email. Check SMTP credentials.");
 }
 
 export async function sendOutOfStockEmail(productTitle: string, variantDetails?: string) {
@@ -635,11 +623,7 @@ export async function sendOutOfStockEmail(productTitle: string, variantDetails?:
     }
   }
 
-  console.log("==================================================================");
-  console.log(`[MOCK EMAIL FALLBACK] Out-of-Stock Notification Logged.`);
-  console.log(`Product: ${productTitle}, Variant: ${variantDetails || "None"}`);
-  console.log(`Recipient Admin: ${adminEmail}`);
-  console.log("==================================================================");
+  throw new Error("Failed to send out of stock email. Check SMTP credentials.");
 }
 
 export interface ContactInquiryDetails {
@@ -724,9 +708,5 @@ export async function sendInquiryEmail(details: ContactInquiryDetails) {
     }
   }
 
-  console.log("==================================================================");
-  console.log(`[MOCK EMAIL FALLBACK] Inquiry Email Sent.`);
-  console.log(`From: ${name} (${email})${phone ? ` - Phone: ${phone}` : ""}`);
-  console.log(`Subject: ${subject}`);
-  console.log("==================================================================");
+  throw new Error("Failed to send contact inquiry email. Check SMTP credentials.");
 }

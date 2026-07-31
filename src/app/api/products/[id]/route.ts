@@ -47,10 +47,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: { size: string; stock: number }[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: any[]; imageCount: number; existingImages?: string[] }[] = JSON.parse(colorsMetaStr);
         
         let colorImageIdx = 0;
-        const colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: { size: string; stock: number }[] }[] = [];
+        const colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: any[] }[] = [];
         
         for (const meta of colorsMeta) {
           const colorImages: string[] = [...(meta.existingImages || [])];

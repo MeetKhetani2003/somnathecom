@@ -45,11 +45,11 @@ export async function POST(req: Request) {
 
 
     // ─── Process Color Variants ──────────────────────────────────────────────
-    let colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: { size: string; stock: number }[] }[] = [];
+    let colors: { name: string; title?: string; featured: boolean; images: string[]; ytVideoUrl?: string; sizeGuide?: any[]; sizes: any[] }[] = [];
     
     if (colorsMetaStr) {
       try {
-        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: { size: string; stock: number }[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
+        const colorsMeta: { name: string; title?: string; featured?: boolean; ytVideoUrl?: string; hasSizeGuide?: boolean; sizeGuide?: any[]; sizes: any[]; imageCount: number; }[] = JSON.parse(colorsMetaStr);
         
         // Upload color images in order
         let colorImageIdx = 0;
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       }
     }
 
-    let sizes: { size: string; stock: number }[] = [];
+    let sizes: any[] = [];
     if (sizesStr) {
       try {
         sizes = JSON.parse(sizesStr);

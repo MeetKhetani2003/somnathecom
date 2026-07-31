@@ -16,6 +16,10 @@ interface SizeEntry {
   price?: number | "";
   mrp?: number | "";
   netPrice?: number | "";
+  weight?: number | "";
+  length?: number | "";
+  width?: number | "";
+  height?: number | "";
 }
 
 interface ColorVariant {
@@ -50,7 +54,7 @@ export default function CreateProductPage() {
 
   // Legacy fallback: sizes without colors (used when no colors are defined)
   const [legacySizeEntries, setLegacySizeEntries] = useState<SizeEntry[]>([
-    { size: "", stock: 0, price: "", mrp: "", netPrice: "" },
+    { size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" },
   ]);
   const [legacyDetailedFiles, setLegacyDetailedFiles] = useState<File[]>([]);
   const [legacyDetailedPreviews, setLegacyDetailedPreviews] = useState<string[]>([]);
@@ -72,7 +76,7 @@ export default function CreateProductPage() {
 
   // ─── Color Variant Helpers ──────────────────────────────────────────────────
   const addColorVariant = () => {
-    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, ytVideoUrl: "", imageFiles: [], imagePreviews: [], hasSizeGuide: false, sizeGuide: [{ size: "", chest: "", waist: "", hip: "" }], sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "" }] }]);
+    setColorVariants(prev => [...prev, { name: "", title: "", featured: false, ytVideoUrl: "", imageFiles: [], imagePreviews: [], hasSizeGuide: false, sizeGuide: [{ size: "", chest: "", waist: "", hip: "" }], sizes: [{ size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }] }]);
     setActiveColorIdx(colorVariants.length);
   };
 
@@ -140,7 +144,7 @@ export default function CreateProductPage() {
   };
 
   const addColorSizeRow = (colorIdx: number) => {
-    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }] } : cv));
+    setColorVariants(prev => prev.map((cv, i) => i === colorIdx ? { ...cv, sizes: [...cv.sizes, { size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }] } : cv));
   };
 
   const removeColorSizeRow = (colorIdx: number, sizeIdx: number) => {
@@ -150,13 +154,13 @@ export default function CreateProductPage() {
   const updateColorSizeRow = (colorIdx: number, sizeIdx: number, field: keyof SizeEntry, value: string | number) => {
     setColorVariants(prev => prev.map((cv, i) => {
       if (i !== colorIdx) return cv;
-      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : s) };
+      return { ...cv, sizes: cv.sizes.map((s, j) => j === sizeIdx ? { ...s, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice" || field === "weight" || field === "length" || field === "width" || field === "height") && value !== "" ? Number(value) : value } : s) };
     }));
   };
 
   // ─── Legacy Size Helpers (no colors) ────────────────────────────────────────
   const addLegacySizeRow = () => {
-    setLegacySizeEntries(prev => [...prev, { size: "", stock: 0, price: "", mrp: "", netPrice: "" }]);
+    setLegacySizeEntries((prev) => [...prev, { size: "", stock: 0, price: "", mrp: "", netPrice: "", weight: "", length: "", width: "", height: "" }]);
   };
 
   const removeLegacySizeRow = (idx: number) => {
@@ -166,7 +170,7 @@ export default function CreateProductPage() {
   const updateLegacySizeRow = (idx: number, field: keyof SizeEntry, value: string | number) => {
     setLegacySizeEntries(prev =>
       prev.map((entry, i) =>
-        i === idx ? { ...entry, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice") && value !== "" ? Number(value) : value } : entry
+        i === idx ? { ...entry, [field]: (field === "stock" || field === "price" || field === "mrp" || field === "netPrice" || field === "weight" || field === "length" || field === "width" || field === "height") && value !== "" ? Number(value) : value } : entry
       )
     );
   };
@@ -686,6 +690,20 @@ export default function CreateProductPage() {
                                 <input type="number" value={entry.netPrice} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-9 w-full rounded-lg border border-border bg-white pl-6 pr-2 text-[12px] outline-none focus:border-primary" />
                               </div>
                             </div>
+                            <div className="grid grid-cols-4 gap-2 pt-1 border-t border-border mt-1">
+                              <div className="relative">
+                                <input type="number" step="0.01" value={entry.weight} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "weight", e.target.value)} placeholder="Weight (kg) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.length} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "length", e.target.value)} placeholder="Length (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.width} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "width", e.target.value)} placeholder="Width (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                              <div className="relative">
+                                <input type="number" step="0.1" value={entry.height} onChange={(e) => updateColorSizeRow(activeColorIdx, sIdx, "height", e.target.value)} placeholder="Height (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] outline-none focus:border-primary" required />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -790,6 +808,20 @@ export default function CreateProductPage() {
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-dark/40">₹</span>
                           <input type="number" value={entry.netPrice} onChange={(e) => updateLegacySizeRow(idx, "netPrice", e.target.value)} placeholder="Net Cost (Opt)" className="h-10 w-full rounded-lg border border-border bg-white pl-7 pr-3 text-[13px] outline-none focus:border-primary" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border mt-2">
+                        <div className="relative">
+                          <input type="number" step="0.01" value={entry.weight} onChange={(e) => updateLegacySizeRow(idx, "weight", e.target.value)} placeholder="Weight (kg) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                        </div>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={entry.length} onChange={(e) => updateLegacySizeRow(idx, "length", e.target.value)} placeholder="Length (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                        </div>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={entry.width} onChange={(e) => updateLegacySizeRow(idx, "width", e.target.value)} placeholder="Width (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
+                        </div>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={entry.height} onChange={(e) => updateLegacySizeRow(idx, "height", e.target.value)} placeholder="Height (cm) *" className="h-9 w-full rounded-lg border border-border bg-white px-3 text-[12px] outline-none focus:border-primary" required />
                         </div>
                       </div>
                     </div>
