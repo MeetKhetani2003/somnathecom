@@ -232,13 +232,11 @@ export async function POST(req: Request) {
       });
 
       try {
-        const shiprocketRes = await createShiprocketOrder(localOrder);
-        if (shiprocketRes && shiprocketRes.shipment_id) {
-          localOrder.trackingNumber = shiprocketRes.shipment_id.toString();
-        }
+        const count = await Order.countDocuments({ isDebitPurchase: true });
+        localOrder.trackingNumber = `customorder${count}`;
         await localOrder.save();
-      } catch (shiprocketErr) {
-        console.error("Failed to create Shiprocket order for Debit purchase:", shiprocketErr);
+      } catch (err) {
+        console.error("Failed to set custom AWB for Debit purchase:", err);
       }
 
       return NextResponse.json({

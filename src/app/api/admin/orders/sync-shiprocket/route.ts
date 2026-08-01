@@ -11,6 +11,10 @@ export async function POST(req: Request) {
 
     // Helper to sync single order
     const syncSingleOrder = async (order: any) => {
+      if (order.isDebitPurchase) {
+        return { orderId: order._id.toString(), trackingNumber: order.trackingNumber, shippingStatus: order.shippingStatus };
+      }
+
       let trackingNumber = order.trackingNumber || "";
 
       // 1. Check if order exists in Shiprocket
