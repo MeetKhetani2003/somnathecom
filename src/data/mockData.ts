@@ -8,6 +8,7 @@ export const heroSlides = [
     image: "/images/products/tencel_plazo.png",
     badge: "New Collection",
   },
+
   {
     id: 2,
     eyebrow: "The Silk Experience",
