@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RotateCcw, Sparkles, ArrowRight, Check } from "lucide-react";
 import { heroSlides, testimonials, categories } from "@/data/mockData";
@@ -73,10 +74,11 @@ function HeroCarousel() {
             }}
           >
             {/* Background image */}
-            <img
+            <Image
+              fill
               src={slide.image}
               alt={slide.title}
-              className="absolute inset-0 h-full w-full object-cover object-top "
+              className="object-cover object-top"
               style={{ transform: i === current ? "scale(1.04)" : "scale(1)", transition: "transform 6s ease-out" }}
             />
             {/* Gradient overlays matching premium design */}
@@ -340,10 +342,11 @@ export default function Home() {
               href={`/products?category=${encodeURIComponent(cat.name)}`}
               className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-[24px] border border-border/40 bg-dark shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-dark/5"
             >
-              <img
+              <Image
+                fill
                 src={cat.image}
                 alt={cat.name}
-                className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
+                className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-dark/95 via-dark/30 to-transparent transition-opacity duration-300 group-hover:opacity-90" />
               <div className="relative z-10 p-5 text-left text-white">
@@ -395,7 +398,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative h-[400px] w-full md:h-auto">
-            <img src="/public/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover object-top" />
+            <Image fill src="/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/20 to-transparent md:hidden" />
           </div>
         </div>

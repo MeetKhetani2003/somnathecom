@@ -5,7 +5,7 @@ export const heroSlides = [
     title: "That Feels As Good As It Looks.",
     subtitle: "Premium comfort, modern styles, and breathable fabrics designed for your best sleep.",
     cta: "Shop Women",
-    image: "/public/images/products/tencel_plazo.png",
+    image: "/images/products/tencel_plazo.png",
     badge: "New Collection",
   },
   {
@@ -14,7 +14,7 @@ export const heroSlides = [
     title: "Unmatched Softness & Breathability",
     subtitle: "Luxury silk collection, crafted for ultimate relaxation and style.",
     cta: "Explore Silk",
-    image: "/public/images/products/silk_suit.png",
+    image: "/images/products/silk_suit.png",
     badge: "Bestseller",
   },
   {
@@ -23,7 +23,7 @@ export const heroSlides = [
     title: "Loungewear Redefined",
     subtitle: "Effortless style meets supreme comfort in our Oversized sets.",
     cta: "Shop Oversized",
-    image: "/public/images/products/oversized_cargo.png",
+    image: "/images/products/oversized_cargo.png",
     badge: "Trending",
   },
   {
@@ -32,7 +32,7 @@ export const heroSlides = [
     title: "Classic Fits, Modern Feel",
     subtitle: "Elevate your evening routine with premium men's night suits.",
     cta: "Shop Men",
-    image: "/public/images/products/gents_stripe.png",
+    image: "/images/products/gents_stripe.png",
     badge: "Must Have",
   },
 ];
@@ -45,11 +45,11 @@ export const products = [
     price: 1499,
     mrp: 2499,
     rating: 4.9,
-    image: "/public/images/products/tencel_plazo.png",
+    image: "/images/products/tencel_plazo.png",
     images: [
-      "/public/images/products/tencel_plazo.png",
-      "/public/images/products/valentino_plazo.png",
-      "/public/images/products/short_suit.png"
+      "/images/products/tencel_plazo.png",
+      "/images/products/valentino_plazo.png",
+      "/images/products/short_suit.png"
     ],
     tag: "Bestseller",
     description: "Experience the ultimate softness with our premium Tencel Plazo Set. Lightweight, breathable, and perfectly styled for lounging.",
@@ -67,12 +67,12 @@ export const products = [
     colors: [
       {
         name: "Dusty Rose",
-        images: ["/public/images/products/tencel_plazo.png", "/public/images/products/short_suit.png"],
+        images: ["/images/products/tencel_plazo.png", "/images/products/short_suit.png"],
         sizes: [{ size: "M", stock: 15 }, { size: "L", stock: 3 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 10 }]
       },
       {
         name: "Ocean Blue",
-        images: ["/public/images/products/silk_suit.png", "/public/images/products/valentino_plazo.png"],
+        images: ["/images/products/silk_suit.png", "/images/products/valentino_plazo.png"],
         sizes: [{ size: "L", stock: 0 }, { size: "XL", stock: 5 }, { size: "XXL", stock: 25 }, { size: "3XL", stock: 12 }]
       }
     ],
@@ -86,10 +86,10 @@ export const products = [
     price: 1899,
     mrp: 2999,
     rating: 4.8,
-    image: "/public/images/products/silk_suit.png",
+    image: "/images/products/silk_suit.png",
     images: [
-      "/public/images/products/silk_suit.png",
-      "/public/images/products/tencel_plazo.png"
+      "/images/products/silk_suit.png",
+      "/images/products/tencel_plazo.png"
     ],
     tag: "Premium",
     description: "A luxurious full night suit featuring a sleek silk-like finish. Perfect for elegant evenings and comfortable sleep.",
@@ -105,12 +105,12 @@ export const products = [
     colors: [
       {
         name: "Champagne Gold",
-        images: ["/public/images/products/silk_suit.png"],
+        images: ["/images/products/silk_suit.png"],
         sizes: [{ size: "M", stock: 8 }, { size: "L", stock: 12 }, { size: "XL", stock: 2 }]
       },
       {
         name: "Emerald Green",
-        images: ["/public/images/products/tencel_plazo.png"],
+        images: ["/images/products/tencel_plazo.png"],
         sizes: [{ size: "M", stock: 0 }, { size: "L", stock: 15 }, { size: "XL", stock: 20 }]
       }
     ],
@@ -124,10 +124,10 @@ export const products = [
     price: 1299,
     mrp: 1999,
     rating: 4.7,
-    image: "/public/images/products/oversized_cargo.png",
+    image: "/images/products/oversized_cargo.png",
     images: [
-      "/public/images/products/oversized_cargo.png",
-      "/public/images/products/short_suit.png"
+      "/images/products/oversized_cargo.png",
+      "/images/products/short_suit.png"
     ],
     tag: "Trending",
     description: "Casual, modern, and extremely comfortable. Our oversized tee paired with a functional cargo plazo is your go-to weekend look.",
@@ -143,12 +143,12 @@ export const products = [
     colors: [
       {
         name: "Classic Charcoal",
-        images: ["/public/images/products/oversized_cargo.png"],
+        images: ["/images/products/oversized_cargo.png"],
         sizes: [{ size: "L", stock: 20 }, { size: "XL", stock: 0 }, { size: "XXL", stock: 15 }]
       },
       {
         name: "Lilac Lavender",
-        images: ["/public/images/products/short_suit.png"],
+        images: ["/images/products/short_suit.png"],
         sizes: [{ size: "L", stock: 4 }, { size: "XL", stock: 22 }, { size: "3XL", stock: 0 }]
       }
     ],
@@ -162,9 +162,9 @@ export const products = [
     price: 1599,
     mrp: 2499,
     rating: 4.8,
-    image: "/public/images/products/gents_stripe.png",
+    image: "/images/products/gents_stripe.png",
     images: [
-      "/public/images/products/gents_stripe.png"
+      "/images/products/gents_stripe.png"
     ],
     tag: "New",
     description: "Classic design meets supreme comfort. Features a relaxed fit and incredibly soft fabric.",
@@ -180,10 +180,10 @@ export const products = [
     price: 1799,
     mrp: 2899,
     rating: 4.9,
-    image: "/public/images/products/valentino_plazo.png",
+    image: "/images/products/valentino_plazo.png",
     images: [
-      "/public/images/products/valentino_plazo.png",
-      "/public/images/products/silk_suit.png"
+      "/images/products/valentino_plazo.png",
+      "/images/products/silk_suit.png"
     ],
     tag: "Exclusive",
     description: "The Valentino signature collection brings elegant draping and high-end fabric feel to everyday loungewear.",
@@ -199,10 +199,10 @@ export const products = [
     price: 1099,
     mrp: 1799,
     rating: 4.6,
-    image: "/public/images/products/short_suit.png",
+    image: "/images/products/short_suit.png",
     images: [
-      "/public/images/products/short_suit.png",
-      "/public/images/products/oversized_cargo.png"
+      "/images/products/short_suit.png",
+      "/images/products/oversized_cargo.png"
     ],
     tag: "-38%",
     description: "Perfect for warm nights. A soft, lightweight short set featuring a comfortable elastic waist.",
@@ -216,42 +216,42 @@ export const products = [
 export const categories = [
   {
     name: "Ladies Collection > Night Suits > Ladies Full Night Suit",
-    image: "/public/images/products/silk_suit.png",
+    image: "/images/products/silk_suit.png",
     count: "45 styles",
   },
   {
     name: "Tencel Collection > Tencel Nightwear > Tencel Full Night Suit",
-    image: "/public/images/products/tencel_plazo.png",
+    image: "/images/products/tencel_plazo.png",
     count: "28 styles",
   },
   {
     name: "Ladies Collection > Oversized Collection > Oversized T-Shirt & Cargo Plazo Set",
-    image: "/public/images/products/oversized_cargo.png",
+    image: "/images/products/oversized_cargo.png",
     count: "32 styles",
   },
   {
     name: "Men's Collection > Night Suits > Gents Full Night Suit",
-    image: "/public/images/products/gents_stripe.png",
+    image: "/images/products/gents_stripe.png",
     count: "18 styles",
   },
   {
     name: "Ladies Collection > Plazo Collection > Valentino Plazo",
-    image: "/public/images/products/valentino_plazo.png",
+    image: "/images/products/valentino_plazo.png",
     count: "15 styles",
   },
   {
     name: "Ladies Collection > Night Suits > Ladies Capri Night Suit",
-    image: "/public/images/products/tencel_plazo.png",
+    image: "/images/products/tencel_plazo.png",
     count: "24 styles",
   },
   {
     name: "Men's Collection > Night Suits > Gents Short Night Suit",
-    image: "/public/images/products/gents_stripe.png",
+    image: "/images/products/gents_stripe.png",
     count: "10 styles",
   },
   {
     name: "Ladies Collection > Night Suits > Ladies Short Night Suit",
-    image: "/public/images/products/short_suit.png",
+    image: "/images/products/short_suit.png",
     count: "30 styles",
   },
 ];
