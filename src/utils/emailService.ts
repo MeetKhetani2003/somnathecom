@@ -710,3 +710,113 @@ export async function sendInquiryEmail(details: ContactInquiryDetails) {
 
   throw new Error("Failed to send contact inquiry email. Check SMTP credentials.");
 }
+
+export interface ExchangeEmailDetails {
+  orderId: string;
+  customerName: string;
+  email: string;
+  exchangeFee: number;
+  originalSizes: any[];
+  newSizes: any[];
+}
+
+export async function sendExchangeConfirmationEmail(details: ExchangeEmailDetails) {
+  const { orderId, customerName, email, exchangeFee, originalSizes, newSizes } = details;
+  
+  // Format items exchanged
+  const itemRows = newSizes.map((newItem: any, index: number) => {
+    const oldItem = originalSizes[index];
+    return `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #F0E6F2; text-align: left; font-size: 14px; color: #1A0F1C;">
+          Product ID: ${newItem.productId}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #F0E6F2; text-align: center; font-size: 14px; color: #4A354D;">
+          ${oldItem ? oldItem.size : 'N/A'} ${oldItem && oldItem.color ? `(${oldItem.color})` : ''}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #F0E6F2; text-align: center; font-size: 14px; color: #0F8A4B; font-weight: bold;">
+          ${newItem.size} ${newItem.color ? `(${newItem.color})` : ''}
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  const emailHtml = `
+    <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #F8FAFC; padding: 30px 15px; text-align: center;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #E5E7EB; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(61, 47, 179, 0.05); text-align: left;">
+        
+        <!-- Header Banner -->
+        <div style="background: linear-gradient(135deg, #16A8E8 0%, #3D2FB3 100%); padding: 30px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Somnath NX</h1>
+          <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Exchange Request Confirmed</p>
+        </div>
+
+        <div style="padding: 30px;">
+          <h2 style="margin-top: 0; font-size: 18px; color: #111827; font-weight: 600;">Hello ${customerName},</h2>
+          <p style="font-size: 14px; color: #4B5563; line-height: 1.6; margin-bottom: 25px;">
+            We have successfully received your exchange request for Order <strong>#${orderId}</strong>. Our team is processing it, and a pickup will be arranged shortly.
+          </p>
+
+          <h3 style="font-size: 15px; color: #111827; border-bottom: 2px solid #E5E7EB; padding-bottom: 8px; margin-bottom: 12px; font-weight: 600;">Exchange Details</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+            <thead>
+              <tr style="background-color: #F0EEFD;">
+                <th style="padding: 10px 12px; text-align: left; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Product</th>
+                <th style="padding: 10px 12px; text-align: center; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">Old Variant</th>
+                <th style="padding: 10px 12px; text-align: center; font-size: 12.5px; text-transform: uppercase; color: #3730A3; font-weight: 600;">New Variant</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+
+          <div style="background-color: #F8FAFC; border-radius: 16px; padding: 15px 20px; margin-bottom: 25px; border: 1px solid #E5E7EB; font-size: 14px; color: #4B5563;">
+            <div style="display: flex; justify-content: space-between;">
+              <strong>Exchange Fee & Price Difference Paid:</strong>
+              <span style="color: #111827; font-weight: 600;">₹${exchangeFee}</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 40px; border-top: 1px solid #E5E7EB; padding-top: 20px; text-align: center; font-size: 12px; color: #6B7280; line-height: 1.5;">
+            Thank you for shopping with Somnath NX!<br/>
+            For help or inquiries, contact us at zenvibe.011@gmail.com
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  let host = process.env.SMTP_HOST;
+  let port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
+  const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+  if (!host && process.env.EMAIL_USER) {
+    host = "smtp.gmail.com";
+    port = 465;
+  }
+
+  if (host && user && pass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+
+      await transporter.sendMail({
+        from: `"Somnath NX Costumes" <${user}>`,
+        to: email,
+        subject: `Exchange Request Confirmed - Order #${orderId}`,
+        html: emailHtml,
+      });
+
+      console.log(`[Email Service] Exchange confirmation email sent to ${email}`);
+      return;
+    } catch (error) {
+      console.error("[Email Service] Failed to send exchange confirmation email:", error);
+    }
+  }
+}

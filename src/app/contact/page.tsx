@@ -105,7 +105,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-sm text-white/70">Location</p>
-                    <p className="font-medium">Anand Nagar Main Road, Rajkot, Gujarat, India</p>
+                    <p className="font-medium">Shop No. G-4, Achkan Bazaar, Baroda Prestige, Varachha Road, Surat – 395006, Gujarat, India</p>
                   </div>
                 </div>
               </div>

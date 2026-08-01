@@ -4,6 +4,7 @@ import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import crypto from "crypto";
 import { createShiprocketOrder } from "@/utils/shiprocket";
+import { sendExchangeConfirmationEmail } from "@/utils/emailService";
 
 export async function POST(req: Request) {
   try {
@@ -241,6 +242,20 @@ export async function POST(req: Request) {
       await createShiprocketOrder(exchangeShiprocketOrder);
     } catch (err) {
       console.error("Exchange Shiprocket Error (Online):", err);
+    }
+
+    // Send Exchange Confirmation Email
+    try {
+      await sendExchangeConfirmationEmail({
+        orderId: order._id.toString(),
+        customerName: order.shippingDetails?.firstName ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}`.trim() : "Customer",
+        email: order.email,
+        exchangeFee: flatExchangeFee,
+        originalSizes,
+        newSizes: recordedNewSizes
+      });
+    } catch (mailErr) {
+      console.error("Failed to send exchange confirmation email:", mailErr);
     }
 
     return NextResponse.json({ 

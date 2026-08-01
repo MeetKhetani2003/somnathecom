@@ -507,6 +507,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
               <p className="mt-6 max-w-[320px] text-[14.5px] leading-relaxed text-dark/70">India’s premium destination for nightwear and loungewear. Experience unmatched comfort, modern designs, and breathable fabrics.</p>
               <div className="mt-6 text-[14px] text-dark/70 space-y-2">
+                <p>Address: <span className="font-medium text-dark">Shop No. G-4, Achkan Bazaar, Baroda Prestige, Varachha Road, Surat – 395006, Gujarat, India</span></p>
                 <p>Email: <a href="mailto:somnathnx1@gmail.com" className="font-medium hover:text-primary transition-colors">somnathnx1@gmail.com</a></p>
                 <p>Phone: <a href="tel:+918780003927" className="font-medium hover:text-primary transition-colors">+91 87800 03927</a></p>
               </div>
