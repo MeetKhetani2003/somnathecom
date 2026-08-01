@@ -185,8 +185,8 @@ async function reseed() {
   const CouponModel = mongoose.models.Coupon || mongoose.model("Coupon", CouponSchema);
 
   // Wipe and reseed products
-  const deleted = await ProductModel.deleteMany({});
-  console.log(`Deleted ${deleted.deletedCount} old products.`);
+  // const deleted = await ProductModel.deleteMany({});
+  // console.log(`Deleted ${deleted.deletedCount} old products.`);
 
   const toInsert = products.map(p => {
     const hasColors = p.colors && p.colors.length > 0;

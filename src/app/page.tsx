@@ -395,7 +395,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative h-[400px] w-full md:h-auto">
-            <img src="/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover object-top" />
+            <img src="/public/images/tencel_lifestyle.png" alt="Tencel Nightwear Lifestyle" className="absolute inset-0 h-full w-full object-cover object-top" />
             <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/20 to-transparent md:hidden" />
           </div>
         </div>
