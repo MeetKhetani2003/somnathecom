@@ -127,7 +127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Navbar */}
-      <header className={cn("sticky top-0 z-50 w-full border-b transition-all duration-300", scrolled ? "border-border bg-surface/80 backdrop-blur-xl" : "border-transparent bg-surface/60 backdrop-blur-lg")}>
+      <header className={cn("sticky top-0 z-[100] w-full border-b transition-all duration-300", scrolled ? "border-border bg-surface/80 backdrop-blur-xl" : "border-transparent bg-surface/60 backdrop-blur-lg")}>
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-4 px-4 md:h-[80px]">
           <Link href="/" className="flex items-center shrink-0">
             <Image
@@ -166,7 +166,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <ul className="space-y-3 border-l-2 border-bg-base pl-4">
                           {group.categories.map((cat: any) => (
                             <li key={cat.value}>
-                              <Link 
+                              <Link
                                 href={`/products?category=${encodeURIComponent(cat.value)}`}
                                 className="block text-[13.5px] text-dark/70 transition-all duration-200 hover:translate-x-1 hover:text-primary hover:font-medium"
                               >
@@ -254,7 +254,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-[13.5px] font-medium text-dark truncate hover:text-primary transition-colors">
                                   {p.title}
-                               </h4>
+                                </h4>
                                 <div className="flex items-center justify-between mt-0.5">
                                   <span className="text-[11.5px] text-dark/50 truncate">
                                     {p.category.split(" > ").pop()}
@@ -277,7 +277,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <button className="relative grid h-10 w-10 place-items-center rounded-full text-dark transition hover:bg-bg-base hover:text-primary md:hidden">
               <Search className="h-5 w-5" />
             </button>
-            <Link 
+            <Link
               href={session ? "/wishlist" : "#"}
               onClick={(e) => {
                 if (!session) {
@@ -326,166 +326,166 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <motion.div key="mobile-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-dark/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
         )}
         {mobileMenu && (
-          <motion.div key="mobile-drawer" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 z-[80] h-full w-[86%] max-w-[360px] overflow-y-auto bg-surface shadow-2xl">
+          <motion.div key="mobile-drawer" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 z-[100] h-full w-[86%] max-w-[360px] overflow-y-auto bg-surface shadow-2xl">
             <div className="flex items-center justify-between border-b border-border p-5">
-                <Image
-                  src="/assets/logo.png"
-                  alt="Somnath NX"
-                  width={120}
-                  height={40}
-                  className="h-9 w-auto object-contain"
+              <Image
+                src="/assets/logo.png"
+                alt="Somnath NX"
+                width={120}
+                height={40}
+                className="h-9 w-auto object-contain"
+              />
+              <button onClick={() => setMobileMenu(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-bg-base">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <div className="relative mb-6">
+                <input
+                  placeholder="Search nightwear..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => {
+                    setIsSearchFocused(true);
+                    fetchSearchProducts();
+                  }}
+                  className="h-12 w-full rounded-xl border border-border bg-bg-base pl-11 pr-4 text-[14px] outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5"
                 />
-                <button onClick={() => setMobileMenu(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-bg-base">
-                  <X className="h-5 w-5" />
-                </button>
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-dark/40" />
               </div>
-              <div className="p-5">
-                <div className="relative mb-6">
-                  <input
-                    placeholder="Search nightwear..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    onFocus={() => {
-                      setIsSearchFocused(true);
-                      fetchSearchProducts();
-                    }}
-                    className="h-12 w-full rounded-xl border border-border bg-bg-base pl-11 pr-4 text-[14px] outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5"
-                  />
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-dark/40" />
-                </div>
 
-                {/* Mobile Search Results */}
-                {searchQuery && (
-                  <div className="mb-6 max-h-[280px] overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-inner">
-                    {loadingSearch ? (
-                      <div className="flex items-center justify-center p-3 text-[13px] text-dark/50 gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span>Searching...</span>
-                      </div>
-                    ) : searchResults.length === 0 ? (
-                      <div className="p-3 text-center text-[13px] text-dark/50">
-                        No products found
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {searchResults.map((p) => (
-                          <Link
-                            key={p.id}
-                            href={`/product/${p.id}`}
-                            onClick={() => {
-                              setSearchQuery("");
-                              setMobileMenu(false);
-                            }}
-                            className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-bg-base"
-                          >
-                            <img
-                              src={p.image}
-                              alt={p.title}
-                              className="h-10 w-8 rounded object-cover"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-[13px] font-medium text-dark truncate">
-                                {p.title}
-                              </h4>
-                              <p className="text-[11px] text-dark/50 truncate">
-                                {p.category.split(" > ").pop()} • ₹{p.price}
-                              </p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <Link href="/" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
-                    Home
-                  </Link>
-
-                  {/* Categories Accordion */}
-                  <details className="group [&_summary::-webkit-details-marker]:hidden border-b border-border/50 pb-2 mb-2">
-                    <summary className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base cursor-pointer outline-none">
-                      <span>Collections</span>
-                      <ChevronDown className="h-4 w-4 text-dark/40 transition-transform duration-200 group-open:rotate-180" />
-                    </summary>
-                    <div className="mt-1 pl-4 pr-2 pb-2 space-y-5 border-l-2 border-border ml-2">
-                      {megaMenuGroups.map((group) => (
-                        <div key={group.title} className="space-y-2">
-                          <div className="text-[11px] font-bold uppercase tracking-wider text-primary px-3 py-1 bg-primary/5 rounded-lg inline-block">
-                            {group.title}
+              {/* Mobile Search Results */}
+              {searchQuery && (
+                <div className="mb-6 max-h-[280px] overflow-y-auto rounded-xl border border-border bg-surface p-2 shadow-inner">
+                  {loadingSearch ? (
+                    <div className="flex items-center justify-center p-3 text-[13px] text-dark/50 gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span>Searching...</span>
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="p-3 text-center text-[13px] text-dark/50">
+                      No products found
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {searchResults.map((p) => (
+                        <Link
+                          key={p.id}
+                          href={`/product/${p.id}`}
+                          onClick={() => {
+                            setSearchQuery("");
+                            setMobileMenu(false);
+                          }}
+                          className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-bg-base"
+                        >
+                          <img
+                            src={p.image}
+                            alt={p.title}
+                            className="h-10 w-8 rounded object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-[13px] font-medium text-dark truncate">
+                              {p.title}
+                            </h4>
+                            <p className="text-[11px] text-dark/50 truncate">
+                              {p.category.split(" > ").pop()} • ₹{p.price}
+                            </p>
                           </div>
-                          <div className="space-y-1 pl-1">
-                            {group.categories.map((cat: any) => (
-                              <Link 
-                                key={cat.value} 
-                                href={`/products?category=${encodeURIComponent(cat.value)}`}
-                                onClick={() => setMobileMenu(false)}
-                                className="block rounded-lg px-3 py-2 text-[14px] text-dark/70 hover:bg-bg-base hover:text-primary hover:font-medium"
-                              >
-                                {cat.label}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
-                  </details>
+                  )}
+                </div>
+              )}
+              <div className="space-y-1">
+                <Link href="/" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                  Home
+                </Link>
 
-                  <Link href={`/products?category=${encodeURIComponent("Tencel Collection > Tencel Nightwear > Tencel Full Night Suit")}`} onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
-                    Tencel Experience
-                  </Link>
+                {/* Categories Accordion */}
+                <details className="group [&_summary::-webkit-details-marker]:hidden border-b border-border/50 pb-2 mb-2">
+                  <summary className="flex items-center justify-between rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base cursor-pointer outline-none">
+                    <span>Collections</span>
+                    <ChevronDown className="h-4 w-4 text-dark/40 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-1 pl-4 pr-2 pb-2 space-y-5 border-l-2 border-border ml-2">
+                    {megaMenuGroups.map((group) => (
+                      <div key={group.title} className="space-y-2">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-primary px-3 py-1 bg-primary/5 rounded-lg inline-block">
+                          {group.title}
+                        </div>
+                        <div className="space-y-1 pl-1">
+                          {group.categories.map((cat: any) => (
+                            <Link
+                              key={cat.value}
+                              href={`/products?category=${encodeURIComponent(cat.value)}`}
+                              onClick={() => setMobileMenu(false)}
+                              className="block rounded-lg px-3 py-2 text-[14px] text-dark/70 hover:bg-bg-base hover:text-primary hover:font-medium"
+                            >
+                              {cat.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
 
-                  <Link href="/products" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
-                    Shop All
-                  </Link>
+                <Link href={`/products?category=${encodeURIComponent("Tencel Collection > Tencel Nightwear > Tencel Full Night Suit")}`} onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                  Tencel Experience
+                </Link>
 
-                  <div className="h-px w-full bg-border my-2" />
+                <Link href="/products" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                  Shop All
+                </Link>
 
-                  <Link 
-                    href={session ? "/wishlist" : "#"}
-                    onClick={(e) => {
-                      if (!session) {
-                        e.preventDefault();
-                        setMobileMenu(false);
-                        setIsLoginOpen(true);
-                      } else {
-                        setMobileMenu(false);
-                      }
-                    }}
-                    className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base"
-                  >
-                    My Wishlist
-                  </Link>
+                <div className="h-px w-full bg-border my-2" />
 
-                  {session ? (
-                    <>
-                      <Link href="/profile" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
-                        My Profile
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setMobileMenu(false);
-                          signOut();
-                        }}
-                        className="w-full text-left block rounded-xl px-4 py-3.5 text-[15px] font-medium text-red-500 hover:bg-red-50 cursor-pointer outline-none"
-                      >
-                        Sign Out
-                      </button>
-                    </>
-                  ) : (
+                <Link
+                  href={session ? "/wishlist" : "#"}
+                  onClick={(e) => {
+                    if (!session) {
+                      e.preventDefault();
+                      setMobileMenu(false);
+                      setIsLoginOpen(true);
+                    } else {
+                      setMobileMenu(false);
+                    }
+                  }}
+                  className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base"
+                >
+                  My Wishlist
+                </Link>
+
+                {session ? (
+                  <>
+                    <Link href="/profile" onClick={() => setMobileMenu(false)} className="block rounded-xl px-4 py-3.5 text-[15px] font-medium text-dark hover:bg-bg-base">
+                      My Profile
+                    </Link>
                     <button
                       onClick={() => {
                         setMobileMenu(false);
-                        setIsLoginOpen(true);
+                        signOut();
                       }}
-                      className="w-full text-left block rounded-xl px-4 py-3.5 text-[15px] font-bold text-primary hover:bg-bg-base cursor-pointer outline-none"
+                      className="w-full text-left block rounded-xl px-4 py-3.5 text-[15px] font-medium text-red-500 hover:bg-red-50 cursor-pointer outline-none"
                     >
-                      Login / Sign Up
+                      Sign Out
                     </button>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setMobileMenu(false);
+                      setIsLoginOpen(true);
+                    }}
+                    className="w-full text-left block rounded-xl px-4 py-3.5 text-[15px] font-bold text-primary hover:bg-bg-base cursor-pointer outline-none"
+                  >
+                    Login / Sign Up
+                  </button>
+                )}
               </div>
-            </motion.div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -517,7 +517,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               { title: "Support", links: ["Size Guide", "Shipping Info", "Returns Policy", "Track Order", "Contact Us"] },
               { title: "Brand", links: ["Our Story", "Privacy Policy", "Terms & Conditions"] },
             ].map((col) => (
-               <div key={col.title}>
+              <div key={col.title}>
                 <div className="text-[13px] font-bold uppercase tracking-wider text-dark">{col.title}</div>
                 <ul className="mt-5 space-y-3">
                   {col.links.map((l) => {
@@ -583,7 +583,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Login Modal */}
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
-      
+
       {/* Size Guide Modal */}
       <SizeGuideModal isOpen={isSizeGuideOpen} onClose={() => setIsSizeGuideOpen(false)} />
 
