@@ -13,27 +13,29 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-          />
-
-          {/* Modal Container */}
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
-              className="pointer-events-auto w-full max-w-[440px] overflow-hidden rounded-[28px] border border-[#E0E4FC] bg-white p-7 shadow-2xl shadow-[#3D2FB3]/10"
-              style={{ fontFamily: "Plus Jakarta Sans, Outfit, Inter, sans-serif" }}
-            >
-              {/* Header */}
+        <motion.div
+          key="login-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+        />
+      )}
+      {isOpen && (
+        <motion.div
+          key="login-modal"
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
+          className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
+        >
+          <div
+            className="pointer-events-auto w-full max-w-[440px] overflow-hidden rounded-[28px] border border-[#E0E4FC] bg-white p-7 shadow-2xl shadow-[#3D2FB3]/10"
+            style={{ fontFamily: "Plus Jakarta Sans, Outfit, Inter, sans-serif" }}
+          >
+            {/* Header */}
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-2 rounded-full bg-[#F0EEFD] px-3 py-1 text-[12px] font-medium text-[#3D2FB3] border border-[#DDE3FC]">
                   <Sparkles className="h-3.5 w-3.5" />
@@ -92,9 +94,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <p className="mt-6 text-center text-[11px] text-[#9CA3AF]">
                 Secure login powered by NextAuth.
               </p>
-            </motion.div>
-          </div>
-        </>
+            </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

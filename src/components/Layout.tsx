@@ -323,10 +323,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenu && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-dark/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
-            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 z-[80] h-full w-[86%] max-w-[360px] overflow-y-auto bg-surface shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border p-5">
+          <motion.div key="mobile-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-dark/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
+        )}
+        {mobileMenu && (
+          <motion.div key="mobile-drawer" initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 300 }} className="fixed right-0 top-0 z-[80] h-full w-[86%] max-w-[360px] overflow-y-auto bg-surface shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border p-5">
                 <Image
                   src="/assets/logo.png"
                   alt="Somnath NX"
@@ -485,7 +486,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </motion.div>
-          </>
         )}
       </AnimatePresence>
 
