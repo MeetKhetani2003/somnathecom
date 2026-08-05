@@ -33,6 +33,10 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
     addToCart(p, selectedColor || undefined, selectedSize || undefined);
   };
 
+  const selectedSizeObj = availableSizes.find((s: any) => (typeof s === "object" ? s.size : s) === selectedSize);
+  const displayPrice = (selectedSizeObj && typeof selectedSizeObj === "object" && typeof selectedSizeObj.price === "number") ? selectedSizeObj.price : p.price;
+  const displayMrp = (selectedSizeObj && typeof selectedSizeObj === "object" && typeof selectedSizeObj.mrp === "number") ? selectedSizeObj.mrp : p.mrp;
+
   return (
     <div className={cn("group relative shrink-0", className || "w-full")}>
       <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-border/50 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-dark/5">
@@ -69,11 +73,11 @@ export function ProductCard({ p, className }: { p: any; className?: string }) {
             </div>
 
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="font-display text-[18px] font-bold text-dark">₹{p.price}</span>
-              {p.mrp > p.price && (
+              <span className="font-display text-[18px] font-bold text-dark">₹{displayPrice}</span>
+              {displayMrp > displayPrice && (
                 <>
-                  <span className="text-[14px] text-dark/40 line-through">₹{p.mrp}</span>
-                  <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((p.mrp - p.price) / p.mrp) * 100)}% off</span>
+                  <span className="text-[14px] text-dark/40 line-through">₹{displayMrp}</span>
+                  <span className="ml-auto text-[13px] font-bold text-green-600">{Math.round(((displayMrp - displayPrice) / displayMrp) * 100)}% off</span>
                 </>
               )}
             </div>

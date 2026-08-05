@@ -30,6 +30,8 @@ export async function POST(req: Request) {
 
       // Color-specific stock check
       const hasColors = product.colors && product.colors.length > 0;
+      let itemPrice = product.price;
+
       if (hasColors && item.selectedColor) {
         const colorObj = product.colors.find((c: any) => c.name === item.selectedColor);
         if (!colorObj) {
@@ -52,6 +54,9 @@ export async function POST(req: Request) {
               message: `Insufficient stock for ${product.title} (${item.selectedColor} / ${sizeObj.size}). Only ${sizeObj.stock} left.`
             }, { status: 400 });
           }
+          if (sizeObj.price !== undefined && sizeObj.price !== null && (sizeObj.price as any) !== "") {
+            itemPrice = Number(sizeObj.price);
+          }
         }
       } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
         const sizeObj = product.sizes.find((s: any) => s.size === item.selectedSize);
@@ -67,6 +72,9 @@ export async function POST(req: Request) {
             message: `Insufficient stock for ${product.title} (${sizeObj.size}). Only ${sizeObj.stock} left.`
           }, { status: 400 });
         }
+        if (sizeObj.price !== undefined && sizeObj.price !== null && (sizeObj.price as any) !== "") {
+          itemPrice = Number(sizeObj.price);
+        }
       } else {
         if (product.stock < item.quantity) {
           return NextResponse.json({
@@ -76,12 +84,12 @@ export async function POST(req: Request) {
         }
       }
 
-      subtotal += product.price * item.quantity;
+      subtotal += itemPrice * item.quantity;
       itemsToOrder.push({
         productDocument: product,
         productId: Number(item.id),
         title: product.title || item.title,
-        price: product.price || item.price || 0,
+        price: itemPrice,
         quantity: item.quantity,
         image: product.image,
         selectedSize: item.selectedSize || "",
